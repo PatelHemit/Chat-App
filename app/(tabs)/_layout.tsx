@@ -15,21 +15,41 @@ export default function TabLayout() {
         tabBarActiveTintColor: Colors[colorScheme ?? 'light'].tint,
         headerShown: false,
         tabBarButton: HapticTab,
+        tabBarStyle: {
+          height: 60, // Increase height to prevent clipping
+          paddingBottom: 5, // Add padding for text
+          paddingTop: 5,
+        },
       }}>
       <Tabs.Screen
         name="index"
         options={{
-          title: 'Home',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="house.fill" color={color} />,
+          title: 'Chats',
+          tabBarIcon: ({ color }) => <IconSymbol size={28} name="plus.message.fill" color={color} />,
         }}
       />
       <Tabs.Screen
-        name="explore"
+        name="updates"
         options={{
-          title: 'Explore',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="paperplane.fill" color={color} />,
+          title: 'Updates',
+          tabBarIcon: ({ color }) => <IconSymbol size={28} name="video" color={color} />, // Placeholder for Status/Ring
         }}
       />
+      <Tabs.Screen
+        name="communities"
+        options={{
+          title: 'Communities',
+          tabBarIcon: ({ color }) => <IconSymbol size={28} name="person.fill" color={color} />, // Placeholder for users group
+        }}
+      />
+      <Tabs.Screen
+        name="calls"
+        options={{
+          title: 'Calls',
+          tabBarIcon: ({ color }) => <IconSymbol size={28} name="phone" color={color} />,
+        }}
+      />
+
     </Tabs>
   );
 }
