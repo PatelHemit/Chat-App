@@ -1,15 +1,17 @@
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useState } from 'react';
 import { KeyboardAvoidingView, Platform, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function OTPScreen() {
     const router = useRouter();
+    const { phoneNumber } = useLocalSearchParams();
     const colorScheme = useColorScheme() ?? 'light';
     const theme = Colors[colorScheme];
     const [otp, setOtp] = useState('');
+    const displayPhone = typeof phoneNumber === 'string' ? phoneNumber : "+91 99999 99999";
 
     const handleVerify = () => {
         if (otp.length < 6) {
@@ -23,7 +25,9 @@ export default function OTPScreen() {
         <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
             <View style={styles.header}>
                 <Text style={[styles.title, { color: theme.headerBackground }]}>Verifying your number</Text>
-                <Text style={[styles.subtitle, { color: theme.text }]}>Waiting to automatically detect an SMS sent to +91 99999 99999.</Text>
+                <Text style={[styles.subtitle, { color: theme.text }]}>
+                    Waiting to automatically detect an SMS sent to {displayPhone}.
+                </Text>
                 <TouchableOpacity><Text style={{ color: '#008069', marginTop: 10, fontWeight: 'bold' }}>Wrong number?</Text></TouchableOpacity>
             </View>
 

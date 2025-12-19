@@ -83,25 +83,32 @@ export default function ChatScreen() {
                 behavior={Platform.OS === 'ios' ? 'padding' : undefined}
                 keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
                 style={styles.inputContainer}>
+
                 <TouchableOpacity style={styles.inputButton}>
                     <IconSymbol name="plus" size={24} color={theme.text} />
                 </TouchableOpacity>
-                <TextInput
-                    style={[styles.input, { backgroundColor: colorScheme === 'dark' ? '#2A3942' : '#fff', color: theme.text }]}
-                    value={message}
-                    onChangeText={setMessage}
-                    placeholder="Message"
-                    placeholderTextColor="#888"
-                />
+
+                <View style={[styles.inputWrapper, { backgroundColor: colorScheme === 'dark' ? '#2A3942' : '#fff' }]}>
+                    <TouchableOpacity style={styles.iconInsideInput}>
+                        <IconSymbol name="face.smiling" size={22} color="#888" />
+                    </TouchableOpacity>
+                    <TextInput
+                        style={[styles.textInput, { color: theme.text }]}
+                        value={message}
+                        onChangeText={setMessage}
+                        placeholder="Type a message"
+                        placeholderTextColor="#888"
+                        multiline
+                    />
+                    <TouchableOpacity style={styles.iconInsideInput}>
+                        <IconSymbol name="camera" size={18} color={theme.text} />
+                    </TouchableOpacity>
+                </View>
+
                 {message.length === 0 ? (
-                    <>
-                        <TouchableOpacity style={styles.inputButton}>
-                            <IconSymbol name="camera" size={24} color={theme.text} />
-                        </TouchableOpacity>
-                        <TouchableOpacity style={styles.inputButton}>
-                            <IconSymbol name="mic" size={24} color={theme.text} />
-                        </TouchableOpacity>
-                    </>
+                    <TouchableOpacity style={styles.inputButton}>
+                        <IconSymbol name="mic" size={24} color={theme.text} />
+                    </TouchableOpacity>
                 ) : (
                     <TouchableOpacity onPress={sendMessage} style={styles.sendButton}>
                         <IconSymbol name="paperplane.fill" size={20} color="#fff" />
@@ -175,21 +182,35 @@ const styles = StyleSheet.create({
     },
     inputContainer: {
         flexDirection: 'row',
-        padding: 6,
+        padding: 8,
         alignItems: 'center',
-        // backgroundColor: 'transparent', // Let it blend
     },
     inputButton: {
-        padding: 8,
+        padding: 10,
     },
-    input: {
+    inputWrapper: {
         flex: 1,
+        flexDirection: 'row',
+        alignItems: 'center',
         borderRadius: 20,
-        paddingHorizontal: 16,
-        paddingVertical: 8,
-        marginHorizontal: 4,
+        paddingHorizontal: 15,
+        marginHorizontal: 5,
+        minHeight: 40,
+    },
+    textInput: {
+        flex: 1,
         fontSize: 16,
-        maxHeight: 100,
+        maxHeight: 30,
+        paddingVertical: 8,
+        textAlignVertical: 'center',
+        ...Platform.select({
+            web: {
+                outlineStyle: 'none',
+            } as any,
+        }),
+    },
+    iconInsideInput: {
+        marginHorizontal: 5,
     },
     sendButton: {
         width: 44,

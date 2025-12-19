@@ -26,9 +26,17 @@ export default function WelcomeScreen() {
 
                 <TouchableOpacity
                     style={styles.button}
-                    onPress={() => router.push('/auth/phone')}
+                    onPress={() => router.push('/auth/qr-login' as any)}
                 >
                     <Text style={styles.buttonText}>AGREE AND CONTINUE</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                    style={[styles.qrButton, { marginTop: 20 }]}
+                    onPress={() => router.push('/auth/phone')}
+                >
+                    <FontAwesome name="phone" size={20} color={theme.text} style={{ marginRight: 10 }} />
+                    <Text style={[styles.qrButtonText, { color: theme.text }]}>Login with Phone Number</Text>
                 </TouchableOpacity>
             </View>
         </SafeAreaView>
@@ -78,5 +86,14 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
         fontSize: 14,
         letterSpacing: 1,
+    },
+    qrButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        padding: 10,
+    },
+    qrButtonText: {
+        fontSize: 14,
+        fontWeight: '600',
     },
 });

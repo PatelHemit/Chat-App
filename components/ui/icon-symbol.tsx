@@ -29,7 +29,9 @@ const MAPPING = {
   'mic': 'mic',
   'plus': 'add',
   'qrcode': 'qr-code',
-} as IconMapping;
+  'face.smiling': 'insert-emoticon',
+  'arrow.left': 'arrow-back',
+} as Partial<IconMapping>;
 
 /**
  * An icon component that uses native SF Symbols on iOS, and Material Icons on Android and web.

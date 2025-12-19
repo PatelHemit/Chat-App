@@ -1,7 +1,8 @@
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
-import { Image, ScrollView, StyleSheet, Text, View } from 'react-native';
+import FontAwesome from '@expo/vector-icons/FontAwesome';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 // --- Shared Styles ---
@@ -233,10 +234,9 @@ export function CommunitiesContent() {
             </View>
 
             <View style={styles.content}>
-                <Image
-                    source={require('@/assets/images/react-logo.png')} // Placeholder
-                    style={styles.image}
-                />
+                <View style={[styles.image, { justifyContent: 'center', alignItems: 'center', backgroundColor: 'transparent' }]}>
+                    <FontAwesome name="users" size={100} color="#008069" />
+                </View>
                 <Text style={[styles.title, { color: theme.text }]}>Stay connected with a community</Text>
                 <Text style={styles.subtitle}>Communities bring members together in topic-based groups, and make it easy to get admin announcements. Any community you're added to will appear here.</Text>
 
