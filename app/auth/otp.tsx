@@ -1,5 +1,6 @@
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useState } from 'react';
 import { KeyboardAvoidingView, Platform, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
@@ -13,12 +14,48 @@ export default function OTPScreen() {
     const [otp, setOtp] = useState('');
     const displayPhone = typeof phoneNumber === 'string' ? phoneNumber : "+91 99999 99999";
 
-    const handleVerify = () => {
+    const [loading, setLoading] = useState(false);
+
+    const handleVerify = async () => {
         if (otp.length < 6) {
             alert("Please enter a valid 6-digit OTP");
             return;
         }
-        router.push('/auth/profile');
+
+        setLoading(true);
+        try {
+            // Ensure phoneNumber is a string
+            const phoneStr = Array.isArray(phoneNumber) ? phoneNumber[0] : phoneNumber;
+
+            const response = await fetch('http://localhost:3000/api/auth/verify-otp', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ phone: phoneStr, otp })
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                // Simulate SMS notification
+                if (data.otp) {
+                    alert(`Your OTP is: ${data.otp}`);
+                }
+
+                if (data.user && data.token) {
+                    await AsyncStorage.setItem('userInfo', JSON.stringify(data.user));
+                    await AsyncStorage.setItem('userToken', data.token);
+                }
+
+                router.push('/auth/profile');
+            } else {
+                alert(data.error || "Invalid OTP");
+            }
+        } catch (error) {
+            console.error(error);
+            alert("Verification failed. Please try again.");
+        } finally {
+            setLoading(false);
+        }
     };
 
     return (
@@ -35,7 +72,6 @@ export default function OTPScreen() {
                 <View style={styles.otpInputContainer}>
                     <TextInput
                         style={[styles.input, { color: theme.text }]}
-                        placeholder="- - - - - -"
                         placeholderTextColor="#aaa"
                         keyboardType="numeric"
                         maxLength={6}

@@ -1,9 +1,12 @@
 import { IconSymbol } from '@/components/ui/icon-symbol';
+import { API_BASE_URL } from '@/config/api';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Stack, useLocalSearchParams } from 'expo-router';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
+    ActivityIndicator,
     FlatList,
     KeyboardAvoidingView,
     Platform,
@@ -15,27 +18,112 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-const DUMMY_MESSAGES = [
-    { id: '1', text: 'Hello!', sender: 'them', time: '10:00 AM' },
-    { id: '2', text: 'Hi! How are you?', sender: 'me', time: '10:01 AM' },
-    { id: '3', text: 'I am doing great, thanks for asking. How about you?', sender: 'them', time: '10:02 AM' },
-    { id: '4', text: 'Same here!', sender: 'me', time: '10:02 AM' },
-];
-
 export default function ChatScreen() {
     const { id, name } = useLocalSearchParams<{ id: string; name: string }>();
     const [message, setMessage] = useState('');
-    const [messages, setMessages] = useState(DUMMY_MESSAGES);
+    const [messages, setMessages] = useState<any[]>([]);
+    const [loading, setLoading] = useState(false);
+    const [currentUserId, setCurrentUserId] = useState("");
+    const flatListRef = useRef<FlatList>(null);
     const colorScheme = useColorScheme() ?? 'light';
     const theme = Colors[colorScheme];
 
-    const sendMessage = () => {
+    useEffect(() => {
+        const fetchUserAndMessages = async () => {
+            try {
+                const userInfo = await AsyncStorage.getItem("userInfo");
+                const token = await AsyncStorage.getItem("userToken");
+
+                if (userInfo) {
+                    const user = JSON.parse(userInfo);
+                    setCurrentUserId(user._id);
+                }
+
+                if (token && id) {
+                    fetchMessages(token);
+                }
+            } catch (error) {
+                console.log(error);
+            }
+        };
+        fetchUserAndMessages();
+    }, [id]);
+
+    const fetchMessages = async (token: string) => {
+        setLoading(true);
+        try {
+            const response = await fetch(`${API_BASE_URL}/api/message/${id}`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            const data = await response.json();
+            setMessages(data);
+        } catch (error) {
+            console.log(error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const [socketConnected, setSocketConnected] = useState(false);
+
+    // Initialize Socket
+    useEffect(() => {
+        // Import socket.io-client dynamically or use require if import fails in some expo setups
+        const io = require("socket.io-client");
+        const socket = io(API_BASE_URL);
+
+        socket.emit("setup", { _id: currentUserId });
+        socket.on("connected", () => setSocketConnected(true));
+
+        socket.emit("join chat", id);
+
+        socket.on("message received", (newMessageRecieved: any) => {
+            if (id === newMessageRecieved.chat._id) {
+                setMessages((prev) => [...prev, newMessageRecieved]);
+                // Scroll to bottom
+                if (flatListRef.current) {
+                    flatListRef.current.scrollToEnd({ animated: true });
+                }
+            }
+        });
+
+        return () => {
+            socket.off("message received");
+            socket.disconnect();
+        };
+    }, [id, currentUserId]); // Depend on id and user to rejoin rooms
+
+    const sendMessage = async () => {
         if (message.trim().length === 0) return;
-        setMessages((prev) => [
-            ...prev,
-            { id: Date.now().toString(), text: message, sender: 'me', time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) },
-        ]);
-        setMessage('');
+
+        try {
+            const token = await AsyncStorage.getItem("userToken");
+            const content = message; // Store locally before clearing
+            setMessage("");
+
+            const response = await fetch(`${API_BASE_URL}/api/message`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`,
+                },
+                body: JSON.stringify({
+                    content: content,
+                    chatId: id,
+                }),
+            });
+
+            const newMessage = await response.json();
+
+            // Emit socket message
+            const io = require("socket.io-client");
+            const socket = io(API_BASE_URL);
+            socket.emit("new message", newMessage);
+
+            setMessages((prev) => [...prev, newMessage]);
+        } catch (error) {
+            console.log("Error sending message:", error);
+        }
     };
 
     return (
@@ -62,22 +150,32 @@ export default function ChatScreen() {
                     ),
                 }}
             />
+            {loading && <ActivityIndicator size="large" color="#008069" />}
             <FlatList
                 data={messages}
-                keyExtractor={(item) => item.id}
-                renderItem={({ item }) => (
-                    <View
-                        style={[
-                            styles.messageBubble,
-                            item.sender === 'me'
-                                ? [styles.myMessage, { backgroundColor: theme.messageSent }]
-                                : [styles.theirMessage, { backgroundColor: theme.messageReceived }],
-                        ]}>
-                        <Text style={[styles.messageText, { color: theme.text }]}>{item.text}</Text>
-                        <Text style={styles.messageTime}>{item.time}</Text>
-                    </View>
-                )}
+                keyExtractor={(item) => item._id}
+                renderItem={({ item }) => {
+                    const isMyMessage = item.sender._id === currentUserId || item.sender === currentUserId;
+                    return (
+                        <View
+                            style={[
+                                styles.messageBubble,
+                                isMyMessage
+                                    ? [styles.myMessage, { backgroundColor: theme.messageSent }]
+                                    : [styles.theirMessage, { backgroundColor: theme.messageReceived }],
+                            ]}>
+                            <Text style={[styles.messageText, { color: theme.text }]}>{item.content}</Text>
+                            <Text style={styles.messageTime}>
+                                {new Date(item.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                            </Text>
+                        </View>
+                    );
+                }}
                 contentContainerStyle={styles.messagesList}
+                /* Scroll to bottom on new message */
+                onContentSizeChange={() => messages.length > 0 && flatListRef.current?.scrollToEnd({ animated: true })}
+                onLayout={() => messages.length > 0 && flatListRef.current?.scrollToEnd({ animated: true })}
+                ref={flatListRef}
             />
             <KeyboardAvoidingView
                 behavior={Platform.OS === 'ios' ? 'padding' : undefined}

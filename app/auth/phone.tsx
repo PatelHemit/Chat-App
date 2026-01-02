@@ -11,12 +11,39 @@ export default function PhoneScreen() {
     const theme = Colors[colorScheme];
     const [phone, setPhone] = useState('');
 
-    const handleNext = () => {
+    const [loading, setLoading] = useState(false);
+
+    const handleNext = async () => {
         if (phone.length < 10) {
             alert("Please enter a valid phone number");
             return;
         }
-        router.push('/auth/otp');
+
+        setLoading(true);
+        try {
+            const response = await fetch('http://localhost:3000/api/auth/send-otp', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ phone })
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                // Simulate SMS notification
+                if (data.otp) {
+                    alert(`Your OTP is: ${data.otp}`);
+                }
+                router.push({ pathname: '/auth/otp', params: { phoneNumber: phone } });
+            } else {
+                alert(data.error || "Failed to send OTP");
+            }
+        } catch (error) {
+            console.error(error);
+            alert("Network error. Please check backend server.");
+        } finally {
+            setLoading(false);
+        }
     };
 
     return (

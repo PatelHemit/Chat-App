@@ -1,6 +1,7 @@
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { KeyboardAvoidingView, Platform, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
@@ -12,13 +13,57 @@ export default function ProfileScreen() {
     const theme = Colors[colorScheme];
     const [name, setName] = useState('');
 
-    const handleFinish = () => {
+    const [loading, setLoading] = useState(false);
+
+    const handleFinish = async () => {
         if (name.length === 0) {
             alert("Please enter your name");
             return;
         }
-        // In a real app, set auth state here
-        router.replace('/(tabs)');
+
+        setLoading(true);
+        try {
+            const userInfo = await AsyncStorage.getItem('userInfo');
+            const token = await AsyncStorage.getItem('userToken');
+
+            if (!userInfo || !token) {
+                alert("Session expired. Please login again.");
+                router.replace('/auth/welcome');
+                return;
+            }
+
+            const user = JSON.parse(userInfo);
+
+            // Call API to update profile
+            const response = await fetch('http://localhost:3000/api/user/update-profile', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    phone: user.phone,
+                    name: name,
+                    profilePic: "" // Implement image upload later
+                })
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                // Update local user info
+                await AsyncStorage.setItem('userInfo', JSON.stringify(data.user));
+                router.replace('/(tabs)');
+            } else {
+                alert(data.error || "Failed to update profile");
+            }
+
+        } catch (error) {
+            console.error(error);
+            alert("Network error");
+        } finally {
+            setLoading(false);
+        }
     };
 
     return (

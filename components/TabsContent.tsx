@@ -229,6 +229,7 @@ export function CommunitiesContent() {
                 <Text style={[styles.headerTitle, { color: theme.headerTintColor }]}>Communities</Text>
                 <View style={styles.headerIcons}>
                     <IconSymbol name="camera" size={24} color={theme.headerTintColor} style={styles.icon} />
+                    <IconSymbol name="magnifyingglass" size={24} color={theme.headerTintColor} style={styles.icon} />
                     <IconSymbol name="ellipsis" size={24} color={theme.headerTintColor} style={styles.icon} />
                 </View>
             </View>

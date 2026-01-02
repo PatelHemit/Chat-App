@@ -1,23 +1,55 @@
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useFocusEffect } from '@react-navigation/native';
 import { Link } from 'expo-router';
-import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
+import { useCallback, useState } from 'react';
+import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-
-const DUMMY_CHATS = [
-  { id: '1', name: 'Alice', lastMessage: 'Hey there!', time: '10:30 AM', unread: 0 },
-  { id: '2', name: 'Bob', lastMessage: 'See you tomorrow.', time: 'Yesterday', unread: 0 },
-  { id: '3', name: 'Charlie', lastMessage: 'How are you?', time: 'Tuesday', unread: 0 },
-];
 
 export default function HomeScreen() {
   const colorScheme = useColorScheme() ?? 'light';
+  const [chats, setChats] = useState([]);
+  const [loading, setLoading] = useState(false);
+
+  // Fetch chats when screen comes into focus
+  useFocusEffect(
+    useCallback(() => {
+      fetchChats();
+    }, [])
+  );
+
+  const fetchChats = async () => {
+    setLoading(true);
+    try {
+      const token = await AsyncStorage.getItem('userToken');
+      if (!token) return;
+
+      const response = await fetch('http://localhost:3000/api/chat', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const data = await response.json();
+      setChats(data);
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Helper to get other user's name
+  const getSender = (loggedUser: any, users: any[]) => {
+    // Logic to return name of user who is NOT loggedUser
+    // Simplified for now assuming users[0] or users[1]
+    // In real app need loggedUserId
+    return users[0]?.name || "User";
+  };
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: Colors[colorScheme].background }]}>
-      <View style={[styles.header, { backgroundColor: Colors[colorScheme].headerBackground }]}>
-        <Text style={[styles.headerTitle, { color: Colors[colorScheme].headerTintColor }]}>WhatsApp</Text>
+    <SafeAreaView style={StyleSheet.flatten([styles.container, { backgroundColor: Colors[colorScheme].background }])}>
+      <View style={StyleSheet.flatten([styles.header, { backgroundColor: Colors[colorScheme].headerBackground }])}>
+        <Text style={StyleSheet.flatten([styles.headerTitle, { color: Colors[colorScheme].headerTintColor }])}>WhatsApp</Text>
         <View style={styles.headerIcons}>
           <Link href={"/qrcode" as any} asChild>
             <Pressable>
@@ -30,38 +62,56 @@ export default function HomeScreen() {
         </View>
       </View>
 
-      <FlatList
-        data={DUMMY_CHATS}
-        keyExtractor={(item) => item.id}
-        renderItem={({ item }) => (
-          <Link href={{ pathname: '/chat/[id]', params: { id: item.id, name: item.name } }} asChild>
-            <Pressable>
-              <View style={styles.chatItem}>
-                <View style={styles.avatar}>
-                  <IconSymbol name="person.fill" size={30} color="#fff" />
-                </View>
-                <View style={styles.chatInfo}>
-                  <View style={styles.chatHeader}>
-                    <Text style={[styles.name, { color: Colors[colorScheme].text }]}>{item.name}</Text>
-                    <Text style={[styles.time, { color: item.unread > 0 ? Colors[colorScheme].tint : '#666' }]}>{item.time}</Text>
-                  </View>
-                  <View style={styles.chatFooter}>
-                    <Text numberOfLines={1} style={styles.lastMessage}>{item.lastMessage}</Text>
-                    {item.unread > 0 && (
-                      <View style={[styles.badge, { backgroundColor: Colors[colorScheme].tint }]}>
-                        <Text style={styles.badgeText}>{item.unread}</Text>
+      {loading ? (
+        <ActivityIndicator size="large" color="#008069" style={{ marginTop: 50 }} />
+      ) : (
+        <FlatList
+          data={chats}
+          keyExtractor={(item: any) => item._id}
+          renderItem={({ item }) => {
+            // Determine the other user (hacky way without user ID, improving needed)
+            // Actually, let's just show the first user that isn't me? 
+            // We need the current user ID to do this properly.
+            // For now, just show users[1].name assuming 1-on-1
+            const chatName = item.users[1] ? item.users[1].name : "Unknown";
+
+            return (
+              <Link href={{ pathname: '/chat/[id]', params: { id: item._id, name: chatName } }} asChild>
+                <Pressable>
+                  <View style={styles.chatItem}>
+                    <View style={styles.avatar}>
+                      <IconSymbol name="person.fill" size={30} color="#fff" />
+                    </View>
+                    <View style={styles.chatInfo}>
+                      <View style={styles.chatHeader}>
+                        <Text style={StyleSheet.flatten([styles.name, { color: Colors[colorScheme].text }])}>{chatName}</Text>
+                        <Text style={StyleSheet.flatten([styles.time, { color: '#666' }])}>
+                          {item.latestMessage ? new Date(item.latestMessage.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ""}
+                        </Text>
                       </View>
-                    )}
+                      <View style={styles.chatFooter}>
+                        <Text numberOfLines={1} style={styles.lastMessage}>
+                          {item.latestMessage ? item.latestMessage.content : "No messages yet"}
+                        </Text>
+                      </View>
+                    </View>
                   </View>
-                </View>
-              </View>
-            </Pressable>
-          </Link>
-        )}
-      />
-      <View style={[styles.fab, { backgroundColor: Colors[colorScheme].tint }]}>
-        <IconSymbol name="plus.message.fill" size={24} color="#fff" />
-      </View>
+                </Pressable>
+              </Link>
+            );
+          }}
+        />
+      )}
+      <Link href="/meta-ai" asChild>
+        <Pressable style={styles.aiFab}>
+          <IconSymbol name="sparkles" size={24} color="#fff" />
+        </Pressable>
+      </Link>
+      <Link href="/chat/new" asChild>
+        <Pressable style={StyleSheet.flatten([styles.fab, { backgroundColor: Colors[colorScheme].tint }])}>
+          <IconSymbol name="plus.message.fill" size={24} color="#fff" />
+        </Pressable>
+      </Link>
     </SafeAreaView>
   );
 }
@@ -157,5 +207,31 @@ const styles = StyleSheet.create({
     },
     shadowOpacity: 0.27,
     shadowRadius: 4.65,
+  },
+  aiFab: {
+    position: 'absolute',
+    right: 24, // Slightly smaller or aligned
+    bottom: 90, // Positioned above the main FAB
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    // backgroundColor: 'transparent', // Using a gradient usually, but here solid or image
+    // For Meta AI, it often looks like a rainbow circle or blue/purple
+    // Let's use a nice distinct color for now, maybe a deep purple or blue
+    // Or we can try to make it look like the multi-color ring if possible, but simple for now:
+    borderWidth: 2,
+    borderColor: '#fff',
+    backgroundColor: '#615EF0', // Example Meta AI-ish color
+    justifyContent: 'center',
+    alignItems: 'center',
+    elevation: 6,
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 3,
+    },
+    shadowOpacity: 0.27,
+    shadowRadius: 4.65,
+    zIndex: 10,
   },
 });

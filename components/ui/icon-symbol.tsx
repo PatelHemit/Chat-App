@@ -31,6 +31,7 @@ const MAPPING = {
   'qrcode': 'qr-code',
   'face.smiling': 'insert-emoticon',
   'arrow.left': 'arrow-back',
+  'sparkles': 'auto-awesome',
 } as Partial<IconMapping>;
 
 /**
