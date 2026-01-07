@@ -5,9 +5,9 @@ const { Server } = require("socket.io");
 const cors = require('cors');
 const ImageKit = require("imagekit");
 const connectDB = require('./config/db');
-const generateToken = require('./config/generateToken');
 const chatRoutes = require('./routes/chatRoutes');
 const userRoutes = require('./routes/userRoutes');
+const authRoutes = require('./routes/authRoutes');
 
 const app = express();
 const server = http.createServer(app);
@@ -24,6 +24,23 @@ const imagekit = new ImageKit({
     publicKey: process.env.IMAGEKIT_PUBLIC_KEY,
     privateKey: process.env.IMAGEKIT_PRIVATE_KEY,
     urlEndpoint: process.env.IMAGEKIT_URL_ENDPOINT
+});
+
+console.log("ImageKit Init:");
+console.log("Public Key Loaded:", process.env.IMAGEKIT_PUBLIC_KEY ? "YES (" + process.env.IMAGEKIT_PUBLIC_KEY.substring(0, 5) + "...)" : "NO");
+console.log("Private Key Loaded:", process.env.IMAGEKIT_PRIVATE_KEY ? "YES" : "NO");
+console.log("Url Endpoint Loaded:", process.env.IMAGEKIT_URL_ENDPOINT ? "YES" : "NO");
+
+// Test ImageKit Connection
+imagekit.listFiles({
+    limit: 1
+}, function (error, result) {
+    if (error) {
+        console.error("❌ ImageKit Connection FAILED: Keys are invalid or don't match.");
+        console.error("Error Detail:", error.message);
+    } else {
+        console.log("✅ ImageKit Connection SUCCESS: Keys are valid.");
+    }
 });
 
 // Socket.io Setup
@@ -71,85 +88,14 @@ app.get('/', (req, res) => {
 
 app.get('/api/imagekit/auth', function (req, res) {
     var result = imagekit.getAuthenticationParameters();
-    res.send(result);
+    res.send({ ...result, publicKey: process.env.IMAGEKIT_PUBLIC_KEY });
 });
 
 app.use('/api/chat', chatRoutes);
 app.use('/api/user', userRoutes);
 app.use('/api/ai', require('./routes/aiRoutes'));
 app.use('/api/message', require('./routes/messageRoutes'));
-
-const User = require('./models/User');
-
-// Mock OTP Storage (In production use Redis/Database)
-const otpStore = {};
-
-app.post('/api/auth/send-otp', (req, res) => {
-    const { phone } = req.body;
-    if (!phone) return res.status(400).json({ error: "Phone number is required" });
-
-    // Generate 6-digit OTP
-    const otp = Math.floor(100000 + Math.random() * 900000).toString();
-    otpStore[phone] = otp;
-
-    console.log(`[OTP] Sending OTP ${otp} to ${phone}`);
-
-    // Return OTP in response for testing purposes (Simulating SMS delivery)
-    res.json({ success: true, message: "OTP sent successfully", otp: otp });
-});
-
-app.post('/api/auth/verify-otp', async (req, res) => {
-    const { phone, otp } = req.body;
-    if (!phone || !otp) return res.status(400).json({ error: "Phone and OTP are required" });
-
-    if (otpStore[phone] === otp) {
-        delete otpStore[phone]; // Clear OTP after success
-
-        try {
-            // Find or Create User
-            let user = await User.findOne({ phone });
-
-            if (!user) {
-                user = await User.create({ phone });
-                console.log(`[DB] New User Created: ${phone}`);
-            } else {
-                console.log(`[DB] User Found: ${phone}`);
-            }
-
-            res.json({
-                success: true,
-                message: "OTP verified",
-                user: user,
-                token: generateToken(user._id)
-            });
-        } catch (error) {
-            console.error(error);
-            res.status(500).json({ error: "Database Error" });
-        }
-    } else {
-        res.status(400).json({ error: "Invalid OTP" });
-    }
-});
-
-app.post('/api/user/update-profile', async (req, res) => {
-    const { phone, name, about, profilePic } = req.body;
-    if (!phone) return res.status(400).json({ error: "Phone is required to update profile" });
-
-    try {
-        const user = await User.findOneAndUpdate(
-            { phone },
-            { name, about, profilePic },
-            { new: true } // Return updated document
-        );
-
-        if (!user) return res.status(404).json({ error: "User not found" });
-
-        res.json({ success: true, user });
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ error: "Server Error" });
-    }
-});
+app.use('/api/auth', authRoutes);
 
 // Start Server
 const PORT = process.env.PORT || 3000;
