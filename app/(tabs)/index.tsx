@@ -1,24 +1,39 @@
 import { IconSymbol } from '@/components/ui/icon-symbol';
+import { API_BASE_URL } from '@/config/api';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect } from '@react-navigation/native';
 import { Link } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, FlatList, Pressable, Image as RNImage, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function HomeScreen() {
   const colorScheme = useColorScheme() ?? 'light';
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [chats, setChats] = useState([]);
   const [loading, setLoading] = useState(false);
 
-  // Fetch chats when screen comes into focus
+  // Fetch chats and user info when screen comes into focus
   useFocusEffect(
     useCallback(() => {
       fetchChats();
+      loadUser();
     }, [])
   );
+
+  const loadUser = async () => {
+    try {
+      const userInfo = await AsyncStorage.getItem("userInfo");
+      if (userInfo) {
+        const user = JSON.parse(userInfo);
+        setCurrentUserId(user._id);
+      }
+    } catch (error) {
+      console.log("Error loading user:", error);
+    }
+  };
 
   const fetchChats = async () => {
     setLoading(true);
@@ -26,7 +41,7 @@ export default function HomeScreen() {
       const token = await AsyncStorage.getItem('userToken');
       if (!token) return;
 
-      const response = await fetch('http://localhost:3000/api/chat', {
+      const response = await fetch(`${API_BASE_URL}/api/chat`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       const data = await response.json();
@@ -38,12 +53,11 @@ export default function HomeScreen() {
     }
   };
 
-  // Helper to get other user's name
-  const getSender = (loggedUser: any, users: any[]) => {
-    // Logic to return name of user who is NOT loggedUser
-    // Simplified for now assuming users[0] or users[1]
-    // In real app need loggedUserId
-    return users[0]?.name || "User";
+  const getChatName = (users: any[]) => {
+    if (!currentUserId || !users) return "Unknown";
+    // Find the user who is NOT the current user
+    const otherUser = users.find((u: any) => u._id !== currentUserId);
+    return otherUser ? otherUser.name : "Unknown User";
   };
 
   return (
@@ -58,7 +72,11 @@ export default function HomeScreen() {
           </Link>
           <IconSymbol name="camera" size={24} color={Colors[colorScheme].headerTintColor} style={styles.icon} />
           <IconSymbol name="magnifyingglass" size={24} color={Colors[colorScheme].headerTintColor} style={styles.icon} />
-          <IconSymbol name="ellipsis" size={24} color={Colors[colorScheme].headerTintColor} style={styles.icon} />
+          <Link href="/settings" asChild>
+            <Pressable>
+              <IconSymbol name="ellipsis" size={24} color={Colors[colorScheme].headerTintColor} style={styles.icon} />
+            </Pressable>
+          </Link>
         </View>
       </View>
 
@@ -69,18 +87,25 @@ export default function HomeScreen() {
           data={chats}
           keyExtractor={(item: any) => item._id}
           renderItem={({ item }) => {
-            // Determine the other user (hacky way without user ID, improving needed)
-            // Actually, let's just show the first user that isn't me? 
-            // We need the current user ID to do this properly.
-            // For now, just show users[1].name assuming 1-on-1
-            const chatName = item.users[1] ? item.users[1].name : "Unknown";
+            const chatName = getChatName(item.users);
 
             return (
-              <Link href={{ pathname: '/chat/[id]', params: { id: item._id, name: chatName } }} asChild>
+              <Link href={{ pathname: '/chat/[id]', params: { id: item._id, name: chatName, profilePic: item.users.find((u: any) => u._id !== currentUserId)?.profilePic } }} asChild>
                 <Pressable>
                   <View style={styles.chatItem}>
                     <View style={styles.avatar}>
-                      <IconSymbol name="person.fill" size={30} color="#fff" />
+                      {/* Show other user profile pic if available */}
+                      {(() => {
+                        const otherUser = item.users.find((u: any) => u._id !== currentUserId);
+                        return otherUser?.profilePic ? (
+                          <RNImage
+                            source={{ uri: otherUser.profilePic }}
+                            style={{ width: 50, height: 50, borderRadius: 25 }}
+                          />
+                        ) : (
+                          <IconSymbol name="person.fill" size={30} color="#fff" />
+                        );
+                      })()}
                     </View>
                     <View style={styles.chatInfo}>
                       <View style={styles.chatHeader}>

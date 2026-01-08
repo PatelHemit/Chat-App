@@ -1,4 +1,5 @@
 import { IconSymbol } from '@/components/ui/icon-symbol';
+import { API_BASE_URL } from '@/config/api';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -35,25 +36,7 @@ export default function ProfileScreen() {
         try {
             console.log("Starting upload for:", uri);
 
-            // 1. Get Auth Params
-            console.log("Fetching auth params from backend...");
-            const authRes = await fetch('http://localhost:3000/api/imagekit/auth');
-
-            if (!authRes.ok) {
-                const text = await authRes.text();
-                throw new Error(`Auth Endpoint Error: ${authRes.status} ${text}`);
-            }
-
-            const authData = await authRes.json();
-            console.log("Auth params received:", authData);
-
-            const { signature, expire, token, publicKey } = authData;
-
-            if (!publicKey) {
-                throw new Error("Public Key missing from backend response. Check .env file.");
-            }
-
-            // 2. Prepare Form Data
+            // Prepare Form Data
             let filename = "profile.jpg";
             let type = "image/jpeg";
 
@@ -75,35 +58,47 @@ export default function ProfileScreen() {
                 const response = await fetch(uri);
                 const blob = await response.blob();
                 console.log("Blob created:", blob);
-                formData.append('file', blob, filename);
+                formData.append('image', blob, filename);
             } else {
                 console.log("Native platform detected.");
                 // @ts-ignore
-                formData.append('file', { uri: uri, name: filename, type });
+                formData.append('image', { uri: uri, name: filename, type });
             }
 
-            formData.append('fileName', filename);
-            formData.append('publicKey', publicKey);
-            formData.append('signature', signature);
-            formData.append('expire', expire);
-            formData.append('token', token);
-            formData.append('useUniqueFileName', 'true');
-
-            // 3. Upload
-            console.log("Sending upload request to ImageKit...");
-            const uploadRes = await fetch('https://upload.imagekit.io/api/v1/files/upload', {
+            // 3. Upload to local backend
+            console.log("Sending upload request to Backend:", `${API_BASE_URL}/api/upload`);
+            const uploadRes = await fetch(`${API_BASE_URL}/api/upload`, {
                 method: 'POST',
-                body: formData
+                body: formData,
+                // NOTE: Do NOT set Content-Type header when sending FormData, 
+                // fetch will automatically set it with boundary.
             });
 
-            const uploadData = await uploadRes.json();
-            console.log("Upload response:", uploadData);
+            console.log("Upload Status:", uploadRes.status);
+            const responseText = await uploadRes.text();
+            console.log("Upload Response Text:", responseText);
 
             if (!uploadRes.ok) {
-                throw new Error(uploadData.message || `Upload Failed: ${uploadRes.status}`);
+                // Try to parse JSON error message from body if possible
+                try {
+                    const errJson = JSON.parse(responseText);
+                    throw new Error(errJson.message || `Upload Failed: ${uploadRes.status}`);
+                } catch (e) {
+                    // If not JSON, throw the text (likely HTML error)
+                    throw new Error(`Upload Failed: ${uploadRes.status} - ${responseText.substring(0, 100)}...`);
+                }
             }
 
-            return uploadData.url;
+            let uploadData;
+            try {
+                uploadData = JSON.parse(responseText);
+            } catch (e) {
+                throw new Error("Server returned non-JSON response: " + responseText.substring(0, 100));
+            }
+
+            console.log("Upload response JSON:", uploadData);
+
+            return uploadData.imageUrl;
         } catch (error: any) {
             console.error("Upload Logic Error:", error);
             throw error; // Re-throw to be caught by handleFinish
@@ -135,7 +130,7 @@ export default function ProfileScreen() {
             }
 
             // Call API to update profile
-            const response = await fetch('http://localhost:3000/api/user/update-profile', {
+            const response = await fetch(`${API_BASE_URL}/api/user/update-profile`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

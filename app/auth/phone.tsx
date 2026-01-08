@@ -14,8 +14,8 @@ export default function PhoneScreen() {
     const [loading, setLoading] = useState(false);
 
     const handleNext = async () => {
-        if (phone.length < 10) {
-            alert("Please enter a valid phone number");
+        if (phone.length !== 10) {
+            alert("Please enter a valid 10-digit phone number");
             return;
         }
 
@@ -99,6 +99,7 @@ export default function PhoneScreen() {
                                         keyboardType="number-pad"
                                         value={phone}
                                         onChangeText={setPhone}
+                                        maxLength={10}
                                         autoFocus
                                         selectionColor="#008069"
                                     />

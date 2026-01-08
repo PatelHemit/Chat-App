@@ -3,26 +3,28 @@ const { GoogleGenerativeAI } = require("@google/generative-ai");
 // Helper to access Gemini
 const getGeminiResponse = async (prompt) => {
     try {
-        const apiKey = process.env.GEMINI_API_KEY || "AIzaSyDbs9NEwV6z33jhE4v9ujd4zYGQFAnq_9M";
+        const apiKey = process.env.GEMINI_API_KEY;
         if (!apiKey) throw new Error("GEMINI_API_KEY not found in .env");
 
         const genAI = new GoogleGenerativeAI(apiKey);
 
-        // Try latest model first
+        // Try Experimental model (usually has free quota)
         try {
-            const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+            // Updated to use the Experimental version which is listed in your account
+            const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash-exp" });
             const result = await model.generateContent(prompt);
             return result.response.text();
         } catch (e) {
-            console.log("Gemini 1.5 Flash failed, trying Pro...", e.message);
-            // Fallback
-            const model = genAI.getGenerativeModel({ model: "gemini-pro" });
+            console.log("Gemini Exp failed, trying Flash Latest...", e.message);
+            // Fallback to the generic alias
+            const model = genAI.getGenerativeModel({ model: "gemini-flash-latest" });
             const result = await model.generateContent(prompt);
             return result.response.text();
         }
     } catch (error) {
         console.error("Gemini Error:", error);
-        return "I am having connection issues with Google AI. Please try again later.";
+        // Return actual error for debugging
+        return `Error: ${error.message}`;
     }
 };
 

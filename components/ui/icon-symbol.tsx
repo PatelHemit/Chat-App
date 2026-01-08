@@ -32,6 +32,7 @@ const MAPPING = {
   'face.smiling': 'insert-emoticon',
   'arrow.left': 'arrow-back',
   'sparkles': 'auto-awesome',
+  'arrow.right.circle': 'logout',
 } as Partial<IconMapping>;
 
 /**

@@ -1,3 +1,4 @@
+import { API_BASE_URL } from '@/config/api';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -27,7 +28,7 @@ export default function OTPScreen() {
             // Ensure phoneNumber is a string
             const phoneStr = Array.isArray(phoneNumber) ? phoneNumber[0] : phoneNumber;
 
-            const response = await fetch('http://localhost:3000/api/auth/verify-otp', {
+            const response = await fetch(`${API_BASE_URL}/api/auth/verify-otp`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ phone: phoneStr, otp })

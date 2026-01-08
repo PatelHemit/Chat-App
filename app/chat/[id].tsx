@@ -10,6 +10,7 @@ import {
     FlatList,
     KeyboardAvoidingView,
     Platform,
+    Image as RNImage,
     StyleSheet,
     Text,
     TextInput,
@@ -17,9 +18,10 @@ import {
     View
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { io } from 'socket.io-client';
 
 export default function ChatScreen() {
-    const { id, name } = useLocalSearchParams<{ id: string; name: string }>();
+    const { id, name, profilePic } = useLocalSearchParams<{ id: string; name: string; profilePic: string }>();
     const [message, setMessage] = useState('');
     const [messages, setMessages] = useState<any[]>([]);
     const [loading, setLoading] = useState(false);
@@ -64,42 +66,64 @@ export default function ChatScreen() {
         }
     };
 
+    const socket = useRef<any>(null);
     const [socketConnected, setSocketConnected] = useState(false);
 
     // Initialize Socket
     useEffect(() => {
-        // Import socket.io-client dynamically or use require if import fails in some expo setups
-        const io = require("socket.io-client");
-        const socket = io(API_BASE_URL);
+        if (!currentUserId) return;
 
-        socket.emit("setup", { _id: currentUserId });
-        socket.on("connected", () => setSocketConnected(true));
+        // Initialize socket connection
+        try {
+            console.log("Initializing socket for user:", currentUserId);
+            // Force websocket transport
+            socket.current = io(API_BASE_URL, { transports: ['websocket'] });
 
-        socket.emit("join chat", id);
+            socket.current.emit("setup", { _id: currentUserId });
+            socket.current.on("connected", () => {
+                console.log("Socket Connected");
+                setSocketConnected(true);
+            });
 
-        socket.on("message received", (newMessageRecieved: any) => {
-            if (id === newMessageRecieved.chat._id) {
-                setMessages((prev) => [...prev, newMessageRecieved]);
-                // Scroll to bottom
-                if (flatListRef.current) {
-                    flatListRef.current.scrollToEnd({ animated: true });
+            console.log("Joining chat room:", id);
+            socket.current.emit("join chat", id);
+
+            socket.current.on("message received", (newMessageRecieved: any) => {
+                console.log("Message detected via socket:", newMessageRecieved);
+                if (!newMessageRecieved || !newMessageRecieved.chat || !newMessageRecieved.sender) return;
+
+                // Check if the message belongs to this chat AND is NOT from current user
+                if (id === newMessageRecieved.chat._id && newMessageRecieved.sender._id !== currentUserId) {
+                    console.log("Appending new message to list");
+                    setMessages((prev) => [...prev, newMessageRecieved]);
+                    // Scroll to bottom
+                    if (flatListRef.current) {
+                        setTimeout(() => {
+                            flatListRef.current?.scrollToEnd({ animated: true });
+                        }, 100);
+                    }
                 }
-            }
-        });
+            });
+        } catch (error) {
+            console.log("Socket initialization error:", error);
+        }
 
         return () => {
-            socket.off("message received");
-            socket.disconnect();
+            if (socket.current) {
+                console.log("Disconnecting socket");
+                socket.current.off("message received");
+                socket.current.disconnect();
+            }
         };
-    }, [id, currentUserId]); // Depend on id and user to rejoin rooms
+    }, [id, currentUserId]);
 
     const sendMessage = async () => {
         if (message.trim().length === 0) return;
+        const currentMessage = message; // Capture current message
 
         try {
             const token = await AsyncStorage.getItem("userToken");
-            const content = message; // Store locally before clearing
-            setMessage("");
+            setMessage(""); // Clear input immediately
 
             const response = await fetch(`${API_BASE_URL}/api/message`, {
                 method: "POST",
@@ -108,21 +132,22 @@ export default function ChatScreen() {
                     Authorization: `Bearer ${token}`,
                 },
                 body: JSON.stringify({
-                    content: content,
+                    content: currentMessage,
                     chatId: id,
                 }),
             });
 
             const newMessage = await response.json();
 
-            // Emit socket message
-            const io = require("socket.io-client");
-            const socket = io(API_BASE_URL);
-            socket.emit("new message", newMessage);
+            // Emit socket message using persistent socket
+            if (socket.current) {
+                socket.current.emit("new message", newMessage);
+            }
 
             setMessages((prev) => [...prev, newMessage]);
         } catch (error) {
             console.log("Error sending message:", error);
+            // Optionally restore message to input if failed
         }
     };
 
@@ -136,9 +161,30 @@ export default function ChatScreen() {
                     headerTitle: () => (
                         <View style={styles.headerTitleContainer}>
                             <View style={styles.avatar}>
-                                <IconSymbol name="person.fill" size={20} color="#fff" />
+                                {profilePic ? (
+                                    <RNImage
+                                        source={{ uri: profilePic }}
+                                        style={{ width: 32, height: 32, borderRadius: 16 }}
+                                    />
+                                ) : (
+                                    <IconSymbol name="person.fill" size={20} color="#fff" />
+                                )}
                             </View>
-                            <Text style={[styles.headerName, { color: theme.headerTintColor }]}>{name || id}</Text>
+                            <View>
+                                <Text style={[styles.headerName, { color: theme.headerTintColor }]}>{name || id}</Text>
+                                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                    <View style={{
+                                        width: 8,
+                                        height: 8,
+                                        borderRadius: 4,
+                                        backgroundColor: socketConnected ? '#25D366' : 'red',
+                                        marginRight: 4
+                                    }} />
+                                    <Text style={{ fontSize: 10, color: theme.headerTintColor, opacity: 0.8 }}>
+                                        {socketConnected ? "Online" : "Connecting..."}
+                                    </Text>
+                                </View>
+                            </View>
                         </View>
                     ),
                     headerRight: () => (

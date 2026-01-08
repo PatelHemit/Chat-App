@@ -1,6 +1,7 @@
 require('dotenv').config();
 const express = require('express');
 const http = require('http');
+const path = require('path');
 const { Server } = require("socket.io");
 const cors = require('cors');
 const ImageKit = require("imagekit");
@@ -18,6 +19,7 @@ connectDB();
 // Middleware
 app.use(cors());
 app.use(express.json());
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // ImageKit Setup
 const imagekit = new ImageKit({
@@ -95,7 +97,18 @@ app.use('/api/chat', chatRoutes);
 app.use('/api/user', userRoutes);
 app.use('/api/ai', require('./routes/aiRoutes'));
 app.use('/api/message', require('./routes/messageRoutes'));
+app.use('/api/upload', require('./routes/uploadRoutes'));
 app.use('/api/auth', authRoutes);
+
+// Error Handling Middleware
+app.use((err, req, res, next) => {
+    console.error("🔥 Global Error Handler:", err.stack);
+    res.status(500).json({
+        message: "Internal Server Error",
+        error: err.message,
+        stack: process.env.NODE_ENV === 'production' ? null : err.stack
+    });
+});
 
 // Start Server
 const PORT = process.env.PORT || 3000;
