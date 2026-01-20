@@ -1,3 +1,4 @@
+import { CustomEmojiPicker } from '@/components/CustomEmojiPicker';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { API_BASE_URL } from '@/config/api';
 import { Colors } from '@/constants/theme';
@@ -16,6 +17,7 @@ export default function ProfileScreen() {
     const theme = Colors[colorScheme];
     const [name, setName] = useState('');
     const [image, setImage] = useState<string | null>(null);
+    const [isEmojiOpen, setIsEmojiOpen] = useState(false);
 
     const [loading, setLoading] = useState(false);
 
@@ -58,11 +60,11 @@ export default function ProfileScreen() {
                 const response = await fetch(uri);
                 const blob = await response.blob();
                 console.log("Blob created:", blob);
-                formData.append('image', blob, filename);
+                formData.append('file', blob, filename);
             } else {
                 console.log("Native platform detected.");
                 // @ts-ignore
-                formData.append('image', { uri: uri, name: filename, type });
+                formData.append('file', { uri: uri, name: filename, type });
             }
 
             // 3. Upload to local backend
@@ -192,9 +194,9 @@ export default function ProfileScreen() {
                     onChangeText={setName}
                     autoFocus
                 />
-                <View style={styles.emojiButton}>
+                <TouchableOpacity onPress={() => setIsEmojiOpen(true)} style={styles.emojiButton}>
                     <IconSymbol name="face.smiling" size={24} color="#aaa" />
-                </View>
+                </TouchableOpacity>
             </KeyboardAvoidingView>
 
             <View style={styles.footer}>
@@ -202,7 +204,18 @@ export default function ProfileScreen() {
                     <Text style={styles.buttonText}>{loading ? "SAVING..." : "NEXT"}</Text>
                 </TouchableOpacity>
             </View>
-        </SafeAreaView>
+
+            <CustomEmojiPicker
+                open={isEmojiOpen}
+                onClose={() => setIsEmojiOpen(false)}
+                onEmojiSelected={(emojiInfo) => {
+                    setName((prev) => prev + emojiInfo.emoji);
+                }}
+                value={name}
+                onChangeText={setName}
+                placeholder="Type your name"
+            />
+        </SafeAreaView >
     );
 }
 
@@ -289,3 +302,5 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
     },
 });
+
+

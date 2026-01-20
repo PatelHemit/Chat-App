@@ -1,12 +1,16 @@
+import { CustomEmojiPicker } from '@/components/CustomEmojiPicker';
+import { VoiceMessageBubble } from '@/components/VoiceMessageBubble';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { API_BASE_URL } from '@/config/api';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Audio } from 'expo-av';
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import {
     ActivityIndicator,
+    Alert,
     FlatList,
     KeyboardAvoidingView,
     Platform,
@@ -21,14 +25,21 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { io } from 'socket.io-client';
 
 export default function ChatScreen() {
-    const { id, name, profilePic } = useLocalSearchParams<{ id: string; name: string; profilePic: string }>();
+    const { id, name, profilePic, otherUserId } = useLocalSearchParams<{ id: string; name: string; profilePic: string; otherUserId: string }>();
     const [message, setMessage] = useState('');
     const [messages, setMessages] = useState<any[]>([]);
     const [loading, setLoading] = useState(false);
+    const [isEmojiOpen, setIsEmojiOpen] = useState(false);
     const [currentUserId, setCurrentUserId] = useState("");
     const flatListRef = useRef<FlatList>(null);
     const colorScheme = useColorScheme() ?? 'light';
     const theme = Colors[colorScheme];
+
+    // Recording State
+    const [recording, setRecording] = useState<Audio.Recording | null>(null);
+    const [isRecording, setIsRecording] = useState(false);
+    const [recordingDuration, setRecordingDuration] = useState(0);
+    const recordingInterval = useRef<any>(null);
 
     useEffect(() => {
         const fetchUserAndMessages = async () => {
@@ -68,6 +79,7 @@ export default function ChatScreen() {
 
     const socket = useRef<any>(null);
     const [socketConnected, setSocketConnected] = useState(false);
+    const [isUserOnline, setIsUserOnline] = useState(false);
 
     // Initialize Socket
     useEffect(() => {
@@ -87,6 +99,26 @@ export default function ChatScreen() {
 
             console.log("Joining chat room:", id);
             socket.current.emit("join chat", id);
+            socket.current.emit("mark-chat-read", { chatId: id, userId: currentUserId });
+
+            // Check if other user is online
+            if (otherUserId) {
+                socket.current.emit("check-online", otherUserId, (isOnline: boolean) => {
+                    setIsUserOnline(isOnline);
+                });
+            }
+
+            socket.current.on("user-online", (userId: string) => {
+                if (userId === otherUserId) {
+                    setIsUserOnline(true);
+                }
+            });
+
+            socket.current.on("user-offline", (userId: string) => {
+                if (userId === otherUserId) {
+                    setIsUserOnline(false);
+                }
+            });
 
             socket.current.on("message received", (newMessageRecieved: any) => {
                 console.log("Message detected via socket:", newMessageRecieved);
@@ -96,12 +128,36 @@ export default function ChatScreen() {
                 if (id === newMessageRecieved.chat._id && newMessageRecieved.sender._id !== currentUserId) {
                     console.log("Appending new message to list");
                     setMessages((prev) => [...prev, newMessageRecieved]);
+
+                    // Mark as read immediately since we are in the chat
+                    if (socket.current) {
+                        socket.current.emit("mark-as-read", { messageId: newMessageRecieved._id, senderId: newMessageRecieved.sender._id });
+                    }
+
                     // Scroll to bottom
                     if (flatListRef.current) {
                         setTimeout(() => {
                             flatListRef.current?.scrollToEnd({ animated: true });
                         }, 100);
                     }
+                }
+            });
+
+            socket.current.on("message-status-updated", ({ messageId, status }: any) => {
+                setMessages((prevMessages) =>
+                    prevMessages.map((msg) =>
+                        msg._id === messageId ? { ...msg, status: status } : msg
+                    )
+                );
+            });
+
+            socket.current.on("messages-read", ({ chatId }: any) => {
+                if (chatId === id) {
+                    setMessages((prevMessages) =>
+                        prevMessages.map((msg) =>
+                            msg.status !== 'read' ? { ...msg, status: 'read' } : msg
+                        )
+                    );
                 }
             });
         } catch (error) {
@@ -112,10 +168,134 @@ export default function ChatScreen() {
             if (socket.current) {
                 console.log("Disconnecting socket");
                 socket.current.off("message received");
+                socket.current.off("message-status-updated");
                 socket.current.disconnect();
             }
         };
     }, [id, currentUserId]);
+
+    // Audio Recording Logic
+    const startRecording = async () => {
+        try {
+            console.log('Requesting permissions..');
+            const permission = await Audio.requestPermissionsAsync();
+
+            if (permission.status === 'granted') {
+                await Audio.setAudioModeAsync({
+                    allowsRecordingIOS: true,
+                    playsInSilentModeIOS: true,
+                });
+
+                console.log('Starting recording..');
+                const { recording } = await Audio.Recording.createAsync(
+                    Audio.RecordingOptionsPresets.HIGH_QUALITY
+                );
+                setRecording(recording);
+                setIsRecording(true);
+                setRecordingDuration(0);
+
+                recordingInterval.current = setInterval(() => {
+                    setRecordingDuration(prev => prev + 1);
+                }, 1000);
+
+                console.log('Recording started');
+            } else {
+                Alert.alert("Permission required", "Please grant microphone permission to record voice messages.");
+            }
+        } catch (err) {
+            console.error('Failed to start recording', err);
+        }
+    };
+
+    const stopRecording = async () => {
+        console.log('Stopping recording..');
+        if (!recording) return;
+
+        setIsRecording(false);
+        if (recordingInterval.current) {
+            clearInterval(recordingInterval.current);
+            recordingInterval.current = null;
+        }
+
+        await recording.stopAndUnloadAsync();
+        const uri = recording.getURI();
+        console.log('Recording stopped and stored at', uri);
+
+        // Upload and Send
+        if (uri) {
+            uploadAndSendAudio(uri);
+        }
+
+        setRecording(null);
+    };
+
+    const cancelRecording = async () => {
+        if (!recording) return;
+        setIsRecording(false);
+        if (recordingInterval.current) {
+            clearInterval(recordingInterval.current);
+            recordingInterval.current = null;
+        }
+        await recording.stopAndUnloadAsync();
+        setRecording(null);
+        setRecordingDuration(0);
+    };
+
+    const uploadAndSendAudio = async (uri: string) => {
+        try {
+            const token = await AsyncStorage.getItem("userToken");
+
+            // 1. Upload
+            const formData = new FormData();
+            const filename = `voice-${Date.now()}.m4a`;
+
+            if (Platform.OS === 'web') {
+                const response = await fetch(uri);
+                const blob = await response.blob();
+                formData.append('file', blob, filename);
+            } else {
+                // @ts-ignore
+                formData.append('file', { uri, name: filename, type: 'audio/m4a' });
+            }
+
+            const uploadRes = await fetch(`${API_BASE_URL}/api/upload`, {
+                method: 'POST',
+                body: formData,
+            });
+            const uploadData = await uploadRes.json();
+
+            if (!uploadRes.ok) throw new Error("Upload failed");
+
+            const fileUrl = uploadData.imageUrl; // Generic route still returns imageUrl field in JSON, we can reuse
+
+            // 2. Send Message
+            const response = await fetch(`${API_BASE_URL}/api/message`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`,
+                },
+                body: JSON.stringify({
+                    content: fileUrl, // Store URL in content
+                    chatId: id,
+                    type: 'audio' // Ensure backend supports this or you updated schema
+                }),
+            });
+
+            const newMessage = await response.json();
+            newMessage.status = newMessage.status || 'sent';
+
+            if (socket.current) {
+                socket.current.emit("new message", newMessage);
+            }
+
+            setMessages((prev) => [...prev, newMessage]);
+
+        } catch (error) {
+            console.log("Error sending voice message:", error);
+            Alert.alert("Error", "Failed to send voice message");
+        }
+    };
 
     const sendMessage = async () => {
         if (message.trim().length === 0) return;
@@ -134,10 +314,13 @@ export default function ChatScreen() {
                 body: JSON.stringify({
                     content: currentMessage,
                     chatId: id,
+                    type: 'text'
                 }),
             });
 
             const newMessage = await response.json();
+            // Default status is sent
+            newMessage.status = newMessage.status || 'sent';
 
             // Emit socket message using persistent socket
             if (socket.current) {
@@ -149,6 +332,12 @@ export default function ChatScreen() {
             console.log("Error sending message:", error);
             // Optionally restore message to input if failed
         }
+    };
+
+    const formatDuration = (seconds: number) => {
+        const mins = Math.floor(seconds / 60);
+        const secs = seconds % 60;
+        return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
     };
 
     return (
@@ -177,11 +366,12 @@ export default function ChatScreen() {
                                         width: 8,
                                         height: 8,
                                         borderRadius: 4,
-                                        backgroundColor: socketConnected ? '#25D366' : 'red',
-                                        marginRight: 4
+                                        backgroundColor: isUserOnline ? '#25D366' : 'transparent',
+                                        marginRight: 4,
+                                        display: isUserOnline ? 'flex' : 'none'
                                     }} />
                                     <Text style={{ fontSize: 10, color: theme.headerTintColor, opacity: 0.8 }}>
-                                        {socketConnected ? "Online" : "Connecting..."}
+                                        {isUserOnline ? "Online" : ""}
                                     </Text>
                                 </View>
                             </View>
@@ -210,9 +400,26 @@ export default function ChatScreen() {
                                     ? [styles.myMessage, { backgroundColor: theme.messageSent }]
                                     : [styles.theirMessage, { backgroundColor: theme.messageReceived }],
                             ]}>
-                            <Text style={[styles.messageText, { color: theme.text }]}>{item.content}</Text>
+
+                            {item.type === 'audio' ? (
+                                <VoiceMessageBubble
+                                    uri={item.content}
+                                    isMyMessage={isMyMessage}
+                                />
+                            ) : (
+                                <Text style={[styles.messageText, { color: theme.text }]}>{item.content}</Text>
+                            )}
+
                             <Text style={styles.messageTime}>
                                 {new Date(item.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                {isMyMessage && (
+                                    <IconSymbol
+                                        name={item.status === 'sent' ? 'checkmark' : 'checkmark.double'}
+                                        size={16}
+                                        color={item.status === 'read' ? '#34B7F1' : '#888'}
+                                        style={{ marginLeft: 4 }}
+                                    />
+                                )}
                             </Text>
                         </View>
                     );
@@ -233,32 +440,63 @@ export default function ChatScreen() {
                 </TouchableOpacity>
 
                 <View style={[styles.inputWrapper, { backgroundColor: colorScheme === 'dark' ? '#2A3942' : '#fff' }]}>
-                    <TouchableOpacity style={styles.iconInsideInput}>
-                        <IconSymbol name="face.smiling" size={22} color="#888" />
-                    </TouchableOpacity>
-                    <TextInput
-                        style={[styles.textInput, { color: theme.text }]}
-                        value={message}
-                        onChangeText={setMessage}
-                        placeholder="Type a message"
-                        placeholderTextColor="#888"
-                        multiline
-                    />
-                    <TouchableOpacity style={styles.iconInsideInput}>
-                        <IconSymbol name="camera" size={18} color={theme.text} />
-                    </TouchableOpacity>
+                    {isRecording ? (
+                        <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: 'red', marginRight: 10 }} />
+                                <Text style={{ color: theme.text, fontSize: 16 }}>{formatDuration(recordingDuration)}</Text>
+                            </View>
+                            <TouchableOpacity onPress={cancelRecording}>
+                                <Text style={{ color: 'red', fontWeight: 'bold' }}>Cancel</Text>
+                            </TouchableOpacity>
+                        </View>
+                    ) : (
+                        <>
+                            <TouchableOpacity onPress={() => setIsEmojiOpen(true)} style={styles.iconInsideInput}>
+                                <IconSymbol name="face.smiling" size={22} color="#888" />
+                            </TouchableOpacity>
+                            <TextInput
+                                style={[styles.textInput, { color: theme.text }]}
+                                value={message}
+                                onChangeText={setMessage}
+                                placeholder="Type a message"
+                                placeholderTextColor="#888"
+                                multiline
+                            />
+                            <TouchableOpacity style={styles.iconInsideInput}>
+                                <IconSymbol name="camera" size={18} color={theme.text} />
+                            </TouchableOpacity>
+                        </>
+                    )}
                 </View>
 
-                {message.length === 0 ? (
-                    <TouchableOpacity style={styles.inputButton}>
-                        <IconSymbol name="mic" size={24} color={theme.text} />
-                    </TouchableOpacity>
-                ) : (
+                {message.length > 0 ? (
                     <TouchableOpacity onPress={sendMessage} style={styles.sendButton}>
                         <IconSymbol name="paperplane.fill" size={20} color="#fff" />
                     </TouchableOpacity>
+                ) : (
+                    isRecording ? (
+                        <TouchableOpacity onPress={stopRecording} style={styles.sendButton}>
+                            <IconSymbol name="paperplane.fill" size={20} color="#fff" />
+                        </TouchableOpacity>
+                    ) : (
+                        <TouchableOpacity onPress={startRecording} style={styles.inputButton}>
+                            <IconSymbol name="mic" size={24} color={theme.text} />
+                        </TouchableOpacity>
+                    )
                 )}
             </KeyboardAvoidingView>
+            <CustomEmojiPicker
+                open={isEmojiOpen}
+                onClose={() => setIsEmojiOpen(false)}
+                onEmojiSelected={(emojiInfo) => {
+                    setMessage((prev) => prev + emojiInfo.emoji);
+                }}
+                value={message}
+                onChangeText={setMessage}
+                placeholder="Type a message"
+                onSend={sendMessage}
+            />
         </SafeAreaView>
     );
 }

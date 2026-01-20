@@ -37,7 +37,46 @@ export default function MetaAIScreen() {
         },
     ]);
     const [inputText, setInputText] = useState('');
+    const [loading, setLoading] = useState(true);
     const flatListRef = useRef<FlatList>(null);
+
+    useEffect(() => {
+        fetchHistory();
+    }, []);
+
+    const fetchHistory = async () => {
+        try {
+            const token = await AsyncStorage.getItem('userToken');
+            const userInfo = await AsyncStorage.getItem('userInfo');
+            const user = userInfo ? JSON.parse(userInfo) : null;
+            const currentUserId = user?._id;
+
+            if (!token || !currentUserId) return;
+
+            const response = await fetch(`${API_BASE_URL}/api/ai/history`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            const data = await response.json();
+
+            if (Array.isArray(data)) {
+                const historyMessages: Message[] = data.map((msg: any) => ({
+                    id: msg._id,
+                    text: msg.content,
+                    sender: msg.sender, // Backend now stores 'user' or 'ai' string directly
+                    time: new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                }));
+
+                // If we have history, show it. Otherwise keep the default greeting.
+                if (historyMessages.length > 0) {
+                    setMessages(historyMessages);
+                }
+            }
+        } catch (error) {
+            console.error("Error fetching AI history:", error);
+        } finally {
+            setLoading(false);
+        }
+    };
 
     const sendMessage = async () => {
         if (!inputText.trim()) return;
@@ -64,6 +103,10 @@ export default function MetaAIScreen() {
             });
             const data = await response.json();
 
+            // The backend now returns the saved message objects, but for UI responsiveness
+            // and consistent formatting with local 'userMessage', we can just use the reply string
+            // or we could map data.aiMessage if we wanted exact DB time.
+
             const aiResponse: Message = {
                 id: (Date.now() + 1).toString(),
                 text: data.reply || "I couldn't process that.",
@@ -77,7 +120,9 @@ export default function MetaAIScreen() {
     };
 
     useEffect(() => {
-        flatListRef.current?.scrollToEnd({ animated: true });
+        if (messages.length > 0) {
+            flatListRef.current?.scrollToEnd({ animated: true });
+        }
     }, [messages]);
 
     return (
@@ -119,6 +164,7 @@ export default function MetaAIScreen() {
                             <Text style={[styles.messageTime, { color: colorScheme === 'dark' && item.sender === 'ai' ? '#ccc' : '#555' }]}>{item.time}</Text>
                         </View>
                     )}
+                    onLayout={() => flatListRef.current?.scrollToEnd({ animated: true })}
                 />
             </ImageBackground>
 

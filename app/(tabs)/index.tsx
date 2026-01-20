@@ -86,11 +86,16 @@ export default function HomeScreen() {
         <FlatList
           data={chats}
           keyExtractor={(item: any) => item._id}
+          extraData={currentUserId}
           renderItem={({ item }) => {
             const chatName = getChatName(item.users);
+            const isLatestMessageMyOwn = item.latestMessage && (
+              String(item.latestMessage.sender._id) === String(currentUserId) ||
+              String(item.latestMessage.sender) === String(currentUserId)
+            );
 
             return (
-              <Link href={{ pathname: '/chat/[id]', params: { id: item._id, name: chatName, profilePic: item.users.find((u: any) => u._id !== currentUserId)?.profilePic } }} asChild>
+              <Link href={{ pathname: '/chat/[id]', params: { id: item._id, name: chatName, profilePic: item.users.find((u: any) => u._id !== currentUserId)?.profilePic, otherUserId: item.users.find((u: any) => u._id !== currentUserId)?._id } }} asChild>
                 <Pressable>
                   <View style={styles.chatItem}>
                     <View style={styles.avatar}>
@@ -115,9 +120,19 @@ export default function HomeScreen() {
                         </Text>
                       </View>
                       <View style={styles.chatFooter}>
-                        <Text numberOfLines={1} style={styles.lastMessage}>
-                          {item.latestMessage ? item.latestMessage.content : "No messages yet"}
-                        </Text>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
+                          {isLatestMessageMyOwn && (
+                            <IconSymbol
+                              name={item.latestMessage.status === 'sent' ? 'checkmark' : 'checkmark.double'}
+                              size={16}
+                              color={item.latestMessage.status === 'read' ? '#34B7F1' : '#888'}
+                              style={{ marginRight: 4 }}
+                            />
+                          )}
+                          <Text numberOfLines={1} style={styles.lastMessage}>
+                            {item.latestMessage ? item.latestMessage.content : "No messages yet"}
+                          </Text>
+                        </View>
                       </View>
                     </View>
                   </View>

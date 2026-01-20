@@ -35,7 +35,7 @@ const uploadMiddleware = multer({
 
 // Upload Endpoint
 router.post('/', (req, res) => {
-    const singleUpload = uploadMiddleware.single('image');
+    const singleUpload = uploadMiddleware.single('file');
 
     singleUpload(req, res, function (err) {
         if (err) {

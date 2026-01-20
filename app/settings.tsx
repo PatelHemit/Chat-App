@@ -2,12 +2,12 @@ import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Stack, useRouter } from 'expo-router';
+import { Stack, useFocusEffect, useRouter } from 'expo-router';
 import { Alert, Image, Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useNavigation } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useCallback, useState } from 'react';
 
 export default function SettingsScreen() {
     const router = useRouter();
@@ -16,9 +16,11 @@ export default function SettingsScreen() {
     const theme = Colors[colorScheme];
     const [user, setUser] = useState<any>(null);
 
-    useEffect(() => {
-        loadUser();
-    }, []);
+    useFocusEffect(
+        useCallback(() => {
+            loadUser();
+        }, [])
+    );
 
     const loadUser = async () => {
         try {
@@ -105,13 +107,15 @@ export default function SettingsScreen() {
                     </View>
                 </View>
 
-                <TouchableOpacity
-                    style={[styles.logoutButton, { backgroundColor: colorScheme === 'dark' ? '#1f2c34' : '#fff' }]}
-                    onPress={handleLogout}
-                >
-                    <IconSymbol name="arrow.right.circle" size={24} color="#F53649" style={styles.logoutIcon} />
-                    <Text style={styles.logoutText}>Log Out</Text>
-                </TouchableOpacity>
+                {Platform.OS === 'web' && user?.profilePic && (
+                    <TouchableOpacity
+                        style={[styles.logoutButton, { backgroundColor: colorScheme === 'dark' ? '#1f2c34' : '#fff' }]}
+                        onPress={handleLogout}
+                    >
+                        <IconSymbol name="arrow.right.circle" size={24} color="#F53649" style={styles.logoutIcon} />
+                        <Text style={styles.logoutText}>Log Out</Text>
+                    </TouchableOpacity>
+                )}
             </View>
         </SafeAreaView>
     );

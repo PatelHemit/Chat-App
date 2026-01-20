@@ -1,4 +1,5 @@
 const { GoogleGenerativeAI } = require("@google/generative-ai");
+const AiMessage = require("../models/AiMessage");
 
 // Helper to access Gemini
 const getGeminiResponse = async (prompt) => {
@@ -10,7 +11,6 @@ const getGeminiResponse = async (prompt) => {
 
         // Try Experimental model (usually has free quota)
         try {
-            // Updated to use the Experimental version which is listed in your account
             const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash-exp" });
             const result = await model.generateContent(prompt);
             return result.response.text();
@@ -23,12 +23,11 @@ const getGeminiResponse = async (prompt) => {
         }
     } catch (error) {
         console.error("Gemini Error:", error);
-        // Return actual error for debugging
         return `Error: ${error.message}`;
     }
 };
 
-// @description     Get AI Response
+// @description     Get AI Response & Save History
 // @route           POST /api/ai/chat
 // @access          Protected
 const chatWithAI = async (req, res) => {
@@ -38,11 +37,51 @@ const chatWithAI = async (req, res) => {
         return res.status(400).json({ error: "Prompt is required" });
     }
 
-    // Simulate Meta AI persona
-    const metaPrompt = `You are Meta AI, an intelligent assistant built by Meta. You are helpful, friendly, and concise. User: ${prompt}`;
+    try {
+        const userId = req.user._id;
 
-    const reply = await getGeminiResponse(metaPrompt);
-    res.json({ reply });
+        // 1. Save User Message
+        const userMsg = await AiMessage.create({
+            user: userId,
+            sender: "user",
+            content: prompt
+        });
+
+        // 2. Get AI Response
+        const metaPrompt = `You are Meta AI, an intelligent assistant built by Meta. You are helpful, friendly, and concise. User: ${prompt}`;
+        const reply = await getGeminiResponse(metaPrompt);
+
+        // 3. Save AI Response
+        const aiMsg = await AiMessage.create({
+            user: userId,
+            sender: "ai",
+            content: reply
+        });
+
+        res.json({ reply, userMessage: userMsg, aiMessage: aiMsg });
+
+    } catch (error) {
+        console.error("ChatWithAI Error:", error);
+        res.status(500).json({ error: error.message });
+    }
 };
 
-module.exports = { chatWithAI };
+// @description     Get AI Chat History
+// @route           GET /api/ai/history
+// @access          Protected
+const getAiHistory = async (req, res) => {
+    try {
+        const userId = req.user._id;
+
+        // Fetch messages for this user, sorted by creation time
+        const messages = await AiMessage.find({ user: userId })
+            .sort({ createdAt: 1 });
+
+        res.json(messages);
+    } catch (error) {
+        console.error("GetAiHistory Error:", error);
+        res.status(500).json({ error: error.message });
+    }
+};
+
+module.exports = { chatWithAI, getAiHistory };
