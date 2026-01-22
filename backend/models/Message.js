@@ -15,6 +15,10 @@ const messageSchema = mongoose.Schema({
         enum: ["sent", "delivered", "read"],
         default: "sent",
     },
+    duration: {
+        type: Number,
+        default: 0
+    }
 }, {
     timestamps: true,
 });

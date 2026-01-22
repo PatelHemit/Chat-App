@@ -3,15 +3,16 @@ import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { Audio } from 'expo-av';
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 interface VoiceMessageBubbleProps {
     uri: string;
     duration?: number; // Duration in milliseconds
     isMyMessage: boolean;
+    profilePic: string;
 }
 
-export const VoiceMessageBubble = ({ uri, duration, isMyMessage }: VoiceMessageBubbleProps) => {
+export const VoiceMessageBubble = ({ uri, duration, isMyMessage, profilePic }: VoiceMessageBubbleProps) => {
     const colorScheme = useColorScheme() ?? 'light';
     const theme = Colors[colorScheme];
     const [sound, setSound] = useState<Audio.Sound | null>(null);
@@ -19,6 +20,7 @@ export const VoiceMessageBubble = ({ uri, duration, isMyMessage }: VoiceMessageB
     const [position, setPosition] = useState(0);
     const [totalDuration, setTotalDuration] = useState(duration || 0);
     const [loading, setLoading] = useState(false);
+    const [waveform] = useState([...Array(15)].map(() => Math.random() * 15 + 5));
 
     useEffect(() => {
         return () => {
@@ -86,69 +88,128 @@ export const VoiceMessageBubble = ({ uri, duration, isMyMessage }: VoiceMessageB
 
     return (
         <View style={styles.container}>
+            {/* Avatar with Mic Badge */}
+            <View style={styles.avatarContainer}>
+                {/* Profile Pic */}
+                <View style={styles.avatarCircle}>
+                    {profilePic ? (
+                        <Image source={{ uri: profilePic }} style={styles.avatarImage} />
+                    ) : (
+                        <IconSymbol name="person.fill" size={30} color="#ccc" />
+                    )}
+                </View>
+                {/* Mic Badge */}
+                <View style={[styles.micBadge, { backgroundColor: isMyMessage ? '#008069' : '#fff' }]}>
+                    <IconSymbol name="mic" size={12} color={isMyMessage ? '#fff' : '#008069'} />
+                </View>
+            </View>
+
+            {/* Controls */}
             <TouchableOpacity onPress={playSound} style={styles.playButton}>
                 {loading ? (
-                    <ActivityIndicator size="small" color={isMyMessage ? '#fff' : '#008069'} />
+                    <ActivityIndicator size="small" color={isMyMessage ? '#005c4b' : '#008069'} />
                 ) : (
                     <IconSymbol
                         name={isPlaying ? 'pause.fill' : 'play.fill'}
-                        size={24}
-                        color={isMyMessage ? '#fff' : '#888'}
+                        size={32} // Large play button
+                        color={'#667781'}
                     />
                 )}
             </TouchableOpacity>
-            <View style={styles.progressContainer}>
-                <View style={styles.progressBar}>
-                    <View
-                        style={[
-                            styles.progressFill,
-                            {
-                                width: `${totalDuration > 0 ? (position / totalDuration) * 100 : 0}%`,
-                                backgroundColor: isMyMessage ? 'rgba(255,255,255,0.7)' : '#008069'
-                            }
-                        ]}
-                    />
+
+            <View style={styles.contentContainer}>
+                {/* Waveform / Progress */}
+                <View style={styles.waveformContainer}>
+                    <View style={[styles.progressDot, { left: `${totalDuration > 0 ? (position / totalDuration) * 100 : 0}%` }]} />
+                    <View style={{ flexDirection: 'row', alignItems: 'center', opacity: 0.6 }}>
+                        {waveform.map((height, i) => (
+                            <View
+                                key={i}
+                                style={{
+                                    width: 3,
+                                    height: height,
+                                    backgroundColor: '#667781',
+                                    marginHorizontal: 1,
+                                    borderRadius: 1.5,
+                                    opacity: (position / totalDuration) * 100 > (i / waveform.length) * 100 ? 1 : 0.4
+                                }}
+                            />
+                        ))}
+                    </View>
                 </View>
-                <Text style={[styles.durationText, { color: isMyMessage ? 'rgba(255,255,255,0.8)' : '#888' }]}>
+                <Text style={styles.durationText}>
                     {formatTime(isPlaying ? position : totalDuration)}
                 </Text>
-            </View>
-            <View style={styles.avatarContainer}>
-                <IconSymbol name="mic.fill" size={20} color={isMyMessage ? 'rgba(255,255,255,0.5)' : '#ccc'} />
             </View>
         </View>
     );
 };
+
 
 const styles = StyleSheet.create({
     container: {
         flexDirection: 'row',
         alignItems: 'center',
         paddingVertical: 5,
-        minWidth: 150,
-    },
-    playButton: {
-        padding: 5,
-    },
-    progressContainer: {
-        flex: 1,
-        marginLeft: 10,
-        marginRight: 10,
-    },
-    progressBar: {
-        height: 3,
-        backgroundColor: 'rgba(0,0,0,0.1)',
-        borderRadius: 2,
-        marginBottom: 5,
-        overflow: 'hidden',
-    },
-    progressFill: {
-        height: '100%',
-    },
-    durationText: {
-        fontSize: 10,
+        paddingHorizontal: 5,
+        minWidth: 200,
     },
     avatarContainer: {
-        marginLeft: 5,
-    }
+        position: 'relative',
+        marginRight: 10,
+    },
+    avatarCircle: {
+        width: 44,
+        height: 44,
+        borderRadius: 22,
+        backgroundColor: '#e0e0e0',
+        justifyContent: 'center',
+        alignItems: 'center',
+        overflow: 'hidden',
+    },
+    avatarImage: {
+        width: '100%',
+        height: '100%',
+    },
+    micBadge: {
+        position: 'absolute',
+        bottom: 0,
+        right: -2,
+        width: 20,
+        height: 20,
+        borderRadius: 10,
+        justifyContent: 'center',
+        alignItems: 'center',
+        elevation: 2,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.2,
+        shadowRadius: 1,
+    },
+    playButton: {
+        padding: 0,
+        marginRight: 8,
+    },
+    contentContainer: {
+        flex: 1,
+    },
+    waveformContainer: {
+        height: 30, // Area for waveform
+        justifyContent: 'center',
+    },
+    progressDot: {
+        position: 'absolute',
+        width: 12,
+        height: 12,
+        borderRadius: 6,
+        backgroundColor: '#34B7F1', // Blue dot
+        top: 9, // Centered vertically roughly
+        zIndex: 10,
+        marginLeft: -6, // Center anchor
+    },
+    durationText: {
+        fontSize: 11,
+        color: '#667781',
+        marginTop: -5,
+    },
 });

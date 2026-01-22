@@ -6,13 +6,17 @@ import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Audio } from 'expo-av';
+import * as Clipboard from 'expo-clipboard';
+import * as Haptics from 'expo-haptics';
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import {
     ActivityIndicator,
     Alert,
+    Animated,
     FlatList,
     KeyboardAvoidingView,
+    Modal,
     Platform,
     Image as RNImage,
     StyleSheet,
@@ -31,15 +35,45 @@ export default function ChatScreen() {
     const [loading, setLoading] = useState(false);
     const [isEmojiOpen, setIsEmojiOpen] = useState(false);
     const [currentUserId, setCurrentUserId] = useState("");
+    const [currentUserProfilePic, setCurrentUserProfilePic] = useState("");
     const flatListRef = useRef<FlatList>(null);
+
     const colorScheme = useColorScheme() ?? 'light';
     const theme = Colors[colorScheme];
+
+    // Message Actions State
+    const [selectedMessage, setSelectedMessage] = useState<any>(null);
+    const [contextMenuVisible, setContextMenuVisible] = useState(false);
 
     // Recording State
     const [recording, setRecording] = useState<Audio.Recording | null>(null);
     const [isRecording, setIsRecording] = useState(false);
     const [recordingDuration, setRecordingDuration] = useState(0);
+    const recordingDurationRef = useRef(0);
     const recordingInterval = useRef<any>(null);
+    const blinkAnim = useRef(new Animated.Value(1)).current;
+
+    useEffect(() => {
+        if (isRecording) {
+            Animated.loop(
+                Animated.sequence([
+                    Animated.timing(blinkAnim, {
+                        toValue: 0.2,
+                        duration: 500,
+                        useNativeDriver: true,
+                    }),
+                    Animated.timing(blinkAnim, {
+                        toValue: 1,
+                        duration: 500,
+                        useNativeDriver: true,
+                    }),
+                ])
+            ).start();
+        } else {
+            blinkAnim.setValue(1);
+            blinkAnim.stopAnimation();
+        }
+    }, [isRecording]);
 
     useEffect(() => {
         const fetchUserAndMessages = async () => {
@@ -50,6 +84,7 @@ export default function ChatScreen() {
                 if (userInfo) {
                     const user = JSON.parse(userInfo);
                     setCurrentUserId(user._id);
+                    setCurrentUserProfilePic(user.profilePic);
                 }
 
                 if (token && id) {
@@ -120,6 +155,10 @@ export default function ChatScreen() {
                 }
             });
 
+            socket.current.on("message-deleted", (messageId: string) => {
+                setMessages((prev) => prev.filter((msg) => msg._id !== messageId));
+            });
+
             socket.current.on("message received", (newMessageRecieved: any) => {
                 console.log("Message detected via socket:", newMessageRecieved);
                 if (!newMessageRecieved || !newMessageRecieved.chat || !newMessageRecieved.sender) return;
@@ -178,6 +217,7 @@ export default function ChatScreen() {
     const startRecording = async () => {
         try {
             console.log('Requesting permissions..');
+            await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
             const permission = await Audio.requestPermissionsAsync();
 
             if (permission.status === 'granted') {
@@ -187,28 +227,33 @@ export default function ChatScreen() {
                 });
 
                 console.log('Starting recording..');
+                // Haptics already handled in previous block
                 const { recording } = await Audio.Recording.createAsync(
                     Audio.RecordingOptionsPresets.HIGH_QUALITY
                 );
                 setRecording(recording);
                 setIsRecording(true);
                 setRecordingDuration(0);
+                recordingDurationRef.current = 0;
 
                 recordingInterval.current = setInterval(() => {
                     setRecordingDuration(prev => prev + 1);
+                    recordingDurationRef.current += 1;
                 }, 1000);
 
                 console.log('Recording started');
             } else {
-                Alert.alert("Permission required", "Please grant microphone permission to record voice messages.");
+                Alert.alert("Permission required", "We need access to your microphone to send voice messages. Please enable it in your settings.");
             }
         } catch (err) {
             console.error('Failed to start recording', err);
+            Alert.alert("Error", "Failed to start recording. Please try again.");
         }
     };
 
     const stopRecording = async () => {
         console.log('Stopping recording..');
+        await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
         if (!recording) return;
 
         setIsRecording(false);
@@ -223,7 +268,7 @@ export default function ChatScreen() {
 
         // Upload and Send
         if (uri) {
-            uploadAndSendAudio(uri);
+            uploadAndSendAudio(uri, recordingDurationRef.current);
         }
 
         setRecording(null);
@@ -231,6 +276,7 @@ export default function ChatScreen() {
 
     const cancelRecording = async () => {
         if (!recording) return;
+        await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
         setIsRecording(false);
         if (recordingInterval.current) {
             clearInterval(recordingInterval.current);
@@ -241,7 +287,7 @@ export default function ChatScreen() {
         setRecordingDuration(0);
     };
 
-    const uploadAndSendAudio = async (uri: string) => {
+    const uploadAndSendAudio = async (uri: string, duration: number) => {
         try {
             const token = await AsyncStorage.getItem("userToken");
 
@@ -278,7 +324,8 @@ export default function ChatScreen() {
                 body: JSON.stringify({
                     content: fileUrl, // Store URL in content
                     chatId: id,
-                    type: 'audio' // Ensure backend supports this or you updated schema
+                    type: 'audio', // Ensure backend supports this or you updated schema
+                    duration: duration // Send accurate duration
                 }),
             });
 
@@ -332,6 +379,46 @@ export default function ChatScreen() {
             console.log("Error sending message:", error);
             // Optionally restore message to input if failed
         }
+    };
+
+    const handleLongPress = (msg: any) => {
+        setSelectedMessage(msg);
+        setContextMenuVisible(true);
+    };
+
+    const handleDeleteMessage = async () => {
+        if (!selectedMessage) return;
+        try {
+            const token = await AsyncStorage.getItem("userToken");
+            await fetch(`${API_BASE_URL}/api/message/${selectedMessage._id}`, {
+                method: 'DELETE',
+                headers: { Authorization: `Bearer ${token}` }
+            });
+
+            // Optimistic update
+            setMessages((prev) => prev.filter((m) => m._id !== selectedMessage._id));
+            setContextMenuVisible(false);
+
+            // Notify others
+            if (socket.current) {
+                // Ideally backend emits this, but we can emit client side too if setup
+                // For now backend deletion is source of truth, but socket event "message-deleted" 
+                // should be emitted by backend OR we just remove locally. 
+                // Let's remove locally for now.
+            }
+
+        } catch (error) {
+            console.log("Error deleting message", error);
+            Alert.alert("Error", "Failed to delete message");
+        }
+    };
+
+    const handleCopyMessage = async () => {
+        if (!selectedMessage) return;
+        if (selectedMessage.type === 'text') {
+            await Clipboard.setStringAsync(selectedMessage.content);
+        }
+        setContextMenuVisible(false);
     };
 
     const formatDuration = (seconds: number) => {
@@ -393,35 +480,42 @@ export default function ChatScreen() {
                 renderItem={({ item }) => {
                     const isMyMessage = item.sender._id === currentUserId || item.sender === currentUserId;
                     return (
-                        <View
-                            style={[
-                                styles.messageBubble,
-                                isMyMessage
-                                    ? [styles.myMessage, { backgroundColor: theme.messageSent }]
-                                    : [styles.theirMessage, { backgroundColor: theme.messageReceived }],
-                            ]}>
+                        <TouchableOpacity
+                            onLongPress={() => handleLongPress(item)}
+                            activeOpacity={0.8}
+                        >
+                            <View
+                                style={[
+                                    styles.messageBubble,
+                                    isMyMessage
+                                        ? [styles.myMessage, { backgroundColor: theme.messageSent }]
+                                        : [styles.theirMessage, { backgroundColor: theme.messageReceived }],
+                                ]}>
 
-                            {item.type === 'audio' ? (
-                                <VoiceMessageBubble
-                                    uri={item.content}
-                                    isMyMessage={isMyMessage}
-                                />
-                            ) : (
-                                <Text style={[styles.messageText, { color: theme.text }]}>{item.content}</Text>
-                            )}
-
-                            <Text style={styles.messageTime}>
-                                {new Date(item.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                {isMyMessage && (
-                                    <IconSymbol
-                                        name={item.status === 'sent' ? 'checkmark' : 'checkmark.double'}
-                                        size={16}
-                                        color={item.status === 'read' ? '#34B7F1' : '#888'}
-                                        style={{ marginLeft: 4 }}
+                                {item.type === 'audio' ? (
+                                    <VoiceMessageBubble
+                                        uri={item.content}
+                                        isMyMessage={isMyMessage}
+                                        profilePic={item.sender?.profilePic || (isMyMessage ? currentUserProfilePic : profilePic)}
+                                        duration={item.type === 'audio' && item.duration ? item.duration * 1000 : 0}
                                     />
+                                ) : (
+                                    <Text style={[styles.messageText, { color: theme.text }]}>{item.content}</Text>
                                 )}
-                            </Text>
-                        </View>
+
+                                <Text style={styles.messageTime}>
+                                    {new Date(item.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                    {isMyMessage && (
+                                        <IconSymbol
+                                            name={item.status === 'sent' ? 'checkmark' : 'checkmark.double'}
+                                            size={16}
+                                            color={item.status === 'read' ? '#34B7F1' : '#888'}
+                                            style={{ marginLeft: 4 }}
+                                        />
+                                    )}
+                                </Text>
+                            </View>
+                        </TouchableOpacity>
                     );
                 }}
                 contentContainerStyle={styles.messagesList}
@@ -441,14 +535,28 @@ export default function ChatScreen() {
 
                 <View style={[styles.inputWrapper, { backgroundColor: colorScheme === 'dark' ? '#2A3942' : '#fff' }]}>
                     {isRecording ? (
-                        <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-                            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                                <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: 'red', marginRight: 10 }} />
-                                <Text style={{ color: theme.text, fontSize: 16 }}>{formatDuration(recordingDuration)}</Text>
-                            </View>
-                            <TouchableOpacity onPress={cancelRecording}>
-                                <Text style={{ color: 'red', fontWeight: 'bold' }}>Cancel</Text>
+                        <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center' }}>
+                            <TouchableOpacity onPress={cancelRecording} style={{ padding: 10 }}>
+                                <IconSymbol name="trash" size={24} color="red" />
                             </TouchableOpacity>
+                            <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', marginLeft: 10 }}>
+                                <Animated.View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: 'red', marginRight: 10, opacity: blinkAnim }} />
+                                <Text style={{ color: theme.text, fontSize: 16, minWidth: 45 }}>{formatDuration(recordingDuration)}</Text>
+                                <View style={{ flexDirection: 'row', alignItems: 'center', marginLeft: 10, flex: 1, overflow: 'hidden', opacity: 0.5 }}>
+                                    {[...Array(15)].map((_, i) => (
+                                        <View
+                                            key={i}
+                                            style={{
+                                                width: 3,
+                                                height: Math.random() * 15 + 5,
+                                                backgroundColor: theme.text,
+                                                marginHorizontal: 1,
+                                                borderRadius: 1.5
+                                            }}
+                                        />
+                                    ))}
+                                </View>
+                            </View>
                         </View>
                     ) : (
                         <>
@@ -489,14 +597,84 @@ export default function ChatScreen() {
             <CustomEmojiPicker
                 open={isEmojiOpen}
                 onClose={() => setIsEmojiOpen(false)}
-                onEmojiSelected={(emojiInfo) => {
-                    setMessage((prev) => prev + emojiInfo.emoji);
+                onEmojiSelected={(emoji: any) => {
+                    setMessage(prev => prev + emoji.emoji);
                 }}
-                value={message}
-                onChangeText={setMessage}
-                placeholder="Type a message"
-                onSend={sendMessage}
             />
+
+            <Modal
+                animationType="fade"
+                transparent={true}
+                visible={contextMenuVisible}
+                onRequestClose={() => setContextMenuVisible(false)}
+            >
+                <TouchableOpacity
+                    style={styles.modalOverlay}
+                    activeOpacity={1}
+                    onPress={() => setContextMenuVisible(false)}
+                >
+                    <View style={[styles.menuContainer, { backgroundColor: theme.background }]}>
+                        {/* Reactions Bar */}
+                        <View style={styles.reactionContainer}>
+                            {['👍', '❤️', '😂', '😮', '😢', '🙏'].map((emoji, index) => (
+                                <TouchableOpacity key={index} style={styles.reactionItem} onPress={() => setContextMenuVisible(false)}>
+                                    <Text style={styles.reactionText}>{emoji}</Text>
+                                </TouchableOpacity>
+                            ))}
+                            <TouchableOpacity style={styles.reactionItem} onPress={() => setContextMenuVisible(false)}>
+                                <IconSymbol name="plus" size={20} color="#888" />
+                            </TouchableOpacity>
+                        </View>
+
+                        {/* Menu Actions */}
+                        <View style={styles.menuList}>
+                            <TouchableOpacity style={styles.menuItem} onPress={() => setContextMenuVisible(false)}>
+                                <IconSymbol name="info.circle" size={22} color={theme.text} />
+                                <Text style={[styles.menuItemText, { color: theme.text }]}>Message info</Text>
+                            </TouchableOpacity>
+
+                            <TouchableOpacity style={styles.menuItem} onPress={() => setContextMenuVisible(false)}>
+                                <IconSymbol name="arrow.turn.up.left" size={22} color={theme.text} />
+                                <Text style={[styles.menuItemText, { color: theme.text }]}>Reply</Text>
+                            </TouchableOpacity>
+
+                            <TouchableOpacity style={styles.menuItem} onPress={handleCopyMessage}>
+                                <IconSymbol name="doc.on.doc" size={22} color={theme.text} />
+                                <Text style={[styles.menuItemText, { color: theme.text }]}>Copy</Text>
+                            </TouchableOpacity>
+
+                            <TouchableOpacity style={styles.menuItem} onPress={() => setContextMenuVisible(false)}>
+                                <IconSymbol name="arrow.turn.up.right" size={22} color={theme.text} />
+                                <Text style={[styles.menuItemText, { color: theme.text }]}>Forward</Text>
+                            </TouchableOpacity>
+
+                            <TouchableOpacity style={styles.menuItem} onPress={() => setContextMenuVisible(false)}>
+                                <IconSymbol name="pin" size={22} color={theme.text} />
+                                <Text style={[styles.menuItemText, { color: theme.text }]}>Pin</Text>
+                            </TouchableOpacity>
+
+                            <TouchableOpacity style={styles.menuItem} onPress={() => setContextMenuVisible(false)}>
+                                <IconSymbol name="star" size={22} color={theme.text} />
+                                <Text style={[styles.menuItemText, { color: theme.text }]}>Star</Text>
+                            </TouchableOpacity>
+
+                            <View style={[styles.separator, { backgroundColor: colorScheme === 'dark' ? '#3d3d3d' : '#f0f0f0' }]} />
+
+                            <TouchableOpacity style={styles.menuItem} onPress={() => setContextMenuVisible(false)}>
+                                <IconSymbol name="checkmark.circle" size={22} color={theme.text} />
+                                <Text style={[styles.menuItemText, { color: theme.text }]}>Select</Text>
+                            </TouchableOpacity>
+
+                            <View style={[styles.separator, { backgroundColor: colorScheme === 'dark' ? '#3d3d3d' : '#f0f0f0' }]} />
+
+                            <TouchableOpacity style={styles.menuItem} onPress={handleDeleteMessage}>
+                                <IconSymbol name="trash" size={22} color="red" />
+                                <Text style={[styles.menuItemText, { color: 'red' }]}>Delete</Text>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                </TouchableOpacity>
+            </Modal>
         </SafeAreaView>
     );
 }
@@ -603,4 +781,68 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         marginLeft: 4,
     },
+    modalOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.5)',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    contextMenu: {
+        width: '80%',
+        borderRadius: 10,
+        padding: 10,
+        elevation: 5,
+    },
+    contextMenuItem: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingVertical: 12,
+        paddingHorizontal: 10,
+    },
+    contextMenuText: {
+        fontSize: 16,
+        marginLeft: 15,
+    },
+    menuContainer: {
+        width: '65%', // Match web-like width
+        borderRadius: 12, // Slightly more rounded
+        elevation: 5,
+        paddingVertical: 10,
+        backgroundColor: '#fff', // Fallback, will be overridden by theme
+        alignSelf: 'center', // Center it
+    },
+    reactionContainer: {
+        flexDirection: 'row',
+        justifyContent: 'space-around',
+        alignItems: 'center',
+        paddingHorizontal: 10,
+        paddingBottom: 10,
+        borderBottomWidth: 1,
+        borderBottomColor: '#eee', // Separator below reactions
+    },
+    reactionItem: {
+        padding: 5,
+    },
+    reactionText: {
+        fontSize: 22,
+    },
+    menuList: {
+        paddingTop: 5,
+    },
+    menuItem: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingVertical: 10,
+        paddingHorizontal: 20,
+    },
+    menuItemText: {
+        fontSize: 14.5, // WhatsApp web font size look
+        marginLeft: 15,
+        fontWeight: '400',
+    },
+    separator: {
+        height: 1,
+        width: '100%',
+        marginVertical: 5,
+    }
 });

@@ -53,10 +53,11 @@ export default function HomeScreen() {
     }
   };
 
-  const getChatName = (users: any[]) => {
-    if (!currentUserId || !users) return "Unknown";
+  const getChatName = (chat: any) => {
+    if (chat.isGroupChat) return chat.chatName;
+    if (!currentUserId || !chat.users) return "Unknown";
     // Find the user who is NOT the current user
-    const otherUser = users.find((u: any) => u._id !== currentUserId);
+    const otherUser = chat.users.find((u: any) => u._id !== currentUserId);
     return otherUser ? otherUser.name : "Unknown User";
   };
 
@@ -88,7 +89,7 @@ export default function HomeScreen() {
           keyExtractor={(item: any) => item._id}
           extraData={currentUserId}
           renderItem={({ item }) => {
-            const chatName = getChatName(item.users);
+            const chatName = getChatName(item);
             const isLatestMessageMyOwn = item.latestMessage && (
               String(item.latestMessage.sender._id) === String(currentUserId) ||
               String(item.latestMessage.sender) === String(currentUserId)
@@ -101,6 +102,9 @@ export default function HomeScreen() {
                     <View style={styles.avatar}>
                       {/* Show other user profile pic if available */}
                       {(() => {
+                        if (item.isGroupChat) {
+                          return <IconSymbol name="person.2.fill" size={30} color="#fff" />;
+                        }
                         const otherUser = item.users.find((u: any) => u._id !== currentUserId);
                         return otherUser?.profilePic ? (
                           <RNImage
@@ -130,7 +134,23 @@ export default function HomeScreen() {
                             />
                           )}
                           <Text numberOfLines={1} style={styles.lastMessage}>
-                            {item.latestMessage ? item.latestMessage.content : "No messages yet"}
+                            {item.latestMessage ? (
+                              item.latestMessage.type === 'audio' ? (
+                                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                  <IconSymbol name="mic" size={16} color="#888" style={{ marginRight: 4 }} />
+                                  <Text style={{ color: '#888' }}>
+                                    {(() => {
+                                      const duration = item.latestMessage.duration || 0;
+                                      const mins = Math.floor(duration / 60);
+                                      const secs = duration % 60;
+                                      return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
+                                    })()}
+                                  </Text>
+                                </View>
+                              ) : (
+                                item.latestMessage.content
+                              )
+                            ) : "No messages yet"}
                           </Text>
                         </View>
                       </View>

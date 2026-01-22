@@ -107,6 +107,10 @@ export default function ProfileScreen() {
         }
     };
 
+
+
+
+
     const handleFinish = async () => {
         if (name.length === 0) {
             alert("Please enter your name");
@@ -198,6 +202,10 @@ export default function ProfileScreen() {
                     <IconSymbol name="face.smiling" size={24} color="#aaa" />
                 </TouchableOpacity>
             </KeyboardAvoidingView>
+
+
+
+
 
             <View style={styles.footer}>
                 <TouchableOpacity style={[styles.button, { backgroundColor: '#008069', opacity: loading ? 0.7 : 1 }]} onPress={handleFinish} disabled={loading}>
@@ -301,6 +309,7 @@ const styles = StyleSheet.create({
         color: 'white',
         fontWeight: 'bold',
     },
+
 });
 
 

@@ -35,6 +35,19 @@ const MAPPING = {
   'arrow.right.circle': 'logout',
   'checkmark': 'check',
   'checkmark.double': 'done-all',
+  'trash': 'delete',
+  'pause': 'pause',
+  'play': 'play-arrow',
+  'stop': 'stop',
+  'pause.fill': 'pause',
+  'play.fill': 'play-arrow',
+  'info.circle': 'info-outline',
+  'arrow.turn.up.left': 'reply',
+  'doc.on.doc': 'content-copy',
+  'arrow.turn.up.right': 'forward',
+  'pin': 'push-pin',
+  'star': 'star-border',
+  'checkmark.circle': 'check-circle-outline',
 } as Partial<IconMapping>;
 
 /**

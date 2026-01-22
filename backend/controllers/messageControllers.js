@@ -34,6 +34,7 @@ const sendMessage = asyncHandler(async (req, res) => {
         content: content,
         chat: chatId,
         type: type || "text",
+        duration: req.body.duration || 0,
     };
 
     try {
@@ -55,4 +56,30 @@ const sendMessage = asyncHandler(async (req, res) => {
     }
 });
 
-module.exports = { allMessages, sendMessage };
+// @description     Delete Message
+// @route           DELETE /api/message/:id
+// @access          Protected
+const deleteMessage = asyncHandler(async (req, res) => {
+    try {
+        const message = await Message.findById(req.params.id);
+
+        if (!message) {
+            res.status(404);
+            throw new Error("Message not found");
+        }
+
+        // Check if user is the sender
+        if (message.sender.toString() !== req.user._id.toString()) {
+            res.status(401);
+            throw new Error("You can't delete this message");
+        }
+
+        await Message.findByIdAndDelete(req.params.id);
+        res.json({ message: "Message removed" });
+    } catch (error) {
+        res.status(400);
+        throw new Error(error.message);
+    }
+});
+
+module.exports = { allMessages, sendMessage, deleteMessage };

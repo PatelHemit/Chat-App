@@ -81,6 +81,15 @@ export default function NewChatScreen() {
 
             {loading && <ActivityIndicator size="large" color="#008069" style={{ marginTop: 20 }} />}
 
+            <Pressable onPress={() => router.push('/chat/create_group' as any)} style={styles.userItem}>
+                <View style={[styles.avatar, { backgroundColor: '#008069' }]}>
+                    <IconSymbol name="person.2.fill" size={24} color="#fff" />
+                </View>
+                <View>
+                    <Text style={[styles.userName, { color: theme.text }]}>New Group</Text>
+                </View>
+            </Pressable>
+
             <FlatList
                 data={results}
                 keyExtractor={(item: any) => item._id}

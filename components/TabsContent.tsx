@@ -1,8 +1,14 @@
 import { IconSymbol } from '@/components/ui/icon-symbol';
+import { API_BASE_URL } from '@/config/api';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { ResizeMode, Video } from 'expo-av';
+import { Image } from 'expo-image';
+import * as ImagePicker from 'expo-image-picker';
+import { useEffect, useRef, useState } from 'react';
+import { ActivityIndicator, Alert, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 // --- Shared Styles ---
@@ -175,6 +181,44 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
     },
+    // Viewer
+    viewerContainer: {
+        flex: 1,
+        backgroundColor: '#000',
+    },
+    viewerHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        padding: 10,
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        zIndex: 10,
+    },
+    viewerName: {
+        color: '#fff',
+        fontSize: 18,
+        fontWeight: 'bold',
+        marginLeft: 10,
+    },
+    viewerContent: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    viewerMedia: {
+        width: '100%',
+        height: '100%',
+    },
+    viewerCaption: {
+        color: '#fff',
+        fontSize: 16,
+        padding: 20,
+        textAlign: 'center',
+        position: 'absolute',
+        bottom: 20,
+    },
 });
 
 export function CallsContent() {
@@ -252,13 +296,132 @@ export function CommunitiesContent() {
 export function UpdatesContent() {
     const colorScheme = useColorScheme() ?? 'light';
     const theme = Colors[colorScheme];
+    const [statuses, setStatuses] = useState<any[]>([]);
+    const [myStatuses, setMyStatuses] = useState<any[]>([]);
+    const [loading, setLoading] = useState(false);
+    const [uploading, setUploading] = useState(false);
+    const [viewingStatus, setViewingStatus] = useState<any | null>(null);
+    const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+    const videoRef = useRef<Video>(null);
+
+    const fetchStatuses = async () => {
+        try {
+            setLoading(true);
+            const token = await AsyncStorage.getItem('userToken');
+            const userInfoStr = await AsyncStorage.getItem('userInfo');
+
+            if (!token || !userInfoStr) return;
+            const userInfo = JSON.parse(userInfoStr);
+            const userId = userInfo._id || userInfo.id;
+            setCurrentUserId(userId);
+
+            const response = await fetch(`${API_BASE_URL}/api/status`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            const data = await response.json();
+            if (response.ok) {
+                // Separately filter my statuses and others
+                const my = data.filter((s: any) => s.user._id === userId || s.user === userId);
+                const others = data.filter((s: any) => s.user._id !== userId && s.user !== userId);
+
+                setMyStatuses(my);
+                setStatuses(others);
+            }
+        } catch (error) {
+            console.error("Error fetching statuses:", error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        fetchStatuses();
+    }, []);
+
+    const uploadStatus = async (uri: string, type: 'image' | 'video') => {
+        try {
+            setUploading(true);
+            const token = await AsyncStorage.getItem('userToken');
+            if (!token) return;
+
+            // 1. Upload to /api/upload
+            const formData = new FormData();
+            const filename = uri.split('/').pop() || (type === 'video' ? 'status.mp4' : 'status.jpg');
+            // @ts-ignore
+            formData.append('file', {
+                uri,
+                type: type === 'video' ? 'video/mp4' : 'image/jpeg',
+                name: filename,
+            });
+
+            const uploadRes = await fetch(`${API_BASE_URL}/api/upload`, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    // 'Content-Type': 'multipart/form-data', // Do NOT set this manually
+                },
+            });
+
+            if (!uploadRes.ok) throw new Error("File upload failed");
+            const uploadData = await uploadRes.json();
+            const mediaUrl = uploadData.imageUrl;
+
+            // 2. Create Status
+            const statusRes = await fetch(`${API_BASE_URL}/api/status`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    mediaUrl,
+                    mediaType: type,
+                    caption: ''
+                })
+            });
+
+            if (statusRes.ok) {
+                fetchStatuses(); // Refresh list
+            } else {
+                Alert.alert("Error", "Failed to update status");
+            }
+
+        } catch (error) {
+            console.error("Upload status error:", error);
+            Alert.alert("Error", "Failed to upload status");
+        } finally {
+            setUploading(false);
+        }
+    };
+
+    const pickMedia = async () => {
+        const result = await ImagePicker.launchImageLibraryAsync({
+            mediaTypes: ImagePicker.MediaTypeOptions.All,
+            allowsEditing: true, // For images. For videos it might be limited.
+            quality: 0.7,
+            videoMaxDuration: 30,
+        });
+
+        if (!result.canceled && result.assets[0]) {
+            const asset = result.assets[0];
+            const type = asset.type === 'video' ? 'video' : 'image';
+            uploadStatus(asset.uri, type);
+        }
+    };
+
+    const formatTime = (dateString: string) => {
+        const date = new Date(dateString);
+        return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    };
 
     return (
         <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
             <View style={[styles.header, { backgroundColor: theme.headerBackground }]}>
                 <Text style={[styles.headerTitle, { color: theme.headerTintColor }]}>Updates</Text>
                 <View style={styles.headerIcons}>
-                    <IconSymbol name="camera" size={24} color={theme.headerTintColor} style={styles.icon} />
+                    <TouchableOpacity onPress={pickMedia} disabled={uploading}>
+                        {uploading ? <ActivityIndicator color={theme.headerTintColor} /> : <IconSymbol name="camera" size={24} color={theme.headerTintColor} style={styles.icon} />}
+                    </TouchableOpacity>
                     <IconSymbol name="magnifyingglass" size={24} color={theme.headerTintColor} style={styles.icon} />
                     <IconSymbol name="ellipsis" size={24} color={theme.headerTintColor} style={styles.icon} />
                 </View>
@@ -266,40 +429,104 @@ export function UpdatesContent() {
             <ScrollView>
                 <View style={styles.section}>
                     <Text style={[styles.updatesSectionTitle, { color: theme.text }]}>Status</Text>
-                    <View style={styles.myStatus}>
+                    <TouchableOpacity
+                        style={styles.myStatus}
+                        onPress={myStatuses.length > 0 ? () => setViewingStatus(myStatuses[0]) : pickMedia}
+                        disabled={uploading}
+                    >
                         <View style={styles.avatarContainer}>
-                            <IconSymbol name="person.fill" size={30} color="#fff" />
-                            <View style={styles.addIcon}>
-                                <IconSymbol name="plus" size={12} color="#fff" />
-                            </View>
+                            {myStatuses.length > 0 ? (
+                                <View style={[styles.statusRing, { borderColor: '#008069', marginRight: 0, width: 54, height: 54 }]}>
+                                    <Image
+                                        source={{ uri: myStatuses[0].mediaUrl }}
+                                        style={{ width: 44, height: 44, borderRadius: 22 }}
+                                        contentFit="cover"
+                                    />
+                                </View>
+                            ) : (
+                                <>
+                                    <IconSymbol name="person.fill" size={30} color="#fff" />
+                                    <View style={styles.addIcon}>
+                                        <IconSymbol name="plus" size={12} color="#fff" />
+                                    </View>
+                                </>
+                            )}
                         </View>
-                        <View>
+                        <View style={{ marginLeft: myStatuses.length > 0 ? 16 : 0 }}>
                             <Text style={[styles.sectionItemTitle, { color: theme.text }]}>My Status</Text>
-                            <Text style={styles.sectionItemSubtitle}>Tap to add status update</Text>
+                            <Text style={styles.sectionItemSubtitle}>
+                                {uploading ? "Uploading..." : (myStatuses.length > 0 ? "Tap to view your status" : "Tap to add status update")}
+                            </Text>
                         </View>
-                    </View>
+                    </TouchableOpacity>
                 </View>
                 <View style={styles.section}>
                     <Text style={[styles.updatesSectionTitle, { color: theme.text }]}>Recent updates</Text>
-                    {/* Dummy Statuses */}
-                    {['Alice', 'Bob', 'Charlie'].map((name, i) => (
-                        <View key={i} style={styles.statusItem}>
+                    {loading && <ActivityIndicator color="#008069" />}
+
+                    {statuses.map((status, i) => (
+                        <TouchableOpacity key={status._id || i} style={styles.statusItem} onPress={() => setViewingStatus(status)}>
                             <View style={[styles.statusRing, { borderColor: '#008069' }]}>
-                                <View style={styles.statusAvatar}>
-                                    <IconSymbol name="person.fill" size={25} color="#fff" />
+                                <View style={[styles.statusAvatar, { overflow: 'hidden' }]}>
+                                    {/* Show profile pic of user if available, else standard icon */}
+                                    {status.user?.profilePic ? (
+                                        <Image source={{ uri: status.user.profilePic }} style={{ width: '100%', height: '100%' }} contentFit="cover" />
+                                    ) : (
+                                        <IconSymbol name="person.fill" size={25} color="#fff" />
+                                    )}
                                 </View>
                             </View>
                             <View>
-                                <Text style={[styles.sectionItemTitle, { color: theme.text }]}>{name}</Text>
-                                <Text style={styles.sectionItemSubtitle}>Today, 10:0{i + 1} AM</Text>
+                                <Text style={[styles.sectionItemTitle, { color: theme.text }]}>{status.user?.name || "Unknown User"}</Text>
+                                <Text style={styles.sectionItemSubtitle}>{formatTime(status.createdAt)}</Text>
                             </View>
-                        </View>
+                        </TouchableOpacity>
                     ))}
+                    {statuses.length === 0 && !loading && (
+                        <Text style={{ textAlign: 'center', color: '#888', marginTop: 20 }}>No recent updates</Text>
+                    )}
                 </View>
             </ScrollView>
             <View style={[styles.fab, { backgroundColor: theme.tint }]}>
-                <IconSymbol name="camera" size={24} color="#fff" />
+                <TouchableOpacity onPress={pickMedia}>
+                    <IconSymbol name="camera" size={24} color="#fff" />
+                </TouchableOpacity>
             </View>
+
+            {/* Status Viewer Modal */}
+            <Modal visible={!!viewingStatus} transparent={true} animationType="fade" onRequestClose={() => setViewingStatus(null)}>
+                <View style={styles.viewerContainer}>
+                    <SafeAreaView style={{ flex: 1 }}>
+                        <View style={styles.viewerHeader}>
+                            <TouchableOpacity onPress={() => setViewingStatus(null)} style={{ padding: 10 }}>
+                                <IconSymbol name="arrow.left" size={24} color="#fff" />
+                            </TouchableOpacity>
+                            <Text style={styles.viewerName}>{viewingStatus?.user?.name}</Text>
+                        </View>
+
+                        <View style={styles.viewerContent}>
+                            {viewingStatus?.mediaType === 'video' ? (
+                                <Video
+                                    ref={videoRef}
+                                    style={styles.viewerMedia}
+                                    source={{ uri: viewingStatus.mediaUrl }}
+                                    useNativeControls
+                                    resizeMode={ResizeMode.CONTAIN}
+                                    isLooping
+                                    shouldPlay
+                                />
+                            ) : (
+                                <Image
+                                    source={{ uri: viewingStatus?.mediaUrl }}
+                                    style={styles.viewerMedia}
+                                    contentFit="contain"
+                                />
+                            )}
+                            {viewingStatus?.caption ? <Text style={styles.viewerCaption}>{viewingStatus.caption}</Text> : null}
+                        </View>
+                    </SafeAreaView>
+                </View>
+            </Modal>
         </SafeAreaView>
     );
 }

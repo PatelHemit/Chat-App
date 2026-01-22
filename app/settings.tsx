@@ -107,15 +107,13 @@ export default function SettingsScreen() {
                     </View>
                 </View>
 
-                {Platform.OS === 'web' && user?.profilePic && (
-                    <TouchableOpacity
-                        style={[styles.logoutButton, { backgroundColor: colorScheme === 'dark' ? '#1f2c34' : '#fff' }]}
-                        onPress={handleLogout}
-                    >
-                        <IconSymbol name="arrow.right.circle" size={24} color="#F53649" style={styles.logoutIcon} />
-                        <Text style={styles.logoutText}>Log Out</Text>
-                    </TouchableOpacity>
-                )}
+                <TouchableOpacity
+                    style={[styles.logoutButton, { backgroundColor: colorScheme === 'dark' ? '#1f2c34' : '#fff' }]}
+                    onPress={handleLogout}
+                >
+                    <IconSymbol name="arrow.right.circle" size={24} color="#F53649" style={styles.logoutIcon} />
+                    <Text style={styles.logoutText}>Log Out</Text>
+                </TouchableOpacity>
             </View>
         </SafeAreaView>
     );
