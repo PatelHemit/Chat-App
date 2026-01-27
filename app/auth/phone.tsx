@@ -35,7 +35,7 @@ export default function PhoneScreen() {
                 if (data.otp) {
                     // For development/testing if Twilio fails or is not set up
                     console.log("OTP:", data.otp);
-                    // alert(`Dev OTP: ${data.otp}`); 
+                    alert(`Verification Code: ${data.otp}\n(Note: Twilio failed, showing code for testing)`);
                 }
                 router.push({
                     pathname: '/auth/otp',
