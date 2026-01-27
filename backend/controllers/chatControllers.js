@@ -133,11 +133,23 @@ const renameGroup = async (req, res) => {
 const addToGroup = async (req, res) => {
     const { chatId, userId } = req.body;
 
-    // check if the requester is admin
+    // Check if the requester is admin
+    const chat = await Chat.findById(chatId);
+
+    if (!chat) {
+        res.status(404);
+        throw new Error("Chat Not Found");
+    }
+
+    if (chat.groupAdmin.toString() !== req.user._id.toString()) {
+        res.status(403);
+        throw new Error("Only admins can add members");
+    }
+
     const added = await Chat.findByIdAndUpdate(
         chatId,
         {
-            $push: { users: userId },
+            $addToSet: { users: userId },
         },
         {
             new: true,
@@ -157,7 +169,20 @@ const addToGroup = async (req, res) => {
 const removeFromGroup = async (req, res) => {
     const { chatId, userId } = req.body;
 
-    // check if the requester is admin
+    const chat = await Chat.findById(chatId);
+
+    if (!chat) {
+        res.status(404);
+        throw new Error("Chat Not Found");
+    }
+
+    // Check if requester is admin OR if they are removing themselves (Exit Group)
+    console.log("Remove Debug:", chat.groupAdmin, req.user._id, userId);
+    if (chat.groupAdmin.toString() !== req.user._id.toString() && userId !== req.user._id.toString()) {
+        res.status(403);
+        throw new Error("Only admins can remove members");
+    }
+
     const removed = await Chat.findByIdAndUpdate(
         chatId,
         {
@@ -178,4 +203,27 @@ const removeFromGroup = async (req, res) => {
     }
 };
 
-module.exports = { accessChat, fetchChats, createGroupChat, renameGroup, addToGroup, removeFromGroup };
+const updateGroupPic = async (req, res) => {
+    const { chatId, pic } = req.body;
+
+    const updatedChat = await Chat.findByIdAndUpdate(
+        chatId,
+        {
+            groupPic: pic,
+        },
+        {
+            new: true,
+        }
+    )
+        .populate("users", "-password")
+        .populate("groupAdmin", "-password");
+
+    if (!updatedChat) {
+        res.status(404);
+        throw new Error("Chat Not Found");
+    } else {
+        res.json(updatedChat);
+    }
+};
+
+module.exports = { accessChat, fetchChats, createGroupChat, renameGroup, addToGroup, removeFromGroup, updateGroupPic };

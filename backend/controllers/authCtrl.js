@@ -9,6 +9,9 @@ const otpStore = {};
 // @description     Send OTP to phone number
 // @route           POST /api/auth/send-otp
 // @access          Public
+// @description     Send OTP to phone number
+// @route           POST /api/auth/send-otp
+// @access          Public
 const sendOTP = asyncHandler(async (req, res) => {
     const { phone } = req.body;
     if (!phone) {
@@ -20,10 +23,42 @@ const sendOTP = asyncHandler(async (req, res) => {
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
     otpStore[phone] = otp;
 
-    console.log(`[OTP] Sending OTP ${otp} to ${phone}`);
+    console.log(`[OTP] Generated OTP ${otp} for ${phone}`);
 
-    // Return OTP in response for testing purposes (Simulating SMS delivery)
-    res.json({ success: true, message: "OTP sent successfully", otp: otp });
+    // Twilio Configuration
+    const accountSid = process.env.TWILIO_ACCOUNT_SID;
+    const authToken = process.env.TWILIO_AUTH_TOKEN;
+    const client = require('twilio')(accountSid, authToken);
+    const fromPhone = process.env.TWILIO_PHONE_NUMBER;
+
+    try {
+        if (!fromPhone || fromPhone === 'YOUR_TWILIO_PHONE_NUMBER') {
+            console.warn("Twilio Phone Number not configured. Skipping SMS.");
+            // For testing without Twilio number, we still return success but maybe log it
+            res.json({ success: true, message: "OTP generated (Twilio skipped)", otp: otp }); // Return otp for dev convenience
+            return;
+        }
+
+        const message = await client.messages.create({
+            body: `Your verification code is: ${otp}`,
+            from: fromPhone,
+            to: phone
+        });
+
+        console.log(`[Twilio] Message sent: ${message.sid}`);
+        res.json({ success: true, message: "OTP sent successfully" });
+
+    } catch (error) {
+        console.error("[Twilio Error] Failed to send SMS:", error.message);
+
+        // FALLBACK: If Twilio fails, we still want to allow development/testing.
+        // We return the OTP in the response body so the app can use it.
+        res.json({
+            success: true,
+            message: `OTP generated (Twilio failed: ${error.message})`,
+            otp: otp
+        });
+    }
 });
 
 // @description     Verify OTP and Login/Register
@@ -36,7 +71,8 @@ const verifyOTP = asyncHandler(async (req, res) => {
         throw new Error("Phone and OTP are required");
     }
 
-    if (otpStore[phone] === otp) {
+    // Check if OTP matches
+    if (otpStore[phone] && otpStore[phone] === otp) {
         delete otpStore[phone]; // Clear OTP after success
 
         // Find or Create User
@@ -57,7 +93,7 @@ const verifyOTP = asyncHandler(async (req, res) => {
         });
     } else {
         res.status(400);
-        throw new Error("Invalid OTP");
+        throw new Error("Invalid OTP or Expired");
     }
 });
 

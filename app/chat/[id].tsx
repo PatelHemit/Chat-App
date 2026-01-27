@@ -8,7 +8,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Audio } from 'expo-av';
 import * as Clipboard from 'expo-clipboard';
 import * as Haptics from 'expo-haptics';
-import { Stack, useLocalSearchParams } from 'expo-router';
+import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import {
     ActivityIndicator,
@@ -36,6 +36,7 @@ export default function ChatScreen() {
     const [isEmojiOpen, setIsEmojiOpen] = useState(false);
     const [currentUserId, setCurrentUserId] = useState("");
     const [currentUserProfilePic, setCurrentUserProfilePic] = useState("");
+    const [chatPic, setChatPic] = useState(profilePic);
     const flatListRef = useRef<FlatList>(null);
 
     const colorScheme = useColorScheme() ?? 'light';
@@ -89,6 +90,7 @@ export default function ChatScreen() {
 
                 if (token && id) {
                     fetchMessages(token);
+                    fetchChatDetails(token);
                 }
             } catch (error) {
                 console.log(error);
@@ -109,6 +111,29 @@ export default function ChatScreen() {
             console.log(error);
         } finally {
             setLoading(false);
+        }
+    };
+
+    const fetchChatDetails = async (token: string) => {
+        try {
+            // Ideally call a specific endpoint, but verifying with list for now or assuming we can find it
+            // Optimally, if it's a group, we want fresh info.
+            const response = await fetch(`${API_BASE_URL}/api/chat`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            const chats = await response.json();
+            const currentChat = chats.find((c: any) => c._id === id);
+
+            if (currentChat) {
+                if (currentChat.isGroupChat) {
+                    setChatPic(currentChat.groupPic);
+                } else {
+                    // Start of logic for 1-1 chat pic if needed, but 'profilePic' param handles it usually
+                    // For group, 'profilePic' param might be stale if updated
+                }
+            }
+        } catch (error) {
+            console.log("Error fetching chat details", error);
         }
     };
 
@@ -435,11 +460,14 @@ export default function ChatScreen() {
                     headerTintColor: theme.headerTintColor,
                     headerTitleAlign: 'left',
                     headerTitle: () => (
-                        <View style={styles.headerTitleContainer}>
+                        <TouchableOpacity
+                            style={styles.headerTitleContainer}
+                            onPress={() => router.push({ pathname: '/chat/info', params: { id } })}
+                        >
                             <View style={styles.avatar}>
-                                {profilePic ? (
+                                {chatPic ? (
                                     <RNImage
-                                        source={{ uri: profilePic }}
+                                        source={{ uri: chatPic }}
                                         style={{ width: 32, height: 32, borderRadius: 16 }}
                                     />
                                 ) : (
@@ -458,11 +486,11 @@ export default function ChatScreen() {
                                         display: isUserOnline ? 'flex' : 'none'
                                     }} />
                                     <Text style={{ fontSize: 10, color: theme.headerTintColor, opacity: 0.8 }}>
-                                        {isUserOnline ? "Online" : ""}
+                                        {isUserOnline ? "Online" : "Tap for info"}
                                     </Text>
                                 </View>
                             </View>
-                        </View>
+                        </TouchableOpacity>
                     ),
                     headerRight: () => (
                         <View style={styles.headerRight}>

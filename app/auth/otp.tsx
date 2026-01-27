@@ -13,7 +13,7 @@ export default function OTPScreen() {
     const colorScheme = useColorScheme() ?? 'light';
     const theme = Colors[colorScheme];
     const [otp, setOtp] = useState('');
-    const displayPhone = typeof phoneNumber === 'string' ? phoneNumber : "+91 99999 99999";
+    const displayPhone = typeof phoneNumber === 'string' ? phoneNumber : "your number";
 
     const [loading, setLoading] = useState(false);
 
@@ -37,23 +37,17 @@ export default function OTPScreen() {
             const data = await response.json();
 
             if (response.ok) {
-                // Simulate SMS notification
-                if (data.otp) {
-                    alert(`Your OTP is: ${data.otp}`);
-                }
-
                 if (data.user && data.token) {
                     await AsyncStorage.setItem('userInfo', JSON.stringify(data.user));
                     await AsyncStorage.setItem('userToken', data.token);
                 }
-
                 router.push('/auth/profile');
             } else {
-                alert(data.error || "Invalid OTP");
+                alert(data.message || "Invalid OTP");
             }
-        } catch (error) {
+        } catch (error: any) {
             console.error(error);
-            alert("Verification failed. Please try again.");
+            alert(`Verification failed: ${error.message}`);
         } finally {
             setLoading(false);
         }
@@ -86,8 +80,12 @@ export default function OTPScreen() {
             </KeyboardAvoidingView>
 
             <View style={styles.footer}>
-                <TouchableOpacity style={[styles.button, { backgroundColor: '#008069' }]} onPress={handleVerify}>
-                    <Text style={styles.buttonText}>VERIFY</Text>
+                <TouchableOpacity
+                    style={[styles.button, { backgroundColor: '#008069' }]}
+                    onPress={handleVerify}
+                    disabled={loading}
+                >
+                    <Text style={styles.buttonText}>{loading ? 'VERIFYING...' : 'VERIFY'}</Text>
                 </TouchableOpacity>
             </View>
         </SafeAreaView>

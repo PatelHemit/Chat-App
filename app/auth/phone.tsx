@@ -1,3 +1,4 @@
+import { API_BASE_URL } from '@/config/api';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useRouter } from 'expo-router';
@@ -10,7 +11,6 @@ export default function PhoneScreen() {
     const colorScheme = useColorScheme() ?? 'light';
     const theme = Colors[colorScheme];
     const [phone, setPhone] = useState('');
-
     const [loading, setLoading] = useState(false);
 
     const handleNext = async () => {
@@ -19,28 +19,34 @@ export default function PhoneScreen() {
             return;
         }
 
+        const formattedPhone = `+91${phone}`;
         setLoading(true);
+
         try {
-            const response = await fetch('http://localhost:3000/api/auth/send-otp', {
+            const response = await fetch(`${API_BASE_URL}/api/auth/send-otp`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ phone })
+                body: JSON.stringify({ phone: formattedPhone })
             });
 
             const data = await response.json();
 
             if (response.ok) {
-                // Simulate SMS notification
                 if (data.otp) {
-                    alert(`Your OTP is: ${data.otp}`);
+                    // For development/testing if Twilio fails or is not set up
+                    console.log("OTP:", data.otp);
+                    // alert(`Dev OTP: ${data.otp}`); 
                 }
-                router.push({ pathname: '/auth/otp', params: { phoneNumber: phone } });
+                router.push({
+                    pathname: '/auth/otp',
+                    params: { phoneNumber: formattedPhone }
+                });
             } else {
-                alert(data.error || "Failed to send OTP");
+                alert(data.message || "Failed to send OTP");
             }
-        } catch (error) {
+        } catch (error: any) {
             console.error(error);
-            alert("Network error. Please check backend server.");
+            alert(`Error: ${error.message}`);
         } finally {
             setLoading(false);
         }
@@ -59,7 +65,7 @@ export default function PhoneScreen() {
                 >
                     <View style={styles.headerContainer}>
                         <View style={styles.headerTop}>
-                            <View style={{ width: 24 }} /> {/* Spacer for balance */}
+                            <View style={{ width: 24 }} />
                             <Text style={[styles.title, { color: '#008069' }]}>Enter your phone number</Text>
                             <TouchableOpacity>
                                 <Text style={[styles.menuDots, { color: theme.text }]}>⋮</Text>
@@ -112,10 +118,11 @@ export default function PhoneScreen() {
                     </View>
 
                     <View style={styles.footer}>
-                        <TouchableOpacity style={styles.button} onPress={handleNext}>
-                            <Text style={styles.buttonText}>NEXT</Text>
+                        <TouchableOpacity style={styles.button} onPress={handleNext} disabled={loading}>
+                            <Text style={styles.buttonText}>{loading ? 'CONNECTING...' : 'NEXT'}</Text>
                         </TouchableOpacity>
                     </View>
+                    {loading && <View style={styles.loadingOverlay}><Text>Sending OTP...</Text></View>}
                 </ScrollView>
             </KeyboardAvoidingView>
         </SafeAreaView>
@@ -159,7 +166,7 @@ const styles = StyleSheet.create({
         lineHeight: 20,
     },
     linkText: {
-        color: '#34B7F1', // WhatsApp blue
+        color: '#34B7F1',
         fontSize: 14,
     },
     content: {
@@ -170,7 +177,7 @@ const styles = StyleSheet.create({
         alignSelf: 'center',
     },
     inputWrapper: {
-        width: '85%', // Mimic typical WhatsApp width logic
+        width: '85%',
         maxWidth: 340,
     },
     pickerContainer: {
@@ -185,24 +192,15 @@ const styles = StyleSheet.create({
     },
     pickerText: {
         fontSize: 16,
-        marginRight: 20, // push arrow to the right a bit visually? No, usually centered together or spread. Reference image shows centered block.
-        // Actually reference image has:
-        //       India         v
-        // -----------------------
-        // + 91   931...
-        //
-        // Let's use space-between or simple center with margin.
-        // Reference image looks like "India" is centered, arrow is right but maybe specific width?
-        // Let's stick to simple center for now, with some margin.
+        paddingLeft: 10,
         flex: 1,
         textAlign: 'center',
-        paddingLeft: 10, // balance visual center
     },
     arrow: {
         fontSize: 10,
     },
     separator: {
-        height: 1, // slightly smaller than 2 for nicer look? no, reference is solid green line.
+        height: 1,
         backgroundColor: '#008069',
         width: '100%',
     },
@@ -214,12 +212,12 @@ const styles = StyleSheet.create({
     countryCodeContainer: {
         width: 70,
         marginRight: 15,
-        alignItems: 'center', // Center text
+        alignItems: 'center',
     },
     codeText: {
         fontSize: 16,
         paddingBottom: 5,
-        paddingLeft: 10, // visual alignment
+        paddingLeft: 10,
     },
     numberInputContainer: {
         flex: 1,
@@ -228,11 +226,11 @@ const styles = StyleSheet.create({
         fontSize: 16,
         paddingBottom: 5,
         paddingLeft: 5,
-        borderWidth: 0, // Ensure no border on Android/iOS
+        borderWidth: 0,
         ...Platform.select({
             web: {
-                outlineStyle: 'none', // Remove focus ring on Web
-                borderBottomWidth: 0, // Ensure no default bottom border interferes
+                outlineStyle: 'none',
+                borderBottomWidth: 0,
             } as any,
         }),
     },
@@ -253,8 +251,8 @@ const styles = StyleSheet.create({
         backgroundColor: '#008069',
         paddingVertical: 10,
         paddingHorizontal: 25,
-        borderRadius: 3, // slightly rounded
-        elevation: 2, // shadow for android
+        borderRadius: 3,
+        elevation: 2,
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 1 },
         shadowOpacity: 0.2,
@@ -265,4 +263,11 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
         fontSize: 14,
     },
+    loadingOverlay: {
+        position: 'absolute',
+        top: 0, left: 0, right: 0, bottom: 0,
+        backgroundColor: 'rgba(255,255,255,0.7)',
+        justifyContent: 'center',
+        alignItems: 'center',
+    }
 });

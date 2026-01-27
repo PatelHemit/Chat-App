@@ -46,6 +46,11 @@ export default function QRLoginScreen() {
                 <Text style={[styles.instructionText, { color: '#666' }]}>
                     Your QR code is private. If you share it with someone, they can scan it with their WhatsApp camera to add you as a contact.
                 </Text>
+
+                <TouchableOpacity style={styles.scanButton} onPress={handleSimulateScan}>
+                    <IconSymbol name="camera.fill" size={20} color="white" style={{ marginRight: 10 }} />
+                    <Text style={styles.scanButtonText}>Simulate Scan (Dev)</Text>
+                </TouchableOpacity>
             </View>
         </SafeAreaView>
     );
@@ -107,5 +112,20 @@ const styles = StyleSheet.create({
         fontSize: 13,
         maxWidth: 300,
         lineHeight: 18,
+        marginBottom: 20,
     },
+    scanButton: {
+        flexDirection: 'row',
+        backgroundColor: '#008069',
+        paddingVertical: 12,
+        paddingHorizontal: 25,
+        borderRadius: 25,
+        alignItems: 'center',
+        elevation: 2,
+    },
+    scanButtonText: {
+        color: 'white',
+        fontWeight: 'bold',
+        fontSize: 16,
+    }
 });

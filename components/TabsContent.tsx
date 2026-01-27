@@ -8,7 +8,7 @@ import { ResizeMode, Video } from 'expo-av';
 import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Alert, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, Modal, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 // --- Shared Styles ---
@@ -347,12 +347,25 @@ export function UpdatesContent() {
             // 1. Upload to /api/upload
             const formData = new FormData();
             const filename = uri.split('/').pop() || (type === 'video' ? 'status.mp4' : 'status.jpg');
+            console.log("Uploading to:", `${API_BASE_URL}/api/upload`);
+            console.log("File URI:", uri);
+
             // @ts-ignore
             formData.append('file', {
                 uri,
                 type: type === 'video' ? 'video/mp4' : 'image/jpeg',
                 name: filename,
             });
+
+            // For web, we might need a Blob if uri is a blob url, but fetch usually handles it or we need to fetch the blob first.
+            if (Platform.OS === 'web') {
+                // Web upload logic might differ slightly if using react-native-web with expo-image-picker
+                // Often expo-image-picker returns a base64 or blob url.
+                console.log("Web platform detected for upload");
+                const res = await fetch(uri);
+                const blob = await res.blob();
+                formData.set('file', blob, filename);
+            }
 
             const uploadRes = await fetch(`${API_BASE_URL}/api/upload`, {
                 method: 'POST',
