@@ -15,8 +15,10 @@ const LOCALHOST = Platform.select({
 const LAN_IP = `http://${localhostIp}:3000`;
 
 // Force manual override if detection is tricky or switching networks
-// export const API_BASE_URL = `http://${MANUAL_LAN_IP}:3000`; 
-export const API_BASE_URL = LAN_IP;
-export const SOCKET_URL = LAN_IP;
+const RENDER_URL = 'https://chat-app-3-avn4.onrender.com';
+
+// export const API_BASE_URL = LAN_IP; 
+export const API_BASE_URL = RENDER_URL;
+export const SOCKET_URL = RENDER_URL;
 
 
