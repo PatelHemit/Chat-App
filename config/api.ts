@@ -18,10 +18,7 @@ const LAN_IP = `http://${localhostIp}:3000`;
 const RENDER_URL = 'https://chat-app-3-avn4.onrender.com';
 
 // export const API_BASE_URL = LAN_IP; 
-export const API_BASE_URL = Platform.select({
-    web: 'http://localhost:3000',
-    default: LAN_IP
-});
+export const API_BASE_URL = RENDER_URL;
 
 export const SOCKET_URL = API_BASE_URL;
 

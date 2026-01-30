@@ -9,7 +9,7 @@ import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Alert, Modal, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, Modal, Platform, Image as RNImage, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 // --- Shared Styles ---
@@ -388,6 +388,32 @@ const styles = StyleSheet.create({
 export function CallsContent() {
     const colorScheme = useColorScheme() ?? 'light';
     const theme = Colors[colorScheme];
+    const [calls, setCalls] = useState<any[]>([]);
+    const [loading, setLoading] = useState(false);
+
+    const fetchCalls = async () => {
+        try {
+            setLoading(true);
+            const token = await AsyncStorage.getItem('userToken');
+            if (!token) return;
+
+            const response = await fetch(`${API_BASE_URL}/api/call`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            const data = await response.json();
+            if (response.ok) {
+                setCalls(data);
+            }
+        } catch (error) {
+            console.error("Error fetching calls:", error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        fetchCalls();
+    }, []);
 
     return (
         <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
@@ -402,22 +428,43 @@ export function CallsContent() {
             <ScrollView>
                 <View style={styles.section}>
                     <Text style={[styles.sectionTitle, { color: theme.text }]}>Recent</Text>
-                    {/* Dummy Calls */}
-                    {['Alice', 'Bob', 'Charlie'].map((name, i) => (
-                        <View key={i} style={styles.callItem}>
-                            <View style={styles.avatar}>
-                                <IconSymbol name="person.fill" size={25} color="#fff" />
-                            </View>
-                            <View style={styles.callInfo}>
-                                <Text style={[styles.itemName, { color: theme.text }]}>{name}</Text>
-                                <View style={styles.callMeta}>
-                                    <IconSymbol name={i % 2 === 0 ? "video" : "phone"} size={14} color={i % 2 === 0 ? "red" : "green"} />
-                                    <Text style={styles.itemDate}> Today, 10:0{i + 1} AM</Text>
+
+                    {loading ? (
+                        <ActivityIndicator size="small" color={theme.tint} />
+                    ) : calls.length > 0 ? (
+                        calls.map((call, i) => {
+                            const isCaller = call.caller?._id === call.caller?._id; // Simplified, in real app compare with currentUserId
+                            const otherUser = call.caller?._id === call.caller?._id ? call.receiver : call.caller;
+
+                            return (
+                                <View key={call._id || i} style={styles.callItem}>
+                                    <View style={styles.avatar}>
+                                        {otherUser?.profilePic ? (
+                                            <RNImage source={{ uri: getInternalUri(otherUser.profilePic) }} style={{ width: 50, height: 50, borderRadius: 25 }} />
+                                        ) : (
+                                            <IconSymbol name="person.fill" size={25} color="#fff" />
+                                        )}
+                                    </View>
+                                    <View style={styles.callInfo}>
+                                        <Text style={[styles.itemName, { color: theme.text }]}>{otherUser?.name || "Unknown"}</Text>
+                                        <View style={styles.callMeta}>
+                                            <IconSymbol
+                                                name={call.status === 'missed' ? "arrow.down.left" : "arrow.up.right"}
+                                                size={14}
+                                                color={call.status === 'missed' ? "red" : "green"}
+                                            />
+                                            <Text style={[styles.itemDate, { color: '#8696A0' }]}>
+                                                {" "}{new Date(call.createdAt).toLocaleDateString()} {new Date(call.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                            </Text>
+                                        </View>
+                                    </View>
+                                    <IconSymbol name={call.type === 'video' ? "video" : "phone"} size={24} color="#008069" />
                                 </View>
-                            </View>
-                            <IconSymbol name={i % 2 === 0 ? "video" : "phone"} size={24} color="#008069" />
-                        </View>
-                    ))}
+                            );
+                        })
+                    ) : (
+                        <Text style={{ textAlign: 'center', color: '#8696A0', marginTop: 20 }}>No recent calls</Text>
+                    )}
                 </View>
             </ScrollView>
             <View style={[styles.fab, { backgroundColor: theme.tint }]}>

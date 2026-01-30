@@ -2,6 +2,7 @@ import { IconSymbol } from '@/components/ui/icon-symbol';
 import { API_BASE_URL } from '@/config/api';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { onUserLogin } from '@/services/CallingService';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect } from '@react-navigation/native';
 import { Link } from 'expo-router';
@@ -29,6 +30,8 @@ export default function HomeScreen() {
       if (userInfo) {
         const user = JSON.parse(userInfo);
         setCurrentUserId(user._id);
+        // Initialize Calling Service
+        onUserLogin(user._id, user.name);
       }
     } catch (error) {
       console.log("Error loading user:", error);

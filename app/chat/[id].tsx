@@ -1,5 +1,6 @@
 import { CustomEmojiPicker } from '@/components/CustomEmojiPicker';
 import { VoiceMessageBubble } from '@/components/VoiceMessageBubble';
+import { ZegoCallButton } from '@/components/ZegoCallButton';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { API_BASE_URL, getInternalUri } from '@/config/api';
 import { Colors } from '@/constants/theme';
@@ -516,6 +517,18 @@ export default function ChatScreen() {
                     ),
                     headerRight: () => (
                         <View style={styles.headerRight}>
+                            <ZegoCallButton
+                                inviteeId={otherUserId}
+                                inviteeName={chatName}
+                                isVideo={false}
+                                theme={theme}
+                            />
+                            <ZegoCallButton
+                                inviteeId={otherUserId}
+                                inviteeName={chatName}
+                                isVideo={true}
+                                theme={theme}
+                            />
                             <TouchableOpacity style={styles.headerIconTouch}>
                                 <IconSymbol name="ellipsis" size={22} color={theme.headerTintColor} />
                             </TouchableOpacity>
