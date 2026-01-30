@@ -1,23 +1,23 @@
 const express = require('express');
 const multer = require('multer');
+const ImageKit = require("imagekit");
+const fs = require('fs');
 const path = require('path');
 
-console.log("✅ LOADING UPLOAD ROUTES - V5 (CLEAN URL FIX)");
+console.log("✅ LOADING UPLOAD ROUTES - V6 (IMAGEKIT FIX)");
 
 const router = express.Router();
 
-// Storage configuration
-const storage = multer.diskStorage({
-    destination(req, file, cb) {
-        cb(null, path.join(__dirname, '../uploads'));
-    },
-    filename(req, file, cb) {
-        cb(
-            null,
-            `${file.fieldname}-${Date.now()}${path.extname(file.originalname)}`
-        );
-    },
+// Initialize ImageKit (Re-using env vars from server.js context)
+const imagekit = new ImageKit({
+    publicKey: process.env.IMAGEKIT_PUBLIC_KEY,
+    privateKey: process.env.IMAGEKIT_PRIVATE_KEY,
+    urlEndpoint: process.env.IMAGEKIT_URL_ENDPOINT
 });
+
+// Configure Multer to save temporarily to disk (needed for stream upload to ImageKit or similar)
+// Or use memoryStorage to avoid disk persistence issues on Render
+const storage = multer.memoryStorage();
 
 // File filter
 function checkFileType(file, cb) {
@@ -37,7 +37,7 @@ const uploadMiddleware = multer({
 router.post('/', (req, res) => {
     const singleUpload = uploadMiddleware.single('file');
 
-    singleUpload(req, res, function (err) {
+    singleUpload(req, res, async function (err) {
         if (err) {
             console.error("Multer Upload Error:", err);
             return res.status(400).json({
@@ -51,21 +51,31 @@ router.post('/', (req, res) => {
             return res.status(400).json({ message: 'No file received' });
         }
 
-        // FORCE CORRECT URL GENERATION
-        // We use just the filename, not the full path.
-        const filename = req.file.filename;
-        const relativeUrl = `uploads/${filename}`;
+        try {
+            console.log("Uploading to ImageKit...");
 
-        // Construct the full URL: http://localhost:3000/uploads/image-xyz.jpg
-        const fullUrl = `${req.protocol}://${req.get('host')}/${relativeUrl}`;
+            // Upload to ImageKit
+            const response = await imagekit.upload({
+                file: req.file.buffer, // Buffer from memoryStorage
+                fileName: req.file.originalname || `upload-${Date.now()}`,
+                folder: "/uploads" // Optional: organize in folders
+            });
 
-        console.log("Upload Success (V5):", fullUrl);
+            console.log("ImageKit Upload Success:", response.url);
 
-        res.json({
-            message: 'Image uploaded successfully',
-            imageUrl: fullUrl,
-            filePath: `/${relativeUrl}`
-        });
+            res.json({
+                message: 'Image uploaded successfully',
+                imageUrl: response.url,
+                fileId: response.fileId
+            });
+
+        } catch (uploadError) {
+            console.error("ImageKit Upload Error:", uploadError);
+            res.status(500).json({
+                message: "Failed to upload to ImageKit",
+                error: uploadError.message
+            });
+        }
     });
 });
 

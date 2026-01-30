@@ -4,8 +4,11 @@ const AiMessage = require("../models/AiMessage");
 // Helper to access Gemini
 const getGeminiResponse = async (prompt) => {
     try {
-        const apiKey = process.env.GEMINI_API_KEY;
-        if (!apiKey) throw new Error("GEMINI_API_KEY not found in .env");
+        const rawKey = process.env.GEMINI_API_KEY;
+        if (!rawKey) throw new Error("GEMINI_API_KEY not found in .env");
+
+        // Sanitise key: remove whitespace and any non-ASCII characters (like Unicode 257)
+        const apiKey = rawKey.trim().replace(/[^\x00-\x7F]/g, "");
 
         const genAI = new GoogleGenerativeAI(apiKey);
 
@@ -31,10 +34,10 @@ const getGeminiResponse = async (prompt) => {
 // @route           POST /api/ai/chat
 // @access          Protected
 const chatWithAI = async (req, res) => {
-    const { prompt } = req.body;
+    const { prompt, type, duration } = req.body;
 
-    if (!prompt) {
-        return res.status(400).json({ error: "Prompt is required" });
+    if (!prompt && type !== 'audio') {
+        return res.status(400).json({ error: "Prompt or audio is required" });
     }
 
     try {
@@ -44,11 +47,19 @@ const chatWithAI = async (req, res) => {
         const userMsg = await AiMessage.create({
             user: userId,
             sender: "user",
-            content: prompt
+            content: prompt,
+            type: type || "text",
+            duration: duration
         });
 
         // 2. Get AI Response
-        const metaPrompt = `You are Meta AI, an intelligent assistant built by Meta. You are helpful, friendly, and concise. User: ${prompt}`;
+        let metaPrompt;
+        if (type === 'audio') {
+            metaPrompt = `You are Meta AI, an intelligent assistant built by Meta. I received a voice message from the user. Since I cannot hear it yet, please acknowledge that you received a voice note and ask them if they can type it or let them know you'll be able to hear it in a future update. User sent a voice note.`;
+        } else {
+            metaPrompt = `You are Meta AI, an intelligent assistant built by Meta. You are helpful, friendly, and concise. User: ${prompt}`;
+        }
+
         const reply = await getGeminiResponse(metaPrompt);
 
         // 3. Save AI Response

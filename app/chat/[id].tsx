@@ -1,7 +1,7 @@
 import { CustomEmojiPicker } from '@/components/CustomEmojiPicker';
 import { VoiceMessageBubble } from '@/components/VoiceMessageBubble';
 import { IconSymbol } from '@/components/ui/icon-symbol';
-import { API_BASE_URL } from '@/config/api';
+import { API_BASE_URL, getInternalUri } from '@/config/api';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -15,6 +15,7 @@ import {
     Alert,
     Animated,
     FlatList,
+    ImageBackground,
     KeyboardAvoidingView,
     Modal,
     Platform,
@@ -37,6 +38,7 @@ export default function ChatScreen() {
     const [currentUserId, setCurrentUserId] = useState("");
     const [currentUserProfilePic, setCurrentUserProfilePic] = useState("");
     const [chatPic, setChatPic] = useState(profilePic);
+    const [chatName, setChatName] = useState(name);
     const flatListRef = useRef<FlatList>(null);
 
     const colorScheme = useColorScheme() ?? 'light';
@@ -75,6 +77,20 @@ export default function ChatScreen() {
             blinkAnim.stopAnimation();
         }
     }, [isRecording]);
+
+    const fetchWithRetry = async (url: string, options: any, retries = 2, delay = 1000) => {
+        for (let i = 0; i < retries; i++) {
+            try {
+                const res = await fetch(url, options);
+                if (res.ok) return res;
+                if (i === retries - 1) return res;
+            } catch (err) {
+                if (i === retries - 1) throw err;
+                console.log(`Fetch failed, retrying (${i + 1}/${retries})...`);
+                await new Promise(resolve => setTimeout(resolve, delay));
+            }
+        }
+    };
 
     useEffect(() => {
         const fetchUserAndMessages = async () => {
@@ -127,9 +143,9 @@ export default function ChatScreen() {
             if (currentChat) {
                 if (currentChat.isGroupChat) {
                     setChatPic(currentChat.groupPic);
+                    setChatName(currentChat.chatName);
                 } else {
-                    // Start of logic for 1-1 chat pic if needed, but 'profilePic' param handles it usually
-                    // For group, 'profilePic' param might be stale if updated
+                    // For one-on-one, we usually rely on the params passed, but could fetch user details here if needed
                 }
             }
         } catch (error) {
@@ -241,6 +257,14 @@ export default function ChatScreen() {
     // Audio Recording Logic
     const startRecording = async () => {
         try {
+            // Cleanup any existing recording first
+            if (recording) {
+                try {
+                    await recording.stopAndUnloadAsync();
+                } catch (e) { }
+                setRecording(null);
+            }
+
             console.log('Requesting permissions..');
             await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
             const permission = await Audio.requestPermissionsAsync();
@@ -252,11 +276,10 @@ export default function ChatScreen() {
                 });
 
                 console.log('Starting recording..');
-                // Haptics already handled in previous block
-                const { recording } = await Audio.Recording.createAsync(
+                const { recording: newRecording } = await Audio.Recording.createAsync(
                     Audio.RecordingOptionsPresets.HIGH_QUALITY
                 );
-                setRecording(recording);
+                setRecording(newRecording);
                 setIsRecording(true);
                 setRecordingDuration(0);
                 recordingDurationRef.current = 0;
@@ -272,6 +295,7 @@ export default function ChatScreen() {
             }
         } catch (err) {
             console.error('Failed to start recording', err);
+            setRecording(null);
             Alert.alert("Error", "Failed to start recording. Please try again.");
         }
     };
@@ -329,13 +353,12 @@ export default function ChatScreen() {
                 formData.append('file', { uri, name: filename, type: 'audio/m4a' });
             }
 
-            const uploadRes = await fetch(`${API_BASE_URL}/api/upload`, {
+            const uploadRes = await fetchWithRetry(`${API_BASE_URL}/api/upload`, {
                 method: 'POST',
                 body: formData,
             });
+            if (!uploadRes || !uploadRes.ok) throw new Error("Upload failed");
             const uploadData = await uploadRes.json();
-
-            if (!uploadRes.ok) throw new Error("Upload failed");
 
             const fileUrl = uploadData.imageUrl; // Generic route still returns imageUrl field in JSON, we can reuse
 
@@ -456,7 +479,9 @@ export default function ChatScreen() {
         <SafeAreaView style={[styles.container, { backgroundColor: theme.chatBackground }]} edges={['bottom']}>
             <Stack.Screen
                 options={{
-                    headerStyle: { backgroundColor: theme.headerBackground },
+                    headerStyle: {
+                        backgroundColor: theme.headerBackground,
+                    },
                     headerTintColor: theme.headerTintColor,
                     headerTitleAlign: 'left',
                     headerTitle: () => (
@@ -467,41 +492,46 @@ export default function ChatScreen() {
                             <View style={styles.avatar}>
                                 {chatPic ? (
                                     <RNImage
-                                        source={{ uri: chatPic }}
-                                        style={{ width: 32, height: 32, borderRadius: 16 }}
+                                        source={{ uri: getInternalUri(chatPic) }}
+                                        style={{ width: 36, height: 36, borderRadius: 18 }}
                                     />
                                 ) : (
-                                    <IconSymbol name="person.fill" size={20} color="#fff" />
+                                    <IconSymbol name="person.fill" size={24} color="#fff" />
                                 )}
                             </View>
-                            <View>
-                                <Text style={[styles.headerName, { color: theme.headerTintColor }]}>{name || id}</Text>
+                            <View style={{ justifyContent: 'center' }}>
                                 <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                                    <View style={{
-                                        width: 8,
-                                        height: 8,
-                                        borderRadius: 4,
-                                        backgroundColor: isUserOnline ? '#25D366' : 'transparent',
-                                        marginRight: 4,
-                                        display: isUserOnline ? 'flex' : 'none'
-                                    }} />
-                                    <Text style={{ fontSize: 10, color: theme.headerTintColor, opacity: 0.8 }}>
-                                        {isUserOnline ? "Online" : "Tap for info"}
+                                    <Text style={[styles.headerName, { color: theme.headerTintColor }]} numberOfLines={1}>
+                                        {chatName || name || id}
                                     </Text>
+                                    {(name === "+91 83203 01352" || id.includes("self")) && (
+                                        <Text style={[styles.headerName, { color: theme.headerTintColor }]}> (You)</Text>
+                                    )}
                                 </View>
+                                <Text style={{ fontSize: 11, color: theme.headerTintColor, opacity: 0.8 }}>
+                                    {isUserOnline ? "Online" : ((name === "+91 83203 01352" || id.includes("self")) ? "Message yourself" : "Tap for info")}
+                                </Text>
                             </View>
                         </TouchableOpacity>
                     ),
                     headerRight: () => (
                         <View style={styles.headerRight}>
-                            <IconSymbol name="video" size={24} color={theme.headerTintColor} style={styles.headerIcon} />
-                            <IconSymbol name="phone" size={24} color={theme.headerTintColor} style={styles.headerIcon} />
-                            <IconSymbol name="ellipsis" size={24} color={theme.headerTintColor} style={styles.headerIcon} />
+                            <TouchableOpacity style={styles.headerIconTouch}>
+                                <IconSymbol name="ellipsis" size={22} color={theme.headerTintColor} />
+                            </TouchableOpacity>
                         </View>
                     ),
                 }}
             />
             {loading && <ActivityIndicator size="large" color="#008069" />}
+
+            <ImageBackground
+                source={{ uri: 'https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png' }}
+                style={StyleSheet.absoluteFillObject}
+                resizeMode="repeat"
+                imageStyle={{ opacity: colorScheme === 'dark' ? 0.05 : 0.4 }}
+            />
+
             <FlatList
                 data={messages}
                 keyExtractor={(item) => item._id}
@@ -557,70 +587,54 @@ export default function ChatScreen() {
                 keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
                 style={styles.inputContainer}>
 
-                <TouchableOpacity style={styles.inputButton}>
-                    <IconSymbol name="plus" size={24} color={theme.text} />
-                </TouchableOpacity>
-
-                <View style={[styles.inputWrapper, { backgroundColor: colorScheme === 'dark' ? '#2A3942' : '#fff' }]}>
+                <View style={[styles.inputPill, { backgroundColor: colorScheme === 'dark' ? '#2A3942' : '#fff' }]}>
                     {isRecording ? (
-                        <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center' }}>
+                        <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', height: 40 }}>
+                            <Animated.View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: 'red', marginRight: 10, opacity: blinkAnim }} />
+                            <Text style={{ color: theme.text, fontSize: 16, minWidth: 45 }}>{formatDuration(recordingDuration)}</Text>
+                            <Text style={{ color: '#888', marginLeft: 10, flex: 1 }}>Slide to cancel</Text>
                             <TouchableOpacity onPress={cancelRecording} style={{ padding: 10 }}>
                                 <IconSymbol name="trash" size={24} color="red" />
                             </TouchableOpacity>
-                            <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', marginLeft: 10 }}>
-                                <Animated.View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: 'red', marginRight: 10, opacity: blinkAnim }} />
-                                <Text style={{ color: theme.text, fontSize: 16, minWidth: 45 }}>{formatDuration(recordingDuration)}</Text>
-                                <View style={{ flexDirection: 'row', alignItems: 'center', marginLeft: 10, flex: 1, overflow: 'hidden', opacity: 0.5 }}>
-                                    {[...Array(15)].map((_, i) => (
-                                        <View
-                                            key={i}
-                                            style={{
-                                                width: 3,
-                                                height: Math.random() * 15 + 5,
-                                                backgroundColor: theme.text,
-                                                marginHorizontal: 1,
-                                                borderRadius: 1.5
-                                            }}
-                                        />
-                                    ))}
-                                </View>
-                            </View>
                         </View>
                     ) : (
                         <>
-                            <TouchableOpacity onPress={() => setIsEmojiOpen(true)} style={styles.iconInsideInput}>
-                                <IconSymbol name="face.smiling" size={22} color="#888" />
+                            <TouchableOpacity onPress={() => setIsEmojiOpen(true)} style={styles.leftInPill}>
+                                <IconSymbol name="face.smiling" size={24} color="#888" />
                             </TouchableOpacity>
+
                             <TextInput
                                 style={[styles.textInput, { color: theme.text }]}
                                 value={message}
                                 onChangeText={setMessage}
-                                placeholder="Type a message"
+                                placeholder="Message"
                                 placeholderTextColor="#888"
                                 multiline
                             />
-                            <TouchableOpacity style={styles.iconInsideInput}>
-                                <IconSymbol name="camera" size={18} color={theme.text} />
+
+                            <TouchableOpacity style={styles.rightInPill}>
+                                <IconSymbol name="paperclip" size={22} color="#888" />
                             </TouchableOpacity>
+
+                            {message.length === 0 && (
+                                <TouchableOpacity style={styles.rightInPill}>
+                                    <IconSymbol name="camera.fill" size={22} color="#888" />
+                                </TouchableOpacity>
+                            )}
                         </>
                     )}
                 </View>
 
-                {message.length > 0 ? (
-                    <TouchableOpacity onPress={sendMessage} style={styles.sendButton}>
-                        <IconSymbol name="paperplane.fill" size={20} color="#fff" />
-                    </TouchableOpacity>
-                ) : (
-                    isRecording ? (
-                        <TouchableOpacity onPress={stopRecording} style={styles.sendButton}>
-                            <IconSymbol name="paperplane.fill" size={20} color="#fff" />
-                        </TouchableOpacity>
-                    ) : (
-                        <TouchableOpacity onPress={startRecording} style={styles.inputButton}>
-                            <IconSymbol name="mic" size={24} color={theme.text} />
-                        </TouchableOpacity>
-                    )
-                )}
+                <TouchableOpacity
+                    style={[styles.circularButton, { backgroundColor: '#00A884' }]}
+                    onPress={message.length > 0 ? sendMessage : (isRecording ? stopRecording : startRecording)}
+                >
+                    <IconSymbol
+                        name={message.length > 0 ? "paperplane.fill" : (isRecording ? "paperplane.fill" : "mic.fill")}
+                        size={22}
+                        color="#fff"
+                    />
+                </TouchableOpacity>
             </KeyboardAvoidingView>
             <CustomEmojiPicker
                 open={isEmojiOpen}
@@ -714,27 +728,35 @@ const styles = StyleSheet.create({
     headerTitleContainer: {
         flexDirection: 'row',
         alignItems: 'center',
-        marginLeft: -10, // Adjust for back button gap
+        paddingVertical: Platform.OS === 'android' ? 12 : 4,
+        paddingRight: 15,
+        paddingTop: Platform.OS === 'android' ? 25 : 4, // Push down for status bar on Android
     },
     avatar: {
-        width: 32,
-        height: 32,
-        borderRadius: 16,
+        width: 36,
+        height: 36,
+        borderRadius: 18,
         backgroundColor: '#ccc',
         justifyContent: 'center',
         alignItems: 'center',
-        marginRight: 10,
+        marginRight: 8,
+        marginLeft: -10, // Pull closer to back button
     },
     headerName: {
-        fontSize: 18,
+        fontSize: 16,
         fontWeight: 'bold',
     },
     headerRight: {
         flexDirection: 'row',
         alignItems: 'center',
+        marginRight: 5,
+    },
+    headerIconTouch: {
+        padding: 8,
+        marginLeft: 5,
     },
     headerIcon: {
-        marginLeft: 20,
+        // removed as replaced by headerIconTouch
     },
     messagesList: {
         padding: 16,
@@ -771,30 +793,51 @@ const styles = StyleSheet.create({
     inputContainer: {
         flexDirection: 'row',
         padding: 8,
-        alignItems: 'center',
+        alignItems: 'flex-end',
+        paddingBottom: Platform.OS === 'ios' ? 25 : 8,
     },
-    inputButton: {
-        padding: 10,
-    },
-    inputWrapper: {
+    inputPill: {
         flex: 1,
         flexDirection: 'row',
         alignItems: 'center',
-        borderRadius: 20,
-        paddingHorizontal: 15,
-        marginHorizontal: 5,
+        borderRadius: 25,
+        paddingHorizontal: 10,
+        marginRight: 5,
         minHeight: 40,
+    },
+    leftInPill: {
+        padding: 5,
+    },
+    rightInPill: {
+        padding: 10,
+    },
+    circularButton: {
+        width: 48,
+        height: 48,
+        borderRadius: 24,
+        justifyContent: 'center',
+        alignItems: 'center',
+        elevation: 2,
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.2,
+        shadowRadius: 1,
     },
     textInput: {
         flex: 1,
         fontSize: 16,
-        maxHeight: 30,
-        paddingVertical: 8,
-        textAlignVertical: 'center',
+        maxHeight: 120,
+        paddingVertical: 10,
+        paddingHorizontal: 10,
         ...Platform.select({
             web: {
                 outlineStyle: 'none',
+                height: 40, // Enforce height on web to match pill
+                marginVertical: 4,
             } as any,
+            android: {
+                paddingVertical: 8,
+            }
         }),
     },
     iconInsideInput: {

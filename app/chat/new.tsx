@@ -1,4 +1,5 @@
 import { IconSymbol } from '@/components/ui/icon-symbol';
+import { API_BASE_URL } from '@/config/api';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -25,7 +26,7 @@ export default function NewChatScreen() {
 
         try {
             const token = await AsyncStorage.getItem('userToken');
-            const response = await fetch(`http://localhost:3000/api/user?search=${text}`, {
+            const response = await fetch(`${API_BASE_URL}/api/user?search=${text}`, {
                 headers: { Authorization: `Bearer ${token}` }
             });
             const data = await response.json();
@@ -39,7 +40,7 @@ export default function NewChatScreen() {
         setLoading(true);
         try {
             const token = await AsyncStorage.getItem('userToken');
-            const response = await fetch('http://localhost:3000/api/chat', {
+            const response = await fetch(`${API_BASE_URL}/api/chat`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

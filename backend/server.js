@@ -60,9 +60,18 @@ const io = new Server(server, {
 
 // Global Online Users Map: <userId, socketId>
 const onlineUsers = new Map();
+// QR Session Map: <sessionId, socketId>
+const qrSessions = new Map();
 
 io.on("connection", (socket) => {
     console.log("Connected to socket.io");
+
+    // QR Login Events
+    socket.on("join-qr-room", (sessionId) => {
+        socket.join(sessionId);
+        qrSessions.set(sessionId, socket.id);
+        console.log(`[QR-LINK] Laptop joined QR room: ${sessionId} (Socket: ${socket.id})`);
+    });
 
     socket.on("setup", (userData) => {
         socket.join(userData._id);
@@ -168,6 +177,56 @@ io.on("connection", (socket) => {
 });
 
 // Routes
+// QR Login Routes
+app.get('/api/auth/qr-session', (req, res) => {
+    const sessionId = Math.random().toString(36).substring(2, 10) + Date.now().toString(36);
+    res.json({ sessionId });
+});
+
+app.post('/api/auth/qr-link', async (req, res) => {
+    const { sessionId, userId, token } = req.body;
+    console.log(`[QR-LINK] Mobile scan received for session: ${sessionId}, user: ${userId}`);
+
+    if (!sessionId || !userId || !token) {
+        console.log(`[QR-LINK] Failed: Missing required fields`);
+        return res.status(400).json({ message: "Missing required fields" });
+    }
+
+    // Find the user to send their full data
+    const User = require('./models/User');
+    const user = await User.findById(userId);
+
+    if (!user) {
+        console.log(`[QR-LINK] Failed: User ${userId} not found`);
+        return res.status(404).json({ message: "User not found" });
+    }
+
+    // Notify the laptop that login was successful
+    console.log(`[QR-LINK] Emitting login-success to sessionId: ${sessionId}`);
+
+    // Diagnostic: Check if anyone is actually in the room
+    const clientsInRoom = io.sockets.adapter.rooms.get(sessionId);
+    const roomSize = clientsInRoom ? clientsInRoom.size : 0;
+    console.log(`[QR-LINK] Clients in room ${sessionId}: ${roomSize}`);
+
+    io.to(sessionId).emit("login-success", {
+        token,
+        user: {
+            _id: user._id,
+            name: user.name,
+            phone: user.phone,
+            profilePic: user.profilePic
+        }
+    });
+
+    if (roomSize === 0) {
+        console.log(`[QR-LINK] ⚠️ WARNING: No laptop is listening in room ${sessionId}. The emit will not be received.`);
+    }
+
+    console.log(`[QR-LINK] ✅ Successfully linked session ${sessionId} to user ${userId}`);
+    res.json({ success: true });
+});
+
 app.get('/', (req, res) => {
     res.send('Backend is running!');
 });

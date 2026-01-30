@@ -1,7 +1,7 @@
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useRouter } from 'expo-router';
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import FontAwesome from '@expo/vector-icons/FontAwesome';
@@ -26,18 +26,26 @@ export default function WelcomeScreen() {
 
                 <TouchableOpacity
                     style={styles.button}
-                    onPress={() => router.push('/auth/qr-login' as any)}
+                    onPress={() => {
+                        if (Platform.OS === 'web') {
+                            router.push('/auth/qr-login' as any);
+                        } else {
+                            router.push('/auth/phone');
+                        }
+                    }}
                 >
                     <Text style={styles.buttonText}>AGREE AND CONTINUE</Text>
                 </TouchableOpacity>
 
-                <TouchableOpacity
-                    style={[styles.qrButton, { marginTop: 20 }]}
-                    onPress={() => router.push('/auth/phone')}
-                >
-                    <FontAwesome name="phone" size={20} color={theme.text} style={{ marginRight: 10 }} />
-                    <Text style={[styles.qrButtonText, { color: theme.text }]}>Login with Phone Number</Text>
-                </TouchableOpacity>
+                {Platform.OS !== 'web' && (
+                    <TouchableOpacity
+                        style={[styles.qrButton, { marginTop: 20 }]}
+                        onPress={() => router.push('/auth/phone')}
+                    >
+                        <FontAwesome name="phone" size={20} color={theme.text} style={{ marginRight: 10 }} />
+                        <Text style={[styles.qrButtonText, { color: theme.text }]}>Login with Phone Number</Text>
+                    </TouchableOpacity>
+                )}
             </View>
         </SafeAreaView>
     );

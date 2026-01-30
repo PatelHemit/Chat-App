@@ -19,6 +19,10 @@ const communitySchema = mongoose.Schema({
         ref: "User",
         required: true
     },
+    announcementGroup: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Chat"
+    },
     // A community links multiple group chats together
     groups: [{
         type: mongoose.Schema.Types.ObjectId,

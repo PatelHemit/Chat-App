@@ -1,9 +1,10 @@
 import { IconSymbol } from '@/components/ui/icon-symbol';
+import { getInternalUri } from '@/config/api';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { Audio } from 'expo-av';
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 interface VoiceMessageBubbleProps {
     uri: string;
@@ -22,6 +23,7 @@ export const VoiceMessageBubble = ({ uri, duration, isMyMessage, profilePic }: V
     const [loading, setLoading] = useState(false);
     const [waveform] = useState([...Array(15)].map(() => Math.random() * 15 + 5));
 
+
     useEffect(() => {
         return () => {
             if (sound) {
@@ -32,6 +34,14 @@ export const VoiceMessageBubble = ({ uri, duration, isMyMessage, profilePic }: V
 
     const playSound = async () => {
         try {
+            // Ensure audio mode is correct for playback
+            await Audio.setAudioModeAsync({
+                allowsRecordingIOS: false,
+                playsInSilentModeIOS: true,
+                staysActiveInBackground: false,
+                shouldDuckAndroid: true,
+            });
+
             if (sound) {
                 const status = await sound.getStatusAsync();
                 if (status.isLoaded) {
@@ -39,7 +49,6 @@ export const VoiceMessageBubble = ({ uri, duration, isMyMessage, profilePic }: V
                         await sound.pauseAsync();
                         setIsPlaying(false);
                     } else {
-                        // If finished, replay from start
                         if (status.positionMillis === status.durationMillis) {
                             await sound.replayAsync();
                         } else {
@@ -52,17 +61,25 @@ export const VoiceMessageBubble = ({ uri, duration, isMyMessage, profilePic }: V
             }
 
             setLoading(true);
+            const finalUri = getInternalUri(uri);
+            console.log('Voice Playback URI:', finalUri);
+
             const { sound: newSound } = await Audio.Sound.createAsync(
-                { uri },
+                { uri: finalUri },
                 { shouldPlay: true },
                 onPlaybackStatusUpdate
             );
             setSound(newSound);
             setIsPlaying(true);
             setLoading(false);
-        } catch (error) {
-            console.log('Error playing sound:', error);
+        } catch (error: any) {
+            console.error('[VOICE ERROR] Playback failed:', error);
             setLoading(false);
+            const finalUri = getInternalUri(uri);
+            Alert.alert(
+                "Playback Error",
+                `Could not load audio.\n\nURL: ${finalUri}\n\nError: ${error.message || "Unknown error"}`
+            );
         }
     };
 
@@ -91,11 +108,11 @@ export const VoiceMessageBubble = ({ uri, duration, isMyMessage, profilePic }: V
             {/* Avatar with Mic Badge */}
             <View style={styles.avatarContainer}>
                 {/* Profile Pic */}
-                <View style={styles.avatarCircle}>
+                <View style={[styles.avatarCircle, { backgroundColor: isMyMessage ? '#00A884' : '#667781' }]}>
                     {profilePic ? (
-                        <Image source={{ uri: profilePic }} style={styles.avatarImage} />
+                        <Image source={{ uri: getInternalUri(profilePic) }} style={styles.avatarImage} />
                     ) : (
-                        <IconSymbol name="person.fill" size={30} color="#ccc" />
+                        <IconSymbol name="person.fill" size={30} color="#fff" />
                     )}
                 </View>
                 {/* Mic Badge */}
@@ -111,8 +128,8 @@ export const VoiceMessageBubble = ({ uri, duration, isMyMessage, profilePic }: V
                 ) : (
                     <IconSymbol
                         name={isPlaying ? 'pause.fill' : 'play.fill'}
-                        size={32} // Large play button
-                        color={'#667781'}
+                        size={32}
+                        color={'#8696a0'}
                     />
                 )}
             </TouchableOpacity>
@@ -120,24 +137,23 @@ export const VoiceMessageBubble = ({ uri, duration, isMyMessage, profilePic }: V
             <View style={styles.contentContainer}>
                 {/* Waveform / Progress */}
                 <View style={styles.waveformContainer}>
-                    <View style={[styles.progressDot, { left: `${totalDuration > 0 ? (position / totalDuration) * 100 : 0}%` }]} />
-                    <View style={{ flexDirection: 'row', alignItems: 'center', opacity: 0.6 }}>
-                        {waveform.map((height, i) => (
+                    <View style={[styles.progressDot, { left: `${totalDuration > 0 ? (position / totalDuration) * 100 : 0}%`, backgroundColor: isMyMessage ? '#34B7F1' : '#34B7F1' }]} />
+                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                        {waveform.map((h, i) => (
                             <View
                                 key={i}
                                 style={{
-                                    width: 3,
-                                    height: height,
-                                    backgroundColor: '#667781',
+                                    width: 2.5,
+                                    height: h,
+                                    backgroundColor: (position / totalDuration) * 100 > (i / waveform.length) * 100 ? '#34B7F1' : '#8696a0',
                                     marginHorizontal: 1,
-                                    borderRadius: 1.5,
-                                    opacity: (position / totalDuration) * 100 > (i / waveform.length) * 100 ? 1 : 0.4
+                                    borderRadius: 1.25,
                                 }}
                             />
                         ))}
                     </View>
                 </View>
-                <Text style={styles.durationText}>
+                <Text style={[styles.durationText, { color: '#8696a0' }]}>
                     {formatTime(isPlaying ? position : totalDuration)}
                 </Text>
             </View>
@@ -162,7 +178,6 @@ const styles = StyleSheet.create({
         width: 44,
         height: 44,
         borderRadius: 22,
-        backgroundColor: '#e0e0e0',
         justifyContent: 'center',
         alignItems: 'center',
         overflow: 'hidden',

@@ -67,7 +67,11 @@ export default function SettingsScreen() {
 
             // Use simple router.replace for Web/Expo Router compatibility
             // This is often more reliable than dispatch reset on web
-            router.replace('/auth/welcome');
+            if (Platform.OS === 'web') {
+                router.replace('/auth/qr-login');
+            } else {
+                router.replace('/auth/welcome');
+            }
 
             // Safety fallback: if router.replace doesn't clear properly on native, 
             // we can keep the dispatch as an alternative if needed, 
@@ -106,6 +110,14 @@ export default function SettingsScreen() {
                         {/* <Text style={{ fontSize: 10, color: 'red' }}>Debug URL: {user?.profilePic}</Text> */}
                     </View>
                 </View>
+
+                <TouchableOpacity
+                    style={[styles.menuItem, { backgroundColor: colorScheme === 'dark' ? '#1f2c34' : '#fff' }]}
+                    onPress={() => router.push('/link-device' as any)}
+                >
+                    <IconSymbol name="laptopcomputer" size={24} color={theme.text} style={styles.menuIcon} />
+                    <Text style={[styles.menuText, { color: theme.text }]}>Linked Devices</Text>
+                </TouchableOpacity>
 
                 <TouchableOpacity
                     style={[styles.logoutButton, { backgroundColor: colorScheme === 'dark' ? '#1f2c34' : '#fff' }]}
@@ -166,5 +178,20 @@ const styles = StyleSheet.create({
         color: '#F53649',
         fontSize: 16,
         fontWeight: 'bold',
+    },
+    menuItem: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        padding: 16,
+        borderRadius: 10,
+        marginBottom: 10,
+        elevation: 2,
+    },
+    menuIcon: {
+        marginRight: 12,
+    },
+    menuText: {
+        fontSize: 16,
+        fontWeight: '500',
     },
 });

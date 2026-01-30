@@ -1,3 +1,4 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { Stack, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
@@ -20,17 +21,31 @@ export default function RootLayout() {
   const [isReady, setIsReady] = useState(false);
 
   useEffect(() => {
-    // Simulate checking auth state
-    // In a real app, check async storage or context
-    const isMounted = true;
-    if (isMounted) {
-      setIsReady(true);
-      // Redirect to welcome screen on launch (simulating fresh install/logout)
-      // Use setTimeout to ensure navigation is ready
-      setTimeout(() => {
-        router.replace('/auth/welcome');
-      }, 100);
-    }
+    const checkAuth = async () => {
+      try {
+        const userToken = await AsyncStorage.getItem('userToken');
+
+        // We set ready first so the router tree can mount
+        setIsReady(true);
+
+        // Then we decide if we need to redirect
+        if (!userToken) {
+          // Small delay to ensure the router is fully initialized
+          setTimeout(() => {
+            if (Platform.OS === 'web') {
+              router.replace('/auth/qr-login');
+            } else {
+              router.replace('/auth/welcome');
+            }
+          }, 0);
+        }
+      } catch (e) {
+        console.error('Error checking auth:', e);
+        setIsReady(true);
+      }
+    };
+
+    checkAuth();
   }, [router]);
 
   if (!isReady) return null;

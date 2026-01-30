@@ -124,7 +124,11 @@ export default function ProfileScreen() {
 
             if (!userInfo || !token) {
                 alert("Session expired. Please login again.");
-                router.replace('/auth/welcome');
+                if (Platform.OS === 'web') {
+                    router.replace('/auth/qr-login');
+                } else {
+                    router.replace('/auth/welcome');
+                }
                 return;
             }
 

@@ -38,6 +38,18 @@ const sendMessage = asyncHandler(async (req, res) => {
     };
 
     try {
+        const chat = await Chat.findById(chatId);
+        if (!chat) {
+            res.status(404);
+            throw new Error("Chat not found");
+        }
+
+        // If it's an announcement group, only admin can send
+        if (chat.isAnnouncementGroup && chat.groupAdmin.toString() !== req.user._id.toString()) {
+            res.status(401);
+            throw new Error("Only admins can send messages in the announcement group");
+        }
+
         var message = await Message.create(newMessage);
 
         message = await message.populate("sender", "name profilePic");
