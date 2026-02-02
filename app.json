@@ -7,7 +7,7 @@
     "icon": "./assets/images/icon.png",
     "scheme": "chatapp",
     "userInterfaceStyle": "automatic",
-    "newArchEnabled": true,
+    "newArchEnabled": false,
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.patelhemit.chatapp"
@@ -28,7 +28,12 @@
         "android.permission.MODIFY_AUDIO_SETTINGS",
         "android.permission.ACCESS_NETWORK_STATE",
         "android.permission.ACCESS_WIFI_STATE",
-        "android.permission.INTERNET"
+        "android.permission.INTERNET",
+        "android.permission.VIBRATE",
+        "android.permission.BLUETOOTH",
+        "android.permission.BLUETOOTH_CONNECT",
+        "android.permission.SYSTEM_ALERT_WINDOW",
+        "android.permission.WAKE_LOCK"
       ],
       "googleServicesFile": "./google-services.json"
     },
@@ -62,12 +67,33 @@
           }
         }
       ],
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "kotlinVersion": "1.9.24",
+            "packagingOptions": {
+              "pickFirst": [
+                "**/libc++_shared.so",
+                "**/libjingle_peerconnection_so.so"
+              ]
+            }
+          }
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/images/icon.png",
+          "color": "#ffffff"
+        }
+      ],
       "@react-native-firebase/app",
       "@react-native-firebase/auth"
     ],
     "experiments": {
       "typedRoutes": true,
-      "reactCompiler": true
+      "reactCompiler": false
     },
     "extra": {
       "router": {},
