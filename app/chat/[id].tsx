@@ -8,7 +8,9 @@ import { useColorScheme } from '@/hooks/use-color-scheme';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Audio } from 'expo-av';
 import * as Clipboard from 'expo-clipboard';
+import * as DocumentPicker from 'expo-document-picker';
 import * as Haptics from 'expo-haptics';
+import * as ImagePicker from 'expo-image-picker';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import {
@@ -393,6 +395,123 @@ export default function ChatScreen() {
         }
     };
 
+    // Media Picker Functions
+    const pickImage = async () => {
+        try {
+            const result = await ImagePicker.launchImageLibraryAsync({
+                mediaTypes: ['images', 'videos'],
+                allowsEditing: false,
+                quality: 0.8,
+            });
+
+            if (!result.canceled && result.assets[0]) {
+                const asset = result.assets[0];
+                uploadAndSendMedia(asset.uri, asset.type === 'video' ? 'video' : 'image');
+            }
+        } catch (error) {
+            console.error('Error picking image:', error);
+            Alert.alert('Error', 'Failed to pick image');
+        }
+    };
+
+    const pickDocument = async () => {
+        try {
+            const result = await DocumentPicker.getDocumentAsync({
+                type: '*/*',
+                copyToCacheDirectory: true,
+            });
+
+            if (!result.canceled && result.assets[0]) {
+                const asset = result.assets[0];
+                uploadAndSendMedia(asset.uri, 'document', asset.name);
+            }
+        } catch (error) {
+            console.error('Error picking document:', error);
+            Alert.alert('Error', 'Failed to pick document');
+        }
+    };
+
+    const openCamera = async () => {
+        try {
+            const permission = await ImagePicker.requestCameraPermissionsAsync();
+            if (permission.status !== 'granted') {
+                Alert.alert('Permission required', 'Camera permission is required to take photos');
+                return;
+            }
+
+            const result = await ImagePicker.launchCameraAsync({
+                allowsEditing: false,
+                quality: 0.8,
+            });
+
+            if (!result.canceled && result.assets[0]) {
+                uploadAndSendMedia(result.assets[0].uri, 'image');
+            }
+        } catch (error) {
+            console.error('Error opening camera:', error);
+            Alert.alert('Error', 'Failed to open camera');
+        }
+    };
+
+    const uploadAndSendMedia = async (uri: string, type: 'image' | 'video' | 'document', fileName?: string) => {
+        try {
+            const token = await AsyncStorage.getItem('userToken');
+
+            // 1. Upload file
+            const formData = new FormData();
+            const name = fileName || `${type}-${Date.now()}.${type === 'image' ? 'jpg' : type === 'video' ? 'mp4' : 'pdf'}`;
+
+            if (Platform.OS === 'web') {
+                const response = await fetch(uri);
+                const blob = await response.blob();
+                formData.append('file', blob, name);
+            } else {
+                // @ts-ignore
+                formData.append('file', {
+                    uri,
+                    name,
+                    type: type === 'image' ? 'image/jpeg' : type === 'video' ? 'video/mp4' : 'application/pdf',
+                });
+            }
+
+            const uploadRes = await fetchWithRetry(`${API_BASE_URL}/api/upload`, {
+                method: 'POST',
+                body: formData,
+            });
+
+            if (!uploadRes || !uploadRes.ok) throw new Error('Upload failed');
+            const uploadData = await uploadRes.json();
+            const fileUrl = uploadData.imageUrl;
+
+            // 2. Send message
+            const response = await fetch(`${API_BASE_URL}/api/message`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${token}`,
+                },
+                body: JSON.stringify({
+                    content: fileUrl,
+                    chatId: id,
+                    type: type,
+                    fileName: fileName,
+                }),
+            });
+
+            const newMessage = await response.json();
+            newMessage.status = newMessage.status || 'sent';
+
+            if (socket.current) {
+                socket.current.emit('new message', newMessage);
+            }
+
+            setMessages((prev) => [...prev, newMessage]);
+        } catch (error) {
+            console.error('Error sending media:', error);
+            Alert.alert('Error', 'Failed to send media');
+        }
+    };
+
     const sendMessage = async () => {
         if (message.trim().length === 0) return;
         const currentMessage = message; // Capture current message
@@ -563,6 +682,7 @@ export default function ChatScreen() {
                                         : [styles.theirMessage, { backgroundColor: theme.messageReceived }],
                                 ]}>
 
+
                                 {item.type === 'audio' ? (
                                     <VoiceMessageBubble
                                         uri={item.content}
@@ -570,9 +690,33 @@ export default function ChatScreen() {
                                         profilePic={item.sender?.profilePic || (isMyMessage ? currentUserProfilePic : profilePic)}
                                         duration={item.type === 'audio' && item.duration ? item.duration * 1000 : 0}
                                     />
+                                ) : item.type === 'image' ? (
+                                    <TouchableOpacity onPress={() => Alert.alert('Image', 'Full image view coming soon')}>
+                                        <RNImage
+                                            source={{ uri: getInternalUri(item.content) }}
+                                            style={{ width: 200, height: 200, borderRadius: 8 }}
+                                            resizeMode="cover"
+                                        />
+                                    </TouchableOpacity>
+                                ) : item.type === 'video' ? (
+                                    <View style={{ width: 200, height: 200, backgroundColor: '#000', borderRadius: 8, justifyContent: 'center', alignItems: 'center' }}>
+                                        <IconSymbol name="play.circle.fill" size={48} color="#fff" />
+                                        <Text style={{ color: '#fff', marginTop: 8 }}>Video</Text>
+                                    </View>
+                                ) : item.type === 'document' ? (
+                                    <View style={{ flexDirection: 'row', alignItems: 'center', padding: 8 }}>
+                                        <IconSymbol name="doc.fill" size={32} color="#888" />
+                                        <View style={{ marginLeft: 8, flex: 1 }}>
+                                            <Text style={[styles.messageText, { color: theme.text }]} numberOfLines={1}>
+                                                {item.fileName || 'Document'}
+                                            </Text>
+                                            <Text style={{ fontSize: 12, color: '#888' }}>Tap to download</Text>
+                                        </View>
+                                    </View>
                                 ) : (
                                     <Text style={[styles.messageText, { color: theme.text }]}>{item.content}</Text>
                                 )}
+
 
                                 <Text style={styles.messageTime}>
                                     {new Date(item.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
@@ -625,12 +769,12 @@ export default function ChatScreen() {
                                 multiline
                             />
 
-                            <TouchableOpacity style={styles.rightInPill}>
+                            <TouchableOpacity style={styles.rightInPill} onPress={pickDocument}>
                                 <IconSymbol name="paperclip" size={22} color="#888" />
                             </TouchableOpacity>
 
                             {message.length === 0 && (
-                                <TouchableOpacity style={styles.rightInPill}>
+                                <TouchableOpacity style={styles.rightInPill} onPress={openCamera}>
                                     <IconSymbol name="camera.fill" size={22} color="#888" />
                                 </TouchableOpacity>
                             )}

@@ -1,11 +1,12 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
-import { Stack, useRouter } from 'expo-router';
+import { Stack, useRootNavigationState, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState } from 'react';
 import 'react-native-reanimated';
 
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import NotificationService from '@/services/NotificationService';
 
 export const unstable_settings = {
   anchor: '(tabs)',
@@ -18,27 +19,35 @@ import { Platform, StyleSheet, View } from 'react-native';
 export default function RootLayout() {
   const colorScheme = useColorScheme();
   const router = useRouter();
+  const navigationState = useRootNavigationState();
   const [isReady, setIsReady] = useState(false);
 
   useEffect(() => {
     const checkAuth = async () => {
+      // Wait for navigation state to be ready
+      if (!navigationState?.key) return;
+
       try {
         const userToken = await AsyncStorage.getItem('userToken');
 
-        // We set ready first so the router tree can mount
-        setIsReady(true);
-
-        // Then we decide if we need to redirect
         if (!userToken) {
-          // Small delay to ensure the router is fully initialized
-          setTimeout(() => {
-            if (Platform.OS === 'web') {
-              router.replace('/auth/qr-login');
-            } else {
-              router.replace('/auth/welcome');
-            }
-          }, 0);
+          if (Platform.OS === 'web') {
+            router.replace('/auth/qr-login');
+          } else {
+            router.replace('/auth/welcome');
+          }
+        } else {
+          // User is logged in - register for push notifications
+          const API_URL = Platform.OS === 'web'
+            ? 'http://localhost:3000'
+            : 'http://192.168.1.36:3000';
+
+          const pushToken = await NotificationService.registerForPushNotifications();
+          if (pushToken) {
+            await NotificationService.sendTokenToBackend(pushToken, userToken, API_URL);
+          }
         }
+        setIsReady(true);
       } catch (e) {
         console.error('Error checking auth:', e);
         setIsReady(true);
@@ -46,9 +55,37 @@ export default function RootLayout() {
     };
 
     checkAuth();
+  }, [navigationState?.key, router]);
+
+  // Set up notification listeners
+  useEffect(() => {
+    const notificationListener = NotificationService.addNotificationReceivedListener(
+      (notification) => {
+        console.log('Notification received:', notification);
+      }
+    );
+
+    const responseListener = NotificationService.addNotificationResponseReceivedListener(
+      (response) => {
+        console.log('Notification tapped:', response);
+        const data = response.notification.request.content.data;
+
+        // Navigate to chat if notification contains chatId
+        if (data.chatId) {
+          router.push(`/chat/${data.chatId}`);
+        }
+      }
+    );
+
+    return () => {
+      notificationListener.remove();
+      responseListener.remove();
+    };
   }, [router]);
 
-  if (!isReady) return null;
+  // We no longer return null here because the navigator needs to mount
+  // to initialize the navigation state.
+
 
   const Content = (
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>

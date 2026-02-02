@@ -120,6 +120,35 @@ io.on("connection", (socket) => {
                 } catch (error) {
                     console.error("Error updating message status to delivered:", error);
                 }
+            } else {
+                // User is offline - send push notification
+                try {
+                    const User = require('./models/User');
+                    const { sendPushNotification } = require('./controllers/notificationControllers');
+
+                    const recipient = await User.findById(user._id);
+                    if (recipient && recipient.pushTokens && recipient.pushTokens.length > 0) {
+                        const senderName = newMessageRecieved.sender.name || 'Someone';
+                        const messagePreview = newMessageRecieved.content
+                            ? (newMessageRecieved.content.length > 50
+                                ? newMessageRecieved.content.substring(0, 50) + '...'
+                                : newMessageRecieved.content)
+                            : (newMessageRecieved.fileUrl ? '📎 Attachment' : 'New message');
+
+                        await sendPushNotification(
+                            recipient.pushTokens,
+                            chat.isGroupChat ? `${senderName} in ${chat.chatName}` : senderName,
+                            messagePreview,
+                            {
+                                type: 'new_message',
+                                chatId: chat._id,
+                                senderId: newMessageRecieved.sender._id
+                            }
+                        );
+                    }
+                } catch (error) {
+                    console.error("Error sending push notification:", error);
+                }
             }
 
             socket.in(user._id).emit("message received", newMessageRecieved);

@@ -39,4 +39,59 @@ const createNotification = asyncHandler(async (req, res) => {
     res.status(201).json(fullNotification);
 });
 
-module.exports = { getNotifications, createNotification };
+
+// @description     Mark Notification as Read
+// @route           PUT /api/notification/:id/read
+// @access          Protected
+const markAsRead = asyncHandler(async (req, res) => {
+    const notification = await Notification.findById(req.params.id);
+
+    if (!notification) {
+        res.status(404);
+        throw new Error("Notification not found");
+    }
+
+    if (notification.recipient.toString() !== req.user._id.toString()) {
+        res.status(403);
+        throw new Error("Not authorized to update this notification");
+    }
+
+    notification.isRead = true;
+    await notification.save();
+
+    res.json({ success: true, notification });
+});
+
+// Helper function to send push notification via Expo
+const sendPushNotification = async (expoPushTokens, title, body, data = {}) => {
+    const messages = expoPushTokens
+        .filter(token => token && token.startsWith('ExponentPushToken'))
+        .map(token => ({
+            to: token,
+            sound: 'default',
+            title,
+            body,
+            data,
+            priority: 'high',
+        }));
+
+    if (messages.length === 0) return;
+
+    try {
+        const response = await fetch('https://exp.host/--/api/v2/push/send', {
+            method: 'POST',
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(messages),
+        });
+
+        const result = await response.json();
+        console.log('Push notification sent:', result);
+    } catch (error) {
+        console.error('Error sending push notification:', error);
+    }
+};
+
+module.exports = { getNotifications, createNotification, markAsRead, sendPushNotification };

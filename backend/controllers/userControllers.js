@@ -42,4 +42,32 @@ const updateProfile = asyncHandler(async (req, res) => {
     res.json({ success: true, user });
 });
 
-module.exports = { allUsers, updateProfile };
+
+// @description     Register Push Token
+// @route           POST /api/user/register-push-token
+// @access          Protected
+const registerPushToken = asyncHandler(async (req, res) => {
+    const { pushToken } = req.body;
+
+    if (!pushToken) {
+        res.status(400);
+        throw new Error("Push token is required");
+    }
+
+    const user = await User.findById(req.user._id);
+
+    if (!user) {
+        res.status(404);
+        throw new Error("User not found");
+    }
+
+    // Add token if it doesn't already exist
+    if (!user.pushTokens.includes(pushToken)) {
+        user.pushTokens.push(pushToken);
+        await user.save();
+    }
+
+    res.json({ success: true, message: "Push token registered" });
+});
+
+module.exports = { allUsers, updateProfile, registerPushToken };
