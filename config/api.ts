@@ -32,7 +32,11 @@ const getApiBaseUrl = () => {
     return `http://${localhostIp}:3000`;
 };
 
-export const API_BASE_URL = getApiBaseUrl();
+// Production URL (Render)
+const RENDER_URL = 'https://chat-app-3-avn4.onrender.com';
+
+// Use Render URL for production, local for development
+export const API_BASE_URL = RENDER_URL;
 console.log(`[API-Config] FINAL API_BASE_URL: ${API_BASE_URL}`);
 // export const API_BASE_URL = RENDER_URL;
 
