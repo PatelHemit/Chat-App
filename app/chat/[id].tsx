@@ -433,6 +433,16 @@ export default function ChatScreen() {
                         setIsMuted(false);
                     }
                 }
+
+                // Block status check
+                if (otherUserId) {
+                    const blockRes = await fetch(`${API_BASE_URL}/api/user/block-status/${otherUserId}`, {
+                        headers: { Authorization: `Bearer ${token}` }
+                    });
+                    const blockData = await blockRes.json();
+                    setIsBlocked(blockData.isBlockedByMe);
+                    // We could also store isBlockingMe if needed later
+                }
             }
         } catch (error) {
             console.log("Error fetching chat details", error);
@@ -908,13 +918,23 @@ export default function ChatScreen() {
     const handleBlockToggle = async () => {
         try {
             const token = await AsyncStorage.getItem('userToken');
-            const res = await fetch(`${API_BASE_URL}/api/user/block/${otherUserId}`, {
+            const endpoint = isBlocked ? 'unblock' : 'block';
+            const res = await fetch(`${API_BASE_URL}/api/user/${endpoint}`, {
                 method: 'POST',
-                headers: { Authorization: `Bearer ${token}` }
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${token}`
+                },
+                body: JSON.stringify({ userId: otherUserId })
             });
             const data = await res.json();
-            setIsBlocked(data.isBlocked);
-            if (Platform.OS === 'android') ToastAndroid.show(data.isBlocked ? "Contact blocked" : "Contact unblocked", ToastAndroid.SHORT);
+            if (data.success) {
+                setIsBlocked(data.isBlocked);
+                if (Platform.OS === 'android') ToastAndroid.show(data.isBlocked ? "Contact blocked" : "Contact unblocked", ToastAndroid.SHORT);
+                setHeaderMenuVisible(false);
+            } else {
+                Alert.alert("Error", data.message || "Failed to update block status");
+            }
         } catch (error) {
             Alert.alert("Error", "Failed to update block status");
         }
@@ -1366,6 +1386,18 @@ export default function ChatScreen() {
                 </View>
             )}
 
+            {/* Blocked Banner */}
+            {isBlocked && (
+                <View style={{ padding: 10, backgroundColor: 'rgba(255,0,0,0.1)', alignItems: 'center' }}>
+                    <Text style={{ color: 'red', fontSize: 14, textAlign: 'center' }}>
+                        You blocked this contact. You cannot send messages.
+                    </Text>
+                    <TouchableOpacity onPress={handleBlockToggle} style={{ marginTop: 5 }}>
+                        <Text style={{ color: 'red', fontWeight: 'bold' }}>UNBLOCK</Text>
+                    </TouchableOpacity>
+                </View>
+            )}
+
             <ImageBackground
                 source={{ uri: 'https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png' }}
                 style={StyleSheet.absoluteFillObject}
@@ -1494,54 +1526,67 @@ export default function ChatScreen() {
                 keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
                 style={styles.inputContainer}>
 
-                <View style={[styles.inputPill, { backgroundColor: colorScheme === 'dark' ? '#2A3942' : '#fff' }]}>
-                    {isRecording ? (
-                        <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', height: 40 }}>
-                            <Animated.View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: 'red', marginRight: 10, opacity: blinkAnim }} />
-                            <Text style={{ color: theme.text, fontSize: 16, minWidth: 45 }}>{formatDuration(recordingDuration)}</Text>
-                            <Text style={{ color: '#888', marginLeft: 10, flex: 1 }}>Slide to cancel</Text>
-                            <TouchableOpacity onPress={cancelRecording} style={{ padding: 10 }}>
-                                <IconSymbol name="trash" size={24} color="red" />
-                            </TouchableOpacity>
-                        </View>
-                    ) : (
-                        <>
-                            <TouchableOpacity onPress={() => setIsEmojiOpen(true)} style={styles.leftInPill}>
-                                <IconSymbol name="face.smiling" size={24} color="#888" />
-                            </TouchableOpacity>
+                {isBlocked ? (
+                    <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.05)', padding: 15, borderRadius: 10, alignItems: 'center' }}>
+                        <Text style={{ color: '#666', fontSize: 14, textAlign: 'center' }}>
+                            You blocked this contact. Tap to unblock.
+                        </Text>
+                        <TouchableOpacity onPress={handleBlockToggle} style={{ marginTop: 8 }}>
+                            <Text style={{ color: '#00A884', fontWeight: 'bold' }}>UNBLOCK</Text>
+                        </TouchableOpacity>
+                    </View>
+                ) : (
+                    <>
+                        <View style={[styles.inputPill, { backgroundColor: colorScheme === 'dark' ? '#2A3942' : '#fff' }]}>
+                            {isRecording ? (
+                                <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', height: 40 }}>
+                                    <Animated.View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: 'red', marginRight: 10, opacity: blinkAnim }} />
+                                    <Text style={{ color: theme.text, fontSize: 16, minWidth: 45 }}>{formatDuration(recordingDuration)}</Text>
+                                    <Text style={{ color: '#888', marginLeft: 10, flex: 1 }}>Slide to cancel</Text>
+                                    <TouchableOpacity onPress={cancelRecording} style={{ padding: 10 }}>
+                                        <IconSymbol name="trash" size={24} color="red" />
+                                    </TouchableOpacity>
+                                </View>
+                            ) : (
+                                <>
+                                    <TouchableOpacity onPress={() => setIsEmojiOpen(true)} style={styles.leftInPill}>
+                                        <IconSymbol name="face.smiling" size={24} color="#888" />
+                                    </TouchableOpacity>
 
-                            <TextInput
-                                style={[styles.textInput, { color: theme.text }]}
-                                value={message}
-                                onChangeText={setMessage}
-                                placeholder="Message"
-                                placeholderTextColor="#888"
-                                multiline
-                            />
+                                    <TextInput
+                                        style={[styles.textInput, { color: theme.text }]}
+                                        value={message}
+                                        onChangeText={setMessage}
+                                        placeholder="Message"
+                                        placeholderTextColor="#888"
+                                        multiline
+                                    />
 
-                            <TouchableOpacity style={styles.rightInPill} onPress={() => setAttachmentMenuVisible(true)}>
-                                <IconSymbol name="paperclip" size={22} color="#888" />
-                            </TouchableOpacity>
+                                    <TouchableOpacity style={styles.rightInPill} onPress={() => setAttachmentMenuVisible(true)}>
+                                        <IconSymbol name="paperclip" size={22} color="#888" />
+                                    </TouchableOpacity>
 
-                            {message.length === 0 && (
-                                <TouchableOpacity style={styles.rightInPill} onPress={openCamera}>
-                                    <IconSymbol name="camera.fill" size={22} color="#888" />
-                                </TouchableOpacity>
+                                    {message.length === 0 && (
+                                        <TouchableOpacity style={styles.rightInPill} onPress={openCamera}>
+                                            <IconSymbol name="camera.fill" size={22} color="#888" />
+                                        </TouchableOpacity>
+                                    )}
+                                </>
                             )}
-                        </>
-                    )}
-                </View>
+                        </View>
 
-                <TouchableOpacity
-                    style={[styles.circularButton, { backgroundColor: '#00A884' }]}
-                    onPress={message.length > 0 ? sendMessage : (isRecording ? stopRecording : startRecording)}
-                >
-                    <IconSymbol
-                        name={message.length > 0 ? "paperplane.fill" : (isRecording ? "paperplane.fill" : "mic.fill")}
-                        size={22}
-                        color="#fff"
-                    />
-                </TouchableOpacity>
+                        <TouchableOpacity
+                            style={[styles.circularButton, { backgroundColor: '#00A884' }]}
+                            onPress={message.length > 0 ? sendMessage : (isRecording ? stopRecording : startRecording)}
+                        >
+                            <IconSymbol
+                                name={message.length > 0 ? "paperplane.fill" : (isRecording ? "paperplane.fill" : "mic.fill")}
+                                size={22}
+                                color="#fff"
+                            />
+                        </TouchableOpacity>
+                    </>
+                )}
             </KeyboardAvoidingView>
             <CustomEmojiPicker
                 open={isEmojiOpen}

@@ -115,7 +115,7 @@ const blockUser = asyncHandler(async (req, res) => {
         console.log(`[Block] User already blocked`);
     }
 
-    res.json({ success: true, message: "User blocked" });
+    res.json({ success: true, message: "User blocked", isBlocked: true });
 });
 
 // @description     Unblock a User
@@ -144,7 +144,7 @@ const unblockUser = asyncHandler(async (req, res) => {
         console.log(`[Unblock] Success: Removed ${userId}. Count from ${initialCount} to ${user.blockedUsers.length}`);
     }
 
-    res.json({ success: true, message: "User unblocked" });
+    res.json({ success: true, message: "User unblocked", isBlocked: false });
 });
 
 // @description     Get Blocked Users
