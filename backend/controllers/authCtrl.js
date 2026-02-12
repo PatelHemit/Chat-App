@@ -93,7 +93,7 @@ const verifyOTP = asyncHandler(async (req, res) => {
         });
     } else {
         res.status(400);
-        throw new Error("Invalid OTP or Expired");
+        throw new Error("Invalid OTP");
     }
 });
 

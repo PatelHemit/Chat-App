@@ -8,7 +8,7 @@ import { useEffect, useState } from 'react';
 import { ActivityIndicator, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import QRCode from 'react-native-qrcode-svg';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import io from 'socket.io-client';
+import { io } from 'socket.io-client';
 
 export default function QRLoginScreen() {
     const router = useRouter();
@@ -49,7 +49,7 @@ export default function QRLoginScreen() {
             // 2. Setup Socket.io to listen for login
             console.log("[QR] Connecting socket to:", SOCKET_URL);
             const socket = io(SOCKET_URL, {
-                transports: ['websocket'],
+                transports: ['polling', 'websocket'], // Enable polling fallback
                 forceNew: true
             });
 
@@ -58,11 +58,16 @@ export default function QRLoginScreen() {
                 socket.emit("join-qr-room", newId);
             });
 
-            socket.on("connect_error", (err) => {
-                console.error("[SOCKET] Connection error:", err);
+            socket.on("connect_error", (err: Error) => {
+                console.error("[SOCKET] Connection error details:", err.message);
+                if (err.message.includes('xhr poll error')) {
+                    // Often CORS or network unreachable
+                    setErrorMsg(`Socket Connection Failed: ${err.message}. Check URL: ${SOCKET_URL}`);
+                    setStatus("error");
+                }
             });
 
-            socket.on("login-success", async (data) => {
+            socket.on("login-success", async (data: { token: string; user: any }) => {
                 console.log("[SOCKET] Login Success received!");
                 setStatus("linked");
 
@@ -126,6 +131,7 @@ export default function QRLoginScreen() {
                         <View style={styles.infoContainer}>
                             <Text style={styles.name}>WhatsApp Web</Text>
                             <Text style={styles.subtitle}>Scan to log in instantly</Text>
+                            <Text style={{ fontSize: 10, color: '#aaa', marginTop: 10 }}>Server: {SOCKET_URL}</Text>
                         </View>
                     )}
                 </View>

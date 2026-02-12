@@ -1,10 +1,102 @@
-Key Check: Length=39, StartsWith=AIza..., EndsWith=...q_9M
-
-Testing model: gemini-1.5-flash
-❌ Failed gemini-1.5-flash: [GoogleGenerativeAI Error]: Error fetching from https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent: [404 Not Found] models/gemini-1.5-flash is not found for API version v1beta, or is not supported for generateContent. Call ListModels to see the list of available models and their supported methods.
-
-Testing model: gemini-pro
-❌ Failed gemini-pro: [GoogleGenerativeAI Error]: Error fetching from https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent: [404 Not Found] models/gemini-pro is not found for API version v1beta, or is not supported for generateContent. Call ListModels to see the list of available models and their supported methods.
-
-Testing model: gemini-1.0-pro
-❌ Failed gemini-1.0-pro: [GoogleGenerativeAI Error]: Error fetching from https://generativelanguage.googleapis.com/v1beta/models/gemini-1.0-pro:generateContent: [404 Not Found] models/gemini-1.0-pro is not found for API version v1beta, or is not supported for generateContent. Call ListModels to see the list of available models and their supported methods.
+[
+  {
+    "id": "698d6c2df1094386d5cdcdce",
+    "type": "image",
+    "content": "/uploads/image-1770875949049.jpg"
+  },
+  {
+    "id": "698d6c12f1094386d5cdcdbd",
+    "type": "video",
+    "content": "/uploads/video-1770875921631.mp4"
+  },
+  {
+    "id": "698d6a96f1094386d5cdcce5",
+    "type": "document",
+    "content": "/uploads/video.mp4"
+  },
+  {
+    "id": "698d688ef1094386d5cdcc6e",
+    "type": "document",
+    "content": "/uploads/VID-20260212-WA0003.mp4"
+  },
+  {
+    "id": "698d686cf1094386d5cdcc59",
+    "type": "document",
+    "content": "/uploads/IMG-20260212-WA0007.jpg"
+  },
+  {
+    "id": "698d62f1580389e8d05be4a3",
+    "type": "document",
+    "content": "https://ik.imagekit.io/2t9i13yqj/uploads/UNIT-3-1_IH-Qv8mgo.pdf"
+  },
+  {
+    "id": "698c8e5eeede688380ea048f",
+    "type": "audio",
+    "content": "https://ik.imagekit.io/2t9i13yqj/uploads/voice-1770819163048_Xg-kfAA_J.m4a"
+  },
+  {
+    "id": "698b1bf4879037b179eb61c8",
+    "type": "video",
+    "content": "Media"
+  },
+  {
+    "id": "698ad45e4a1e2f579806ac88",
+    "type": "document",
+    "content": "Final Word.pdf"
+  },
+  {
+    "id": "698ad4334a1e2f579806ac73",
+    "type": "document",
+    "content": "Final Word.docx"
+  },
+  {
+    "id": "698ad2ec4a1e2f579806ac2f",
+    "type": "image",
+    "content": "image-1770630247121.jpg"
+  },
+  {
+    "id": "698ad2ec4a1e2f579806ac29",
+    "type": "image",
+    "content": "image-1770630247121.jpg"
+  },
+  {
+    "id": "698ad2184a1e2f579806abda",
+    "type": "document",
+    "content": "Re-Registered%20CreatPix%20Infotech%20LLP.xlsx"
+  },
+  {
+    "id": "698acda34a1e2f579806ab47",
+    "type": "document",
+    "content": "Re-Registered CreatPix Infotech LLP.xlsx"
+  },
+  {
+    "id": "698acc124a1e2f579806ab3c",
+    "type": "document",
+    "content": "Final Word.docx"
+  },
+  {
+    "id": "698acbeb4a1e2f579806ab31",
+    "type": "document",
+    "content": "Final Word.pdf"
+  },
+  {
+    "id": "698acabe4a1e2f579806aaf4",
+    "type": "document",
+    "content": "MCA Project[1].pptx"
+  },
+  {
+    "id": "698ac4eb894c9ba7d7f9f18d",
+    "type": "document",
+    "content": "inputoutput.pdf"
+  },
+  {
+    "id": "6989e49f50933b3f018900a7",
+    "type": "audio",
+    "content": "audio-1770644636500.file"
+  },
+  {
+    "id": "6989db43a46a7b22e27cc094",
+    "type": "image",
+    "content": "image-1770642241377.jpg"
+  }
+]

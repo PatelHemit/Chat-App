@@ -15,9 +15,35 @@ const imagekit = new ImageKit({
     urlEndpoint: process.env.IMAGEKIT_URL_ENDPOINT
 });
 
-// Configure Multer to save temporarily to disk (needed for stream upload to ImageKit or similar)
-// Or use memoryStorage to avoid disk persistence issues on Render
-const storage = multer.memoryStorage();
+// Configure Multer to save to disk
+const storage = multer.diskStorage({
+    destination: function (req, file, cb) {
+        const uploadPath = path.join(__dirname, '../uploads');
+        // Ensure directory exists
+        if (!fs.existsSync(uploadPath)) {
+            fs.mkdirSync(uploadPath, { recursive: true });
+        }
+        cb(null, uploadPath);
+    },
+    filename: function (req, file, cb) {
+        // Sanitize filename: decode URI, replace spaces and special chars with underscores
+        const originalName = file.originalname || 'file';
+        let sanitized = originalName;
+        try {
+            sanitized = decodeURIComponent(originalName);
+        } catch (e) {
+            console.log("Failed to decode filename:", originalName);
+        }
+
+        // Remove special characters and replace spaces with underscores
+        sanitized = sanitized.replace(/\s+/g, '_').replace(/[^a-zA-Z0-9.\-_]/g, '');
+
+        // Ensure it's not empty and has a timestamp to avoid collisions
+        const namePart = path.parse(sanitized).name || 'file';
+        const extPart = path.parse(sanitized).ext || path.extname(originalName);
+        cb(null, `${namePart}-${Date.now()}${extPart}`);
+    }
+});
 
 // File filter
 function checkFileType(file, cb) {
@@ -28,6 +54,9 @@ function checkFileType(file, cb) {
 // Initialize Multer
 const uploadMiddleware = multer({
     storage: storage,
+    limits: {
+        fileSize: 200 * 1024 * 1024 // 200MB limit
+    },
     fileFilter: function (req, file, cb) {
         checkFileType(file, cb);
     },
@@ -52,27 +81,31 @@ router.post('/', (req, res) => {
         }
 
         try {
-            console.log("Uploading to ImageKit...");
+            // Construct Local URL
+            const localUrl = `/uploads/${req.file.filename}`;
+            console.log("✅ Local File Saved:", localUrl);
 
-            // Upload to ImageKit
-            const response = await imagekit.upload({
-                file: req.file.buffer, // Buffer from memoryStorage
-                fileName: req.file.originalname || `upload-${Date.now()}`,
-                folder: "/uploads" // Optional: organize in folders
-            });
+            // Optional: Still upload to ImageKit for backup/production if needed
+            // For now, return LOCAL URL to ensure immediate fix
 
-            console.log("ImageKit Upload Success:", response.url);
+            const fileMetadata = {
+                fileName: req.file.originalname,
+                fileSize: req.file.size,
+                fileExtension: path.extname(req.file.originalname),
+                mimeType: req.file.mimetype
+            };
 
             res.json({
-                message: 'Image uploaded successfully',
-                imageUrl: response.url,
-                fileId: response.fileId
+                message: 'File uploaded successfully',
+                imageUrl: localUrl, // Return local path!
+                fileId: req.file.filename,
+                fileMetadata: fileMetadata
             });
 
         } catch (uploadError) {
-            console.error("ImageKit Upload Error:", uploadError);
+            console.error("Upload Logic Error:", uploadError);
             res.status(500).json({
-                message: "Failed to upload to ImageKit",
+                message: "Failed to process upload",
                 error: uploadError.message
             });
         }

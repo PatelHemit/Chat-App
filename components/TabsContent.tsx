@@ -186,13 +186,10 @@ const styles = StyleSheet.create({
     viewerContainer: {
         flex: 1,
         backgroundColor: '#000',
-        alignItems: 'center',
-        justifyContent: 'center',
     },
     viewerInner: {
         flex: 1,
         width: '100%',
-        maxWidth: 500,
         backgroundColor: '#000',
         position: 'relative',
     },
@@ -383,13 +380,36 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
     },
+    // Status Privacy Menu
+    menuContainer: {
+        position: 'absolute',
+        top: 60,
+        right: 10,
+        borderRadius: 4,
+        elevation: 5,
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.25,
+        shadowRadius: 3.84,
+        minWidth: 150,
+        paddingVertical: 5,
+    },
+    menuItem: {
+        padding: 15,
+    },
+    menuText: {
+        fontSize: 16,
+    }
 });
 
 export function CallsContent() {
     const colorScheme = useColorScheme() ?? 'light';
     const theme = Colors[colorScheme];
     const [calls, setCalls] = useState<any[]>([]);
+    const [filteredCalls, setFilteredCalls] = useState<any[]>([]);
     const [loading, setLoading] = useState(false);
+    const [isSearching, setIsSearching] = useState(false);
+    const [searchQuery, setSearchQuery] = useState("");
 
     const fetchCalls = async () => {
         try {
@@ -403,12 +423,28 @@ export function CallsContent() {
             const data = await response.json();
             if (response.ok) {
                 setCalls(data);
+                setFilteredCalls(data);
             }
         } catch (error) {
             console.error("Error fetching calls:", error);
         } finally {
             setLoading(false);
         }
+    };
+
+    const handleSearch = (query: string) => {
+        setSearchQuery(query);
+        if (!query.trim()) {
+            setFilteredCalls(calls);
+            return;
+        }
+
+        const filtered = calls.filter((call) => {
+            const isCaller = call.caller?._id === call.caller?._id;
+            const otherUser = isCaller ? call.receiver : call.caller;
+            return otherUser?.name?.toLowerCase().includes(query.toLowerCase());
+        });
+        setFilteredCalls(filtered);
     };
 
     useEffect(() => {
@@ -418,12 +454,37 @@ export function CallsContent() {
     return (
         <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
             <View style={[styles.header, { backgroundColor: theme.headerBackground }]}>
-                <Text style={[styles.headerTitle, { color: theme.headerTintColor }]}>Calls</Text>
-                <View style={styles.headerIcons}>
-                    <IconSymbol name="camera" size={24} color={theme.headerTintColor} style={styles.icon} />
-                    <IconSymbol name="magnifyingglass" size={24} color={theme.headerTintColor} style={styles.icon} />
-                    <IconSymbol name="ellipsis" size={24} color={theme.headerTintColor} style={styles.icon} />
-                </View>
+                {isSearching ? (
+                    <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center' }}>
+                        <TouchableOpacity onPress={() => { setIsSearching(false); handleSearch(""); }}>
+                            <IconSymbol name="arrow.left" size={24} color={theme.headerTintColor} />
+                        </TouchableOpacity>
+                        <TextInput
+                            style={{
+                                flex: 1,
+                                marginLeft: 16,
+                                fontSize: 18,
+                                color: theme.headerTintColor,
+                                ...Platform.select({ web: { outlineStyle: 'none' } as any })
+                            }}
+                            placeholder="Search calls..."
+                            placeholderTextColor="rgba(255,255,255,0.7)"
+                            autoFocus
+                            value={searchQuery}
+                            onChangeText={handleSearch}
+                        />
+                    </View>
+                ) : (
+                    <>
+                        <Text style={[styles.headerTitle, { color: theme.headerTintColor }]}>Calls</Text>
+                        <View style={styles.headerIcons}>
+                            <TouchableOpacity onPress={() => setIsSearching(true)}>
+                                <IconSymbol name="magnifyingglass" size={24} color={theme.headerTintColor} style={styles.icon} />
+                            </TouchableOpacity>
+                            <IconSymbol name="ellipsis" size={24} color={theme.headerTintColor} style={styles.icon} />
+                        </View>
+                    </>
+                )}
             </View>
             <ScrollView>
                 <View style={styles.section}>
@@ -431,8 +492,8 @@ export function CallsContent() {
 
                     {loading ? (
                         <ActivityIndicator size="small" color={theme.tint} />
-                    ) : calls.length > 0 ? (
-                        calls.map((call, i) => {
+                    ) : filteredCalls.length > 0 ? (
+                        filteredCalls.map((call, i) => {
                             const isCaller = call.caller?._id === call.caller?._id; // Simplified, in real app compare with currentUserId
                             const otherUser = call.caller?._id === call.caller?._id ? call.receiver : call.caller;
 
@@ -479,7 +540,10 @@ export function CommunitiesContent() {
     const colorScheme = useColorScheme() ?? 'light';
     const theme = Colors[colorScheme];
     const [communities, setCommunities] = useState<any[]>([]);
+    const [filteredCommunities, setFilteredCommunities] = useState<any[]>([]);
     const [loading, setLoading] = useState(false);
+    const [isSearching, setIsSearching] = useState(false);
+    const [searchQuery, setSearchQuery] = useState("");
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
     const [communityName, setCommunityName] = useState("");
     const [communityDescription, setCommunityDescription] = useState("");
@@ -498,6 +562,7 @@ export function CommunitiesContent() {
             const data = await response.json();
             if (response.ok) {
                 setCommunities(data);
+                setFilteredCommunities(data);
             }
         } catch (error) {
             console.error("Error fetching communities:", error);
@@ -565,6 +630,19 @@ export function CommunitiesContent() {
         }
     };
 
+    const handleSearch = (query: string) => {
+        setSearchQuery(query);
+        if (!query.trim()) {
+            setFilteredCommunities(communities);
+            return;
+        }
+
+        const filtered = communities.filter((community) =>
+            community.name?.toLowerCase().includes(query.toLowerCase())
+        );
+        setFilteredCommunities(filtered);
+    };
+
     useEffect(() => {
         fetchCommunities();
     }, []);
@@ -572,19 +650,44 @@ export function CommunitiesContent() {
     return (
         <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
             <View style={[styles.header, { backgroundColor: theme.headerBackground }]}>
-                <Text style={[styles.headerTitle, { color: theme.headerTintColor }]}>Communities</Text>
-                <View style={styles.headerIcons}>
-                    <IconSymbol name="camera" size={24} color={theme.headerTintColor} style={styles.icon} />
-                    <IconSymbol name="magnifyingglass" size={24} color={theme.headerTintColor} style={styles.icon} />
-                    <IconSymbol name="ellipsis" size={24} color={theme.headerTintColor} style={styles.icon} />
-                </View>
+                {isSearching ? (
+                    <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center' }}>
+                        <TouchableOpacity onPress={() => { setIsSearching(false); handleSearch(""); }}>
+                            <IconSymbol name="arrow.left" size={24} color={theme.headerTintColor} />
+                        </TouchableOpacity>
+                        <TextInput
+                            style={{
+                                flex: 1,
+                                marginLeft: 16,
+                                fontSize: 18,
+                                color: theme.headerTintColor,
+                                ...Platform.select({ web: { outlineStyle: 'none' } as any })
+                            }}
+                            placeholder="Search communities..."
+                            placeholderTextColor="rgba(255,255,255,0.7)"
+                            autoFocus
+                            value={searchQuery}
+                            onChangeText={handleSearch}
+                        />
+                    </View>
+                ) : (
+                    <>
+                        <Text style={[styles.headerTitle, { color: theme.headerTintColor }]}>Communities</Text>
+                        <View style={styles.headerIcons}>
+                            <TouchableOpacity onPress={() => setIsSearching(true)}>
+                                <IconSymbol name="magnifyingglass" size={24} color={theme.headerTintColor} style={styles.icon} />
+                            </TouchableOpacity>
+                            <IconSymbol name="ellipsis" size={24} color={theme.headerTintColor} style={styles.icon} />
+                        </View>
+                    </>
+                )}
             </View>
 
             {loading ? (
                 <View style={[styles.content]}>
                     <ActivityIndicator size="large" color="#008069" />
                 </View>
-            ) : communities.length > 0 ? (
+            ) : filteredCommunities.length > 0 ? (
                 <ScrollView>
                     <View style={styles.section}>
                         <TouchableOpacity style={styles.statusItem} onPress={() => setIsCreateModalOpen(true)}>
@@ -596,7 +699,7 @@ export function CommunitiesContent() {
                             </View>
                         </TouchableOpacity>
 
-                        {communities.map((community) => (
+                        {filteredCommunities.map((community) => (
                             <View key={community._id} style={{ marginBottom: 20 }}>
                                 <TouchableOpacity
                                     style={styles.statusItem}
@@ -740,18 +843,23 @@ export function CommunitiesContent() {
 }
 
 export function UpdatesContent() {
+    const router = useRouter();
     const colorScheme = useColorScheme() ?? 'light';
     const theme = Colors[colorScheme];
     const [groupedStatuses, setGroupedStatuses] = useState<any[]>([]);
+    const [filteredGroupedStatuses, setFilteredGroupedStatuses] = useState<any[]>([]);
     const [myStatuses, setMyStatuses] = useState<any[]>([]);
     const [loading, setLoading] = useState(false);
     const [uploading, setUploading] = useState(false);
+    const [isSearching, setIsSearching] = useState(false);
+    const [searchQuery, setSearchQuery] = useState("");
     const [viewingUser, setViewingUser] = useState<any | null>(null);
     const [viewingStatuses, setViewingStatuses] = useState<any[]>([]);
     const [currentIndex, setCurrentIndex] = useState(0);
     const [isViewerOpen, setIsViewerOpen] = useState(false);
     const [showViewersList, setShowViewersList] = useState(false);
     const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+    const [showMenu, setShowMenu] = useState(false);
     const videoRef = useRef<Video>(null);
     const timerRef = useRef<any>(null);
 
@@ -766,6 +874,8 @@ export function UpdatesContent() {
             const userId = (userInfo._id || userInfo.id)?.toString();
             setCurrentUserId(userId);
 
+            // Fetch privacy settings to filter statuses locally if needed, though backend handles it
+            // For now, just fetching statuses
             const response = await fetch(`${API_BASE_URL}/api/status`, {
                 headers: { Authorization: `Bearer ${token}` }
             });
@@ -807,6 +917,7 @@ export function UpdatesContent() {
 
                 setMyStatuses(my);
                 setGroupedStatuses(grouped);
+                setFilteredGroupedStatuses(grouped);
             }
         } catch (error) {
             console.error("Error fetching statuses:", error);
@@ -818,6 +929,20 @@ export function UpdatesContent() {
     useEffect(() => {
         fetchStatuses();
     }, []);
+
+    const handleSearch = (query: string) => {
+        setSearchQuery(query);
+        if (!query.trim()) {
+            setFilteredGroupedStatuses(groupedStatuses);
+            return;
+        }
+
+        const filtered = groupedStatuses.filter((group) => {
+            const name = group.user?.name || "Unknown User";
+            return name.toLowerCase().includes(query.toLowerCase());
+        });
+        setFilteredGroupedStatuses(filtered);
+    };
 
     // Auto-advance logic
     useEffect(() => {
@@ -912,7 +1037,13 @@ export function UpdatesContent() {
                 body: formData,
             });
 
-            if (!uploadRes.ok) throw new Error("File upload failed");
+            console.log('Upload response status:', uploadRes.status);
+
+            if (!uploadRes.ok) {
+                const errorText = await uploadRes.text();
+                console.error('Upload failed with status:', uploadRes.status, errorText);
+                throw new Error(`File upload failed: ${uploadRes.status}`);
+            }
             const uploadData = await uploadRes.json();
             const mediaUrl = uploadData.imageUrl;
 
@@ -934,9 +1065,11 @@ export function UpdatesContent() {
             } else {
                 Alert.alert("Error", "Failed to update status");
             }
-        } catch (error) {
+        } catch (error: any) {
             console.error("Upload status error:", error);
-            Alert.alert("Error", "Failed to upload status");
+            console.error("API_BASE_URL:", API_BASE_URL);
+            console.error("Error details:", error.message, error.stack);
+            Alert.alert("Upload Error", `Failed to upload status: ${error.message || 'Network request failed'}\n\nPlease check if backend is running.`);
         } finally {
             setUploading(false);
         }
@@ -967,15 +1100,69 @@ export function UpdatesContent() {
     return (
         <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
             <View style={[styles.header, { backgroundColor: theme.headerBackground }]}>
-                <Text style={[styles.headerTitle, { color: theme.headerTintColor }]}>Updates</Text>
-                <View style={styles.headerIcons}>
-                    <TouchableOpacity onPress={pickMedia} disabled={uploading}>
-                        {uploading ? <ActivityIndicator color={theme.headerTintColor} /> : <IconSymbol name="camera" size={24} color={theme.headerTintColor} style={styles.icon} />}
-                    </TouchableOpacity>
-                    <IconSymbol name="magnifyingglass" size={24} color={theme.headerTintColor} style={styles.icon} />
-                    <IconSymbol name="ellipsis" size={24} color={theme.headerTintColor} style={styles.icon} />
-                </View>
+                {isSearching ? (
+                    <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center' }}>
+                        <TouchableOpacity onPress={() => { setIsSearching(false); handleSearch(""); }}>
+                            <IconSymbol name="arrow.left" size={24} color={theme.headerTintColor} />
+                        </TouchableOpacity>
+                        <TextInput
+                            style={{
+                                flex: 1,
+                                marginLeft: 16,
+                                fontSize: 18,
+                                color: theme.headerTintColor,
+                                ...Platform.select({ web: { outlineStyle: 'none' } as any })
+                            }}
+                            placeholder="Search status..."
+                            placeholderTextColor="rgba(255,255,255,0.7)"
+                            autoFocus
+                            value={searchQuery}
+                            onChangeText={handleSearch}
+                        />
+                    </View>
+                ) : (
+                    <>
+                        <Text style={[styles.headerTitle, { color: theme.headerTintColor }]}>Updates</Text>
+                        <View style={styles.headerIcons}>
+                            <TouchableOpacity onPress={pickMedia} disabled={uploading}>
+                                {uploading ? <ActivityIndicator color={theme.headerTintColor} /> : <IconSymbol name="camera" size={24} color={theme.headerTintColor} style={styles.icon} />}
+                            </TouchableOpacity>
+                            <TouchableOpacity onPress={() => setIsSearching(true)}>
+                                <IconSymbol name="magnifyingglass" size={24} color={theme.headerTintColor} style={styles.icon} />
+                            </TouchableOpacity>
+                            <TouchableOpacity onPress={() => setShowMenu(true)}>
+                                <IconSymbol name="ellipsis" size={24} color={theme.headerTintColor} style={styles.icon} />
+                            </TouchableOpacity>
+                        </View>
+                    </>
+                )}
             </View>
+
+            {/* Custom Menu Modal */}
+            <Modal
+                transparent={true}
+                visible={showMenu}
+                onRequestClose={() => setShowMenu(false)}
+                animationType="fade"
+            >
+                <TouchableOpacity
+                    style={styles.modalOverlay}
+                    activeOpacity={1}
+                    onPress={() => setShowMenu(false)}
+                >
+                    <View style={[styles.menuContainer, { backgroundColor: theme.background }]}>
+                        <TouchableOpacity
+                            style={styles.menuItem}
+                            onPress={() => {
+                                setShowMenu(false);
+                                router.push('/status/privacy' as any);
+                            }}
+                        >
+                            <Text style={[styles.menuText, { color: theme.text }]}>Status privacy</Text>
+                        </TouchableOpacity>
+                    </View>
+                </TouchableOpacity>
+            </Modal>
             <ScrollView>
                 <View style={styles.section}>
                     <Text style={[styles.updatesSectionTitle, { color: theme.text }]}>Status</Text>
@@ -1014,7 +1201,7 @@ export function UpdatesContent() {
                     <Text style={[styles.updatesSectionTitle, { color: theme.text }]}>Recent updates</Text>
                     {loading && <ActivityIndicator color="#008069" />}
 
-                    {groupedStatuses.map((group, i) => (
+                    {filteredGroupedStatuses.map((group, i) => (
                         <TouchableOpacity key={group.user?._id || i} style={styles.statusItem} onPress={() => openViewer(group.user, group.statuses)}>
                             <View style={[styles.statusRing, { borderColor: '#008069' }]}>
                                 <View style={[styles.statusAvatar, { overflow: 'hidden' }]}>
@@ -1031,7 +1218,7 @@ export function UpdatesContent() {
                             </View>
                         </TouchableOpacity>
                     ))}
-                    {groupedStatuses.length === 0 && !loading && (
+                    {filteredGroupedStatuses.length === 0 && !loading && (
                         <Text style={{ textAlign: 'center', color: '#888', marginTop: 20 }}>No recent updates</Text>
                     )}
                 </View>

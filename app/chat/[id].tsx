@@ -6,9 +6,25 @@ import { API_BASE_URL, getInternalUri } from '@/config/api';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Audio } from 'expo-av';
-import * as Clipboard from 'expo-clipboard';
+import { Audio, ResizeMode, Video } from 'expo-av';
+// Lazy load native modules to prevent crashes if they are missing
+let Clipboard: any = null;
+let Sharing: any = null;
+
+try {
+    Clipboard = require('expo-clipboard');
+} catch (e) {
+    console.log("Clipboard module not found");
+}
+
+try {
+    Sharing = require('expo-sharing');
+} catch (e) {
+    console.log("Sharing module not found");
+}
+
 import * as DocumentPicker from 'expo-document-picker';
+import * as FileSystem from 'expo-file-system/legacy';
 import * as Haptics from 'expo-haptics';
 import * as ImagePicker from 'expo-image-picker';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
@@ -16,21 +32,254 @@ import { useEffect, useRef, useState } from 'react';
 import {
     ActivityIndicator,
     Alert,
+    AlertButton,
     Animated,
     FlatList,
     ImageBackground,
     KeyboardAvoidingView,
     Modal,
     Platform,
+    Pressable,
     Image as RNImage,
     StyleSheet,
     Text,
     TextInput,
+    ToastAndroid,
     TouchableOpacity,
     View
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { io } from 'socket.io-client';
+
+const styles = StyleSheet.create({
+    container: {
+        flex: 1,
+    },
+    headerTitleContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingVertical: Platform.OS === 'android' ? 12 : 4,
+        paddingRight: 15,
+        paddingTop: Platform.OS === 'android' ? 25 : 4,
+    },
+    avatar: {
+        width: 36,
+        height: 36,
+        borderRadius: 18,
+        backgroundColor: '#ccc',
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginRight: 8,
+        marginLeft: -10,
+    },
+    headerName: {
+        fontSize: 16,
+        fontWeight: 'bold',
+    },
+    headerRight: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginRight: 5,
+    },
+    headerIconTouch: {
+        padding: 8,
+        marginLeft: 5,
+    },
+    messagesList: {
+        padding: 16,
+        paddingBottom: 20,
+    },
+    messageBubble: {
+        padding: 8,
+        borderRadius: 8,
+        maxWidth: '75%',
+        marginBottom: 8,
+        elevation: 1,
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.18,
+        shadowRadius: 1.00,
+    },
+    myMessage: {
+        alignSelf: 'flex-end',
+        borderTopRightRadius: 0,
+    },
+    theirMessage: {
+        alignSelf: 'flex-start',
+        borderTopLeftRadius: 0,
+    },
+    messageText: {
+        fontSize: 16,
+    },
+    messageTime: {
+        fontSize: 10,
+        color: '#888',
+        alignSelf: 'flex-end',
+        marginTop: 4,
+    },
+    inputContainer: {
+        flexDirection: 'row',
+        padding: 8,
+        alignItems: 'flex-end',
+        paddingBottom: Platform.OS === 'ios' ? 25 : 8,
+    },
+    inputPill: {
+        flex: 1,
+        flexDirection: 'row',
+        alignItems: 'center',
+        borderRadius: 25,
+        paddingHorizontal: 10,
+        marginRight: 5,
+        minHeight: 40,
+    },
+    leftInPill: {
+        padding: 5,
+    },
+    rightInPill: {
+        padding: 10,
+    },
+    circularButton: {
+        width: 48,
+        height: 48,
+        borderRadius: 24,
+        justifyContent: 'center',
+        alignItems: 'center',
+        elevation: 2,
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.2,
+        shadowRadius: 1,
+    },
+    textInput: {
+        flex: 1,
+        fontSize: 16,
+        maxHeight: 120,
+        paddingVertical: 10,
+        paddingHorizontal: 10,
+        ...Platform.select({
+            web: {
+                outlineStyle: 'none',
+                height: 40,
+                marginVertical: 4,
+            } as any,
+            android: {
+                paddingVertical: 8,
+            }
+        }),
+    },
+    modalOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.5)',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    menuContainer: {
+        width: '65%',
+        borderRadius: 12,
+        elevation: 5,
+        paddingVertical: 10,
+        backgroundColor: '#fff',
+        alignSelf: 'center',
+    },
+    reactionContainer: {
+        flexDirection: 'row',
+        justifyContent: 'space-around',
+        alignItems: 'center',
+        paddingHorizontal: 10,
+        paddingBottom: 10,
+        borderBottomWidth: 1,
+        borderBottomColor: '#eee',
+    },
+    reactionItem: {
+        padding: 5,
+    },
+    reactionText: {
+        fontSize: 22,
+    },
+    menuList: {
+        paddingTop: 5,
+    },
+    menuItem: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingVertical: 10,
+        paddingHorizontal: 20,
+    },
+    menuItemText: {
+        fontSize: 14.5,
+        marginLeft: 15,
+        fontWeight: '400',
+    },
+    separator: {
+        height: 1,
+        width: '100%',
+        marginVertical: 5,
+    },
+    headerTextContainer: {
+        marginLeft: 10,
+        justifyContent: 'center',
+    },
+    headerStatus: {
+        fontSize: 12,
+        opacity: 0.8,
+    },
+    headerMenuContent: {
+        position: 'absolute',
+        top: 60,
+        right: 10,
+        backgroundColor: '#fff',
+        borderRadius: 8,
+        elevation: 5,
+        paddingVertical: 5,
+        width: 180,
+    },
+    headerMenuItem: {
+        padding: 15,
+        borderBottomWidth: 0.5,
+        borderBottomColor: '#eee',
+    },
+    headerMenuText: {
+        fontSize: 16,
+    },
+    searchContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        padding: 5,
+        backgroundColor: 'rgba(0,0,0,0.05)',
+        borderRadius: 8,
+        margin: 10,
+    },
+    searchInput: {
+        flex: 1,
+        height: 40,
+        paddingHorizontal: 10,
+        fontSize: 16,
+    },
+    searchClose: {
+        padding: 5,
+    },
+    searchNav: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    reactionBubbleContainer: {
+        position: 'absolute',
+        bottom: -15,
+        backgroundColor: '#fff',
+        borderRadius: 12,
+        paddingHorizontal: 6,
+        paddingVertical: 2,
+        flexDirection: 'row',
+        alignItems: 'center',
+        elevation: 2,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.2,
+        shadowRadius: 1,
+        borderWidth: 1,
+        borderColor: '#f0f0f0',
+    }
+});
 
 export default function ChatScreen() {
     const { id, name, profilePic, otherUserId } = useLocalSearchParams<{ id: string; name: string; profilePic: string; otherUserId: string }>();
@@ -42,22 +291,39 @@ export default function ChatScreen() {
     const [currentUserProfilePic, setCurrentUserProfilePic] = useState("");
     const [chatPic, setChatPic] = useState(profilePic);
     const [chatName, setChatName] = useState(name);
-    const flatListRef = useRef<FlatList>(null);
-
-    const colorScheme = useColorScheme() ?? 'light';
-    const theme = Colors[colorScheme];
-
-    // Message Actions State
-    const [selectedMessage, setSelectedMessage] = useState<any>(null);
+    const [isMuted, setIsMuted] = useState(false);
+    const [isBlocked, setIsBlocked] = useState(false);
+    const [isUserOnline, setIsUserOnline] = useState(false);
+    const [headerMenuVisible, setHeaderMenuVisible] = useState(false);
+    const [muteModalVisible, setMuteModalVisible] = useState(false);
+    const [clearChatModalVisible, setClearChatModalVisible] = useState(false);
+    const [deleteMedia, setDeleteMedia] = useState(false);
+    const [attachmentMenuVisible, setAttachmentMenuVisible] = useState(false);
+    const [fullImageVisible, setFullImageVisible] = useState(false);
+    const [activeImageUrl, setActiveImageUrl] = useState<string | null>(null);
+    const [activeMediaType, setActiveMediaType] = useState<'image' | 'video'>('image');
+    const [selectedMedia, setSelectedMedia] = useState<any>(null);
+    const [replyingTo, setReplyingTo] = useState<any>(null);
+    const [searchResults, setSearchResults] = useState<number[]>([]);
+    const [searchResultIndex, setSearchResultIndex] = useState(-1);
+    const [isSearching, setIsSearching] = useState(false);
+    const [searchQuery, setSearchQuery] = useState("");
     const [contextMenuVisible, setContextMenuVisible] = useState(false);
-
-    // Recording State
-    const [recording, setRecording] = useState<Audio.Recording | null>(null);
-    const [isRecording, setIsRecording] = useState(false);
+    const [selectedMessage, setSelectedMessage] = useState<any>(null);
+    const [isLatestMessageMyOwn, setIsLatestMessageMyOwn] = useState(false);
     const [recordingDuration, setRecordingDuration] = useState(0);
+    const [isRecording, setIsRecording] = useState(false);
+    const [recording, setRecording] = useState<Audio.Recording | null>(null);
+    const [socketConnected, setSocketConnected] = useState(false);
+
+    const flatListRef = useRef<FlatList>(null);
+    const socket = useRef<any>(null);
     const recordingDurationRef = useRef(0);
     const recordingInterval = useRef<any>(null);
     const blinkAnim = useRef(new Animated.Value(1)).current;
+
+    const colorScheme = useColorScheme() ?? 'light';
+    const theme = Colors[colorScheme];
 
     useEffect(() => {
         if (isRecording) {
@@ -147,8 +413,25 @@ export default function ChatScreen() {
                 if (currentChat.isGroupChat) {
                     setChatPic(currentChat.groupPic);
                     setChatName(currentChat.chatName);
-                } else {
-                    // For one-on-one, we usually rely on the params passed, but could fetch user details here if needed
+                }
+
+                // Mute status check
+                const userInfoStr = await AsyncStorage.getItem("userInfo");
+                if (userInfoStr) {
+                    const userInfo = JSON.parse(userInfoStr);
+                    const muteInfo = currentChat.mutedBy?.find((m: any) =>
+                        String(m.user._id || m.user) === String(userInfo._id)
+                    );
+                    if (muteInfo) {
+                        const expiry = muteInfo.mutedUntil ? new Date(muteInfo.mutedUntil) : null;
+                        if (!expiry || expiry > new Date()) {
+                            setIsMuted(true);
+                        } else {
+                            setIsMuted(false);
+                        }
+                    } else {
+                        setIsMuted(false);
+                    }
                 }
             }
         } catch (error) {
@@ -156,9 +439,7 @@ export default function ChatScreen() {
         }
     };
 
-    const socket = useRef<any>(null);
-    const [socketConnected, setSocketConnected] = useState(false);
-    const [isUserOnline, setIsUserOnline] = useState(false);
+
 
     // Initialize Socket
     useEffect(() => {
@@ -201,6 +482,18 @@ export default function ChatScreen() {
 
             socket.current.on("message-deleted", (messageId: string) => {
                 setMessages((prev) => prev.filter((msg) => msg._id !== messageId));
+            });
+
+            socket.current.on("message-deleted-everyone", (messageId: string) => {
+                setMessages((prev) => prev.filter((msg) => msg._id !== messageId));
+            });
+
+            socket.current.on("reaction-updated", ({ messageId, reactions }: any) => {
+                setMessages((prev) =>
+                    prev.map((msg) =>
+                        msg._id === messageId ? { ...msg, reactions } : msg
+                    )
+                );
             });
 
             socket.current.on("message received", (newMessageRecieved: any) => {
@@ -252,6 +545,8 @@ export default function ChatScreen() {
                 console.log("Disconnecting socket");
                 socket.current.off("message received");
                 socket.current.off("message-status-updated");
+                socket.current.off("reaction-updated");
+                socket.current.off("message-deleted-everyone");
                 socket.current.disconnect();
             }
         };
@@ -549,44 +844,395 @@ export default function ChatScreen() {
         }
     };
 
+    const handleMenuOption = (option: string) => {
+        setHeaderMenuVisible(false);
+        switch (option) {
+            case 'mute':
+                if (isMuted) {
+                    handleUnmute();
+                } else {
+                    setMuteModalVisible(true);
+                }
+                break;
+            case 'clear':
+                setClearChatModalVisible(true);
+                break;
+            case 'block':
+                handleBlockToggle();
+                break;
+            case 'search':
+                setIsSearching(true);
+                break;
+        }
+    };
+
+    const handleMute = async (duration: '8hours' | '1week' | 'forever') => {
+        try {
+            const token = await AsyncStorage.getItem('userToken');
+            const res = await fetch(`${API_BASE_URL}/api/chat/mute/${id}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${token}`
+                },
+                body: JSON.stringify({ duration })
+            });
+            if (res.ok) {
+                setIsMuted(true);
+                setMuteModalVisible(false);
+                if (Platform.OS === 'android') ToastAndroid.show("Notifications muted", ToastAndroid.SHORT);
+            }
+        } catch (error) {
+            Alert.alert("Error", "Failed to mute chat");
+        }
+    };
+
+    const handleUnmute = async () => {
+        try {
+            const token = await AsyncStorage.getItem('userToken');
+            const res = await fetch(`${API_BASE_URL}/api/chat/unmute/${id}`, {
+                method: 'PUT',
+                headers: {
+                    Authorization: `Bearer ${token}`
+                }
+            });
+            if (res.ok) {
+                setIsMuted(false);
+                if (Platform.OS === 'android') ToastAndroid.show("Notifications unmuted", ToastAndroid.SHORT);
+            }
+        } catch (error) {
+            Alert.alert("Error", "Failed to unmute chat");
+        }
+    };
+
+    const handleBlockToggle = async () => {
+        try {
+            const token = await AsyncStorage.getItem('userToken');
+            const res = await fetch(`${API_BASE_URL}/api/user/block/${otherUserId}`, {
+                method: 'POST',
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            const data = await res.json();
+            setIsBlocked(data.isBlocked);
+            if (Platform.OS === 'android') ToastAndroid.show(data.isBlocked ? "Contact blocked" : "Contact unblocked", ToastAndroid.SHORT);
+        } catch (error) {
+            Alert.alert("Error", "Failed to update block status");
+        }
+    };
+
+    const handleClearChat = async () => {
+        try {
+            const token = await AsyncStorage.getItem('userToken');
+            const response = await fetch(`${API_BASE_URL}/api/chat/clear/${id}`, {
+                method: 'DELETE',
+                headers: { Authorization: `Bearer ${token}` }
+            });
+
+            if (response.ok) {
+                // Refetch messages to get the updated list (with deletedFor filter applied)
+                await fetchMessages(token!);
+                setClearChatModalVisible(false);
+                if (Platform.OS === 'android') ToastAndroid.show("Chat cleared", ToastAndroid.SHORT);
+            } else {
+                Alert.alert("Error", "Failed to clear chat");
+            }
+        } catch (error) {
+            Alert.alert("Error", "Failed to clear chat");
+        }
+    };
+
+    const handleSearch = (query: string) => {
+        setSearchQuery(query);
+        if (!query) {
+            setSearchResults([]);
+            setSearchResultIndex(-1);
+            return;
+        }
+
+        const res = messages
+            .map((m, i) => (m.type === 'text' && m.content.toLowerCase().includes(query.toLowerCase()) ? i : -1))
+            .filter(i => i !== -1);
+
+        setSearchResults(res);
+        if (res.length > 0) {
+            setSearchResultIndex(res.length - 1);
+            flatListRef.current?.scrollToIndex({ index: res[res.length - 1], animated: true });
+        }
+    };
+
+    const nextSearchResult = () => {
+        if (searchResults.length === 0) return;
+        const nextIdx = (searchResultIndex - 1 + searchResults.length) % searchResults.length;
+        setSearchResultIndex(nextIdx);
+        flatListRef.current?.scrollToIndex({ index: searchResults[nextIdx], animated: true });
+    };
+
     const handleLongPress = (msg: any) => {
         setSelectedMessage(msg);
         setContextMenuVisible(true);
     };
 
-    const handleDeleteMessage = async () => {
+    const handleDeleteMessage = () => {
         if (!selectedMessage) return;
+
+        const isMyMessage = String(selectedMessage.sender?._id || selectedMessage.sender) === String(currentUserId);
+
+        const deleteForMe = async () => {
+            try {
+                const token = await AsyncStorage.getItem("userToken");
+                await fetch(`${API_BASE_URL}/api/message/delete-for-me`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        Authorization: `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ messageId: selectedMessage._id })
+                });
+
+                setMessages((prev) => prev.filter((m) => m._id !== selectedMessage._id));
+                setContextMenuVisible(false);
+            } catch (error) {
+                Alert.alert("Error", "Failed to delete message");
+            }
+        };
+
+        const deleteForEveryone = async () => {
+            try {
+                const token = await AsyncStorage.getItem("userToken");
+                await fetch(`${API_BASE_URL}/api/message/${selectedMessage._id}`, {
+                    method: 'DELETE',
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+
+                // Locally we remove it, or we could wait for socket.
+                // But for immediate feedback, filtered:
+                setMessages((prev) => prev.filter((m) => m._id !== selectedMessage._id));
+                setContextMenuVisible(false);
+            } catch (error) {
+                Alert.alert("Error", "Failed to delete message for everyone");
+            }
+        };
+
+        const options: AlertButton[] = [
+            { text: "Delete for me", onPress: deleteForMe },
+            { text: "Cancel", style: "cancel", onPress: () => setContextMenuVisible(false) }
+        ];
+
+        if (isMyMessage) {
+            options.unshift({ text: "Delete for everyone", onPress: deleteForEveryone });
+        }
+
+        Alert.alert(
+            "Delete Message?",
+            "Are you sure you want to delete this message?",
+            options
+        );
+    };
+
+    const handleAddReaction = async (emoji: string) => {
+        if (!selectedMessage) return;
+        setContextMenuVisible(false);
+
         try {
-            const token = await AsyncStorage.getItem("userToken");
-            await fetch(`${API_BASE_URL}/api/message/${selectedMessage._id}`, {
-                method: 'DELETE',
-                headers: { Authorization: `Bearer ${token}` }
-            });
+            const token = await AsyncStorage.getItem('userToken');
+            const existingReaction = selectedMessage.reactions?.find((r: any) =>
+                String(r.user._id || r.user) === String(currentUserId)
+            );
 
-            // Optimistic update
-            setMessages((prev) => prev.filter((m) => m._id !== selectedMessage._id));
-            setContextMenuVisible(false);
+            if (existingReaction && existingReaction.emoji === emoji) {
+                // Remove reaction
+                await fetch(`${API_BASE_URL}/api/message/unreact`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ messageId: selectedMessage._id })
+                });
+            } else {
+                // Add/Update
+                await fetch(`${API_BASE_URL}/api/message/react`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ messageId: selectedMessage._id, emoji })
+                });
+            }
+            // Logic to update local state immediately if needed, 
+            // but we have socket listeners for that.
+        } catch (error) {
+            console.error("Reaction failed:", error);
+        }
+    };
 
-            // Notify others
-            if (socket.current) {
-                // Ideally backend emits this, but we can emit client side too if setup
-                // For now backend deletion is source of truth, but socket event "message-deleted" 
-                // should be emitted by backend OR we just remove locally. 
-                // Let's remove locally for now.
+    const handleReplyMessage = () => {
+        setReplyingTo(selectedMessage);
+        setContextMenuVisible(false);
+    };
+
+    const handleForwardMessage = () => {
+        setContextMenuVisible(false);
+        router.push({
+            pathname: '/chat/new',
+            params: { forwardId: selectedMessage._id }
+        });
+    };
+
+    const handleOpenDocument = async (msg: any) => {
+        const uri = getInternalUri(msg.content || msg.fileUrl);
+        if (!uri) return;
+
+        try {
+            if (Platform.OS === 'web') {
+                import('react-native').then(({ Linking }) => {
+                    if (typeof Linking.openURL === 'function') {
+                        Linking.openURL(uri);
+                    }
+                });
+                return;
             }
 
+            // For Mobile: Download and Share
+            const fileExt = msg.fileName ? (msg.fileName.split('.').pop() || 'tmp') : (uri.split('.').pop() || 'bin');
+            // @ts-ignore
+            const localUri = `${FileSystem.cacheDirectory}${msg._id}.${fileExt}`;
+
+            if (Platform.OS === 'android') ToastAndroid.show("Opening document...", ToastAndroid.SHORT);
+
+            const downloadResult = await FileSystem.downloadAsync(uri, localUri);
+
+            if (Sharing && typeof Sharing.shareAsync === 'function') {
+                await Sharing.shareAsync(downloadResult.uri);
+            } else {
+                import('react-native').then(({ Linking }) => {
+                    if (typeof Linking.openURL === 'function') {
+                        Linking.openURL(uri);
+                    }
+                });
+            }
         } catch (error) {
-            console.log("Error deleting message", error);
-            Alert.alert("Error", "Failed to delete message");
+            console.error("handleOpenDocument Error:", error);
+            if (Platform.OS === 'android') ToastAndroid.show("Failed to open document", ToastAndroid.SHORT);
+        }
+    };
+
+    const handleMessageInfo = async () => {
+        if (!selectedMessage) return;
+        setContextMenuVisible(false);
+
+        try {
+            const token = await AsyncStorage.getItem('userToken');
+            const response = await fetch(`${API_BASE_URL}/api/message/info/${selectedMessage._id}`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const data = await response.json();
+
+            let infoText = `Sent: ${new Date(data.createdAt).toLocaleString()}\nStatus: ${data.status}`;
+
+            if (data.readBy && data.readBy.length > 0) {
+                infoText += `\n\nRead by:\n${data.readBy.map((r: any) => `${r.user?.name || 'User'} (${new Date(r.readAt).toLocaleTimeString()})`).join('\n')}`;
+            }
+
+            if (data.deliveredTo && data.deliveredTo.length > 0) {
+                infoText += `\n\nDelivered to:\n${data.deliveredTo.map((r: any) => `${r.user?.name || 'User'} (${new Date(r.deliveredAt).toLocaleTimeString()})`).join('\n')}`;
+            }
+
+            Alert.alert("Message Info", infoText);
+        } catch (error) {
+            Alert.alert("Message Info", `Sent: ${new Date(selectedMessage.createdAt).toLocaleString()}\nStatus: ${selectedMessage.status}`);
+        }
+    };
+
+    const handleJumpToMessage = (messageId: string) => {
+        const index = messages.findIndex(m => m._id === messageId);
+        if (index > -1) {
+            flatListRef.current?.scrollToIndex({
+                index,
+                animated: true,
+                viewPosition: 0.5
+            });
         }
     };
 
     const handleCopyMessage = async () => {
         if (!selectedMessage) return;
-        if (selectedMessage.type === 'text') {
-            await Clipboard.setStringAsync(selectedMessage.content);
-        }
         setContextMenuVisible(false);
+
+        try {
+            if (selectedMessage.type === 'text') {
+                if (Clipboard && typeof Clipboard.setStringAsync === 'function') {
+                    await Clipboard.setStringAsync(selectedMessage.content);
+                    if (Platform.OS === 'android') ToastAndroid.show("Message copied", ToastAndroid.SHORT);
+                } else {
+                    if (Platform.OS === 'android') ToastAndroid.show("Clickboard not available", ToastAndroid.SHORT);
+                }
+            } else {
+                const uri = getInternalUri(selectedMessage.content || selectedMessage.fileUrl);
+                if (!uri) return;
+
+                if (Platform.OS === 'android') ToastAndroid.show("Preparing media...", ToastAndroid.SHORT);
+
+                const fileExt = uri.split('.').pop() || 'bin';
+                // @ts-ignore
+                const localUri = `${FileSystem.cacheDirectory}copy_temp.${fileExt}`;
+
+                const downloadResult = await FileSystem.downloadAsync(uri, localUri);
+
+                if (selectedMessage.type === 'image') {
+                    let imageCopied = false;
+                    try {
+                        // @ts-ignore
+                        const base64 = await FileSystem.readAsStringAsync(downloadResult.uri, { encoding: FileSystem.EncodingType.Base64 });
+                        if (base64 && Clipboard && typeof Clipboard.setImageAsync === 'function') {
+                            await Clipboard.setImageAsync(base64);
+                            imageCopied = true;
+                            if (Platform.OS === 'android') ToastAndroid.show("Image copied to clipboard", ToastAndroid.SHORT);
+                        }
+                    } catch (e) {
+                        console.log("Native image copy failed:", e);
+                        imageCopied = false;
+                    }
+
+                    if (!imageCopied) {
+                        await Clipboard.setStringAsync(uri);
+                        if (Platform.OS === 'android') ToastAndroid.show("Link copied (Image copy not supported)", ToastAndroid.SHORT);
+                    }
+                } else {
+                    let shared = false;
+                    try {
+                        const isSharingAvailable = await (async () => {
+                            try {
+                                return Sharing && typeof Sharing.isAvailableAsync === 'function' && await Sharing.isAvailableAsync();
+                            } catch {
+                                return false;
+                            }
+                        })();
+
+                        if (isSharingAvailable && Sharing) {
+                            await Sharing.shareAsync(downloadResult.uri);
+                            shared = true;
+                        }
+                    } catch (e) {
+                        console.log("Native sharing failed:", e);
+                        shared = false;
+                    }
+
+                    if (!shared && Clipboard) {
+                        await Clipboard.setStringAsync(uri);
+                        if (Platform.OS === 'android') ToastAndroid.show("Link copied (Sharing not supported)", ToastAndroid.SHORT);
+                    }
+                }
+            }
+        } catch (error) {
+            console.error("handleCopyMessage Error:", error);
+            if (selectedMessage?.type === 'text') {
+                Alert.alert("Error", "Failed to copy text");
+            } else {
+                ToastAndroid.show("Failed to process media", ToastAndroid.SHORT);
+            }
+        }
     };
 
     const formatDuration = (seconds: number) => {
@@ -605,57 +1251,120 @@ export default function ChatScreen() {
                     headerTintColor: theme.headerTintColor,
                     headerTitleAlign: 'left',
                     headerTitle: () => (
-                        <TouchableOpacity
-                            style={styles.headerTitleContainer}
-                            onPress={() => router.push({ pathname: '/chat/info', params: { id } })}
-                        >
-                            <View style={styles.avatar}>
+                        <View style={styles.headerTitleContainer}>
+                            <TouchableOpacity
+                                style={{ flexDirection: 'row', alignItems: 'center' }}
+                                onPress={() => router.push({ pathname: '/chat/info', params: { id, name, profilePic, otherUserId } })}
+                            >
                                 {chatPic ? (
-                                    <RNImage
-                                        source={{ uri: getInternalUri(chatPic) }}
-                                        style={{ width: 36, height: 36, borderRadius: 18 }}
-                                    />
+                                    <RNImage source={{ uri: getInternalUri(chatPic) }} style={styles.avatar} />
                                 ) : (
-                                    <IconSymbol name="person.fill" size={24} color="#fff" />
+                                    <View style={styles.avatar}>
+                                        <IconSymbol name="person.fill" size={24} color="#fff" />
+                                    </View>
                                 )}
-                            </View>
-                            <View style={{ justifyContent: 'center' }}>
-                                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                                    <Text style={[styles.headerName, { color: theme.headerTintColor }]} numberOfLines={1}>
-                                        {chatName || name || id}
-                                    </Text>
-                                    {(name === "+91 83203 01352" || id.includes("self")) && (
-                                        <Text style={[styles.headerName, { color: theme.headerTintColor }]}> (You)</Text>
-                                    )}
+                                <View style={styles.headerTextContainer}>
+                                    <Text style={[styles.headerName, { color: theme.headerTintColor }]} numberOfLines={1}>{chatName || name}</Text>
+                                    <Text style={[styles.headerStatus, { color: theme.headerTintColor }]}>{isUserOnline ? "online" : "last seen recently"}</Text>
                                 </View>
-                                <Text style={{ fontSize: 11, color: theme.headerTintColor, opacity: 0.8 }}>
-                                    {isUserOnline ? "Online" : ((name === "+91 83203 01352" || id.includes("self")) ? "Message yourself" : "Tap for info")}
-                                </Text>
-                            </View>
-                        </TouchableOpacity>
+                            </TouchableOpacity>
+                        </View>
                     ),
                     headerRight: () => (
                         <View style={styles.headerRight}>
                             <ZegoCallButton
                                 inviteeId={otherUserId}
                                 inviteeName={chatName}
-                                isVideo={false}
+                                isVideo={true}
                                 theme={theme}
                             />
                             <ZegoCallButton
                                 inviteeId={otherUserId}
                                 inviteeName={chatName}
-                                isVideo={true}
+                                isVideo={false}
                                 theme={theme}
                             />
-                            <TouchableOpacity style={styles.headerIconTouch}>
-                                <IconSymbol name="ellipsis" size={22} color={theme.headerTintColor} />
+                            <TouchableOpacity style={styles.headerIconTouch} onPress={() => setHeaderMenuVisible(true)}>
+                                <IconSymbol name="ellipsis.vertical" size={22} color={theme.headerTintColor} />
                             </TouchableOpacity>
+
+                            <Modal
+                                visible={headerMenuVisible}
+                                transparent={true}
+                                animationType="fade"
+                                onRequestClose={() => setHeaderMenuVisible(false)}
+                            >
+                                <Pressable
+                                    style={styles.modalOverlay}
+                                    onPress={() => setHeaderMenuVisible(false)}
+                                >
+                                    <View style={[styles.headerMenuContent, { backgroundColor: theme.background }]}>
+                                        <TouchableOpacity
+                                            style={styles.headerMenuItem}
+                                            onPress={() => handleMenuOption('search')}
+                                        >
+                                            <Text style={[styles.headerMenuText, { color: theme.text }]}>Search</Text>
+                                        </TouchableOpacity>
+                                        <TouchableOpacity
+                                            style={styles.headerMenuItem}
+                                            onPress={() => handleMenuOption('mute')}
+                                        >
+                                            <Text style={[styles.headerMenuText, { color: theme.text }]}>{isMuted ? "Unmute" : "Mute notifications"}</Text>
+                                        </TouchableOpacity>
+                                        <TouchableOpacity
+                                            style={styles.headerMenuItem}
+                                            onPress={() => handleMenuOption('clear')}
+                                        >
+                                            <Text style={[styles.headerMenuText, { color: theme.text }]}>Clear chat</Text>
+                                        </TouchableOpacity>
+                                        <TouchableOpacity
+                                            style={styles.headerMenuItem}
+                                            onPress={() => handleMenuOption('block')}
+                                        >
+                                            <Text style={[styles.headerMenuText, { color: theme.text }]}>{isBlocked ? "Unblock" : "Block"}</Text>
+                                        </TouchableOpacity>
+                                    </View>
+                                </Pressable>
+                            </Modal>
                         </View>
                     ),
                 }}
             />
             {loading && <ActivityIndicator size="large" color="#008069" />}
+
+            {/* Search Bar UI */}
+            {isSearching && (
+                <View style={[styles.searchContainer, { backgroundColor: theme.background }]}>
+                    <TouchableOpacity onPress={() => { setIsSearching(false); handleSearch(""); }} style={styles.searchClose}>
+                        <IconSymbol name="chevron.left" size={24} color={theme.text} />
+                    </TouchableOpacity>
+                    <TextInput
+                        style={[styles.searchInput, { color: theme.text }]}
+                        placeholder="Search messages..."
+                        placeholderTextColor="#888"
+                        value={searchQuery}
+                        onChangeText={handleSearch}
+                        autoFocus
+                    />
+                    {searchResults.length > 0 && (
+                        <View style={styles.searchNav}>
+                            <Text style={{ color: '#888', marginRight: 10 }}>
+                                {searchResults.length - searchResultIndex} of {searchResults.length}
+                            </Text>
+                            <TouchableOpacity onPress={nextSearchResult} style={{ padding: 5 }}>
+                                <IconSymbol name="chevron.up" size={20} color={theme.text} />
+                            </TouchableOpacity>
+                            <TouchableOpacity onPress={() => {
+                                const next = (searchResultIndex + 1) % searchResults.length;
+                                setSearchResultIndex(next);
+                                flatListRef.current?.scrollToIndex({ index: searchResults[next], animated: true });
+                            }} style={{ padding: 5 }}>
+                                <IconSymbol name="chevron.down" size={20} color={theme.text} />
+                            </TouchableOpacity>
+                        </View>
+                    )}
+                </View>
+            )}
 
             <ImageBackground
                 source={{ uri: 'https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png' }}
@@ -691,7 +1400,11 @@ export default function ChatScreen() {
                                         duration={item.type === 'audio' && item.duration ? item.duration * 1000 : 0}
                                     />
                                 ) : item.type === 'image' ? (
-                                    <TouchableOpacity onPress={() => Alert.alert('Image', 'Full image view coming soon')}>
+                                    <TouchableOpacity onPress={() => {
+                                        setActiveImageUrl(item.content);
+                                        setActiveMediaType('image');
+                                        setFullImageVisible(true);
+                                    }}>
                                         <RNImage
                                             source={{ uri: getInternalUri(item.content) }}
                                             style={{ width: 200, height: 200, borderRadius: 8 }}
@@ -699,20 +1412,29 @@ export default function ChatScreen() {
                                         />
                                     </TouchableOpacity>
                                 ) : item.type === 'video' ? (
-                                    <View style={{ width: 200, height: 200, backgroundColor: '#000', borderRadius: 8, justifyContent: 'center', alignItems: 'center' }}>
-                                        <IconSymbol name="play.circle.fill" size={48} color="#fff" />
-                                        <Text style={{ color: '#fff', marginTop: 8 }}>Video</Text>
-                                    </View>
+                                    <TouchableOpacity onPress={() => {
+                                        setActiveImageUrl(item.content);
+                                        setActiveMediaType('video');
+                                        setFullImageVisible(true);
+                                    }}>
+                                        <View style={{ width: 200, height: 200, backgroundColor: '#000', borderRadius: 8, justifyContent: 'center', alignItems: 'center' }}>
+                                            <IconSymbol name="play.circle.fill" size={48} color="#fff" />
+                                            <Text style={{ color: '#fff', marginTop: 8 }}>Video</Text>
+                                        </View>
+                                    </TouchableOpacity>
                                 ) : item.type === 'document' ? (
-                                    <View style={{ flexDirection: 'row', alignItems: 'center', padding: 8 }}>
+                                    <TouchableOpacity
+                                        style={{ flexDirection: 'row', alignItems: 'center', padding: 8 }}
+                                        onPress={() => handleOpenDocument(item)}
+                                    >
                                         <IconSymbol name="doc.fill" size={32} color="#888" />
                                         <View style={{ marginLeft: 8, flex: 1 }}>
                                             <Text style={[styles.messageText, { color: theme.text }]} numberOfLines={1}>
                                                 {item.fileName || 'Document'}
                                             </Text>
-                                            <Text style={{ fontSize: 12, color: '#888' }}>Tap to download</Text>
+                                            <Text style={{ fontSize: 12, color: '#888' }}>Tap to view</Text>
                                         </View>
-                                    </View>
+                                    </TouchableOpacity>
                                 ) : (
                                     <Text style={[styles.messageText, { color: theme.text }]}>{item.content}</Text>
                                 )}
@@ -729,6 +1451,20 @@ export default function ChatScreen() {
                                         />
                                     )}
                                 </Text>
+
+                                {item.reactions && item.reactions.length > 0 && (
+                                    <View style={[
+                                        styles.reactionBubbleContainer,
+                                        isMyMessage ? { left: -10 } : { right: -10 }
+                                    ]}>
+                                        {Array.from(new Set(item.reactions.map((r: any) => r.emoji))).slice(0, 3).map((emoji: any, i) => (
+                                            <Text key={i} style={{ fontSize: 12 }}>{emoji}</Text>
+                                        ))}
+                                        {item.reactions.length > 1 && (
+                                            <Text style={{ fontSize: 10, color: '#888', marginLeft: 2 }}>{item.reactions.length}</Text>
+                                        )}
+                                    </View>
+                                )}
                             </View>
                         </TouchableOpacity>
                     );
@@ -739,6 +1475,20 @@ export default function ChatScreen() {
                 onLayout={() => messages.length > 0 && flatListRef.current?.scrollToEnd({ animated: true })}
                 ref={flatListRef}
             />
+            {replyingTo && (
+                <View style={{ padding: 10, backgroundColor: 'rgba(0,0,0,0.05)', borderTopWidth: 1, borderTopColor: '#eee', flexDirection: 'row', alignItems: 'center' }}>
+                    <View style={{ flex: 1, paddingLeft: 10, borderLeftWidth: 4, borderLeftColor: '#00A884' }}>
+                        <Text style={{ fontWeight: 'bold', color: '#00A884' }}>
+                            {String(replyingTo.sender?._id || replyingTo.sender) === String(currentUserId) ? "You" : (chatName || "Contact")}
+                        </Text>
+                        <Text numberOfLines={1} style={{ color: '#666' }}>{replyingTo.content}</Text>
+                    </View>
+                    <TouchableOpacity onPress={() => setReplyingTo(null)} style={{ padding: 5 }}>
+                        <IconSymbol name="xmark.circle.fill" size={20} color="#888" />
+                    </TouchableOpacity>
+                </View>
+            )}
+
             <KeyboardAvoidingView
                 behavior={Platform.OS === 'ios' ? 'padding' : undefined}
                 keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
@@ -769,7 +1519,7 @@ export default function ChatScreen() {
                                 multiline
                             />
 
-                            <TouchableOpacity style={styles.rightInPill} onPress={pickDocument}>
+                            <TouchableOpacity style={styles.rightInPill} onPress={() => setAttachmentMenuVisible(true)}>
                                 <IconSymbol name="paperclip" size={22} color="#888" />
                             </TouchableOpacity>
 
@@ -801,6 +1551,157 @@ export default function ChatScreen() {
                 }}
             />
 
+            {/* Mute Modal */}
+            <Modal
+                visible={muteModalVisible}
+                transparent={true}
+                animationType="fade"
+                onRequestClose={() => setMuteModalVisible(false)}
+            >
+                <Pressable style={styles.modalOverlay} onPress={() => setMuteModalVisible(false)}>
+                    <View style={[styles.menuContainer, { backgroundColor: theme.background }]}>
+                        <Text style={{ fontSize: 18, fontWeight: 'bold', padding: 20, color: theme.text }}>Mute notifications for...</Text>
+                        <TouchableOpacity style={styles.menuItem} onPress={() => handleMute("8hours")}>
+                            <Text style={[styles.menuItemText, { color: theme.text }]}>8 hours</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity style={styles.menuItem} onPress={() => handleMute("1week")}>
+                            <Text style={[styles.menuItemText, { color: theme.text }]}>1 week</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity style={styles.menuItem} onPress={() => handleMute("forever")}>
+                            <Text style={[styles.menuItemText, { color: theme.text }]}>Always</Text>
+                        </TouchableOpacity>
+                        <View style={{ flexDirection: 'row', justifyContent: 'flex-end', padding: 10 }}>
+                            <TouchableOpacity onPress={() => setMuteModalVisible(false)}>
+                                <Text style={{ color: '#00A884', fontWeight: 'bold', padding: 10 }}>CANCEL</Text>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                </Pressable>
+            </Modal>
+
+            {/* Clear Chat Modal */}
+            <Modal
+                visible={clearChatModalVisible}
+                transparent={true}
+                animationType="fade"
+                onRequestClose={() => setClearChatModalVisible(false)}
+            >
+                <Pressable style={styles.modalOverlay} onPress={() => setClearChatModalVisible(false)}>
+                    <View style={[styles.menuContainer, { backgroundColor: theme.background }]}>
+                        <Text style={{ fontSize: 16, padding: 20, color: theme.text }}>Clear this chat?</Text>
+                        <View style={{ paddingHorizontal: 20, paddingBottom: 10, flexDirection: 'row', alignItems: 'center' }}>
+                            <TouchableOpacity
+                                style={{ flexDirection: 'row', alignItems: 'center' }}
+                                onPress={() => setDeleteMedia(!deleteMedia)}
+                            >
+                                <IconSymbol name={deleteMedia ? "checkmark.square.fill" : "square"} size={22} color="#00A884" />
+                                <Text style={{ marginLeft: 10, color: theme.text }}>Also delete media received in this chat from the device gallery</Text>
+                            </TouchableOpacity>
+                        </View>
+                        <View style={{ flexDirection: 'row', justifyContent: 'flex-end', padding: 10 }}>
+                            <TouchableOpacity onPress={() => setClearChatModalVisible(false)}>
+                                <Text style={{ color: '#00A884', fontWeight: 'bold', padding: 10 }}>CANCEL</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity onPress={handleClearChat}>
+                                <Text style={{ color: '#00A884', fontWeight: 'bold', padding: 10 }}>CLEAR CHAT</Text>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                </Pressable>
+            </Modal>
+
+            {/* Attachment Menu */}
+            <Modal
+                visible={attachmentMenuVisible}
+                transparent={true}
+                animationType="slide"
+                onRequestClose={() => setAttachmentMenuVisible(false)}
+            >
+                <Pressable style={styles.modalOverlay} onPress={() => setAttachmentMenuVisible(false)}>
+                    <View style={{ position: 'absolute', bottom: 80, left: 10, right: 10, backgroundColor: theme.background, borderRadius: 16, padding: 20, flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-around' }}>
+                        <TouchableOpacity style={{ alignItems: 'center', margin: 10 }} onPress={() => { setAttachmentMenuVisible(false); pickDocument(); }}>
+                            <View style={{ width: 50, height: 50, borderRadius: 25, backgroundColor: '#7F66FF', justifyContent: 'center', alignItems: 'center' }}>
+                                <IconSymbol name="doc.fill" size={24} color="#fff" />
+                            </View>
+                            <Text style={{ marginTop: 5, color: theme.text, fontSize: 12 }}>Document</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity style={{ alignItems: 'center', margin: 10 }} onPress={() => { setAttachmentMenuVisible(false); openCamera(); }}>
+                            <View style={{ width: 50, height: 50, borderRadius: 25, backgroundColor: '#FF2E74', justifyContent: 'center', alignItems: 'center' }}>
+                                <IconSymbol name="camera.fill" size={24} color="#fff" />
+                            </View>
+                            <Text style={{ marginTop: 5, color: theme.text, fontSize: 12 }}>Camera</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity style={{ alignItems: 'center', margin: 10 }} onPress={() => { setAttachmentMenuVisible(false); pickImage(); }}>
+                            <View style={{ width: 50, height: 50, borderRadius: 25, backgroundColor: '#C159FF', justifyContent: 'center', alignItems: 'center' }}>
+                                <IconSymbol name="photo.fill" size={24} color="#fff" />
+                            </View>
+                            <Text style={{ marginTop: 5, color: theme.text, fontSize: 12 }}>Gallery</Text>
+                        </TouchableOpacity>
+                        {/* Add more as needed: Audio, Location, Contact */}
+                    </View>
+                </Pressable>
+            </Modal>
+
+            {/* Full Screen Media Viewer */}
+            <Modal
+                visible={fullImageVisible}
+                transparent={false}
+                animationType="fade"
+                onRequestClose={() => setFullImageVisible(false)}
+            >
+                <View style={{ flex: 1, backgroundColor: '#000', justifyContent: 'center' }}>
+                    <TouchableOpacity
+                        style={{ position: 'absolute', top: 40, left: 20, zIndex: 10, padding: 10 }}
+                        onPress={() => setFullImageVisible(false)}
+                    >
+                        <IconSymbol name="xmark" size={30} color="#fff" />
+                    </TouchableOpacity>
+
+                    {activeMediaType === 'image' ? (
+                        <RNImage
+                            source={{ uri: getInternalUri(activeImageUrl!) }}
+                            style={{ width: '100%', height: '80%' }}
+                            resizeMode="contain"
+                        />
+                    ) : (
+                        <Video
+                            source={{ uri: getInternalUri(activeImageUrl!) }}
+                            style={{ width: '100%', height: '80%' }}
+                            useNativeControls
+                            resizeMode={ResizeMode.CONTAIN}
+                            isLooping
+                            shouldPlay
+                        />
+                    )}
+
+                    <View style={{ position: 'absolute', bottom: 40, left: 0, right: 0, alignItems: 'center' }}>
+                        <TouchableOpacity
+                            style={{ backgroundColor: 'rgba(255,255,255,0.2)', padding: 15, borderRadius: 30 }}
+                            onPress={async () => {
+                                if (activeImageUrl) {
+                                    const uri = getInternalUri(activeImageUrl);
+                                    if (uri) {
+                                        const fileExt = uri.split('.').pop() || 'bin';
+                                        // @ts-ignore
+                                        const localUri = `${FileSystem.cacheDirectory}share_temp.${fileExt}`;
+                                        await FileSystem.downloadAsync(uri, localUri);
+
+                                        if (Sharing && typeof Sharing.shareAsync === 'function') {
+                                            await Sharing.shareAsync(localUri);
+                                        } else if (Clipboard && typeof Clipboard.setStringAsync === 'function') {
+                                            await Clipboard.setStringAsync(uri);
+                                            if (Platform.OS === 'android') ToastAndroid.show("Link copied (Sharing not available)", ToastAndroid.SHORT);
+                                        }
+                                    }
+                                }
+                            }}
+                        >
+                            <IconSymbol name="square.and.arrow.up" size={24} color="#fff" />
+                        </TouchableOpacity>
+                    </View>
+                </View>
+            </Modal>
+
             <Modal
                 animationType="fade"
                 transparent={true}
@@ -816,25 +1717,23 @@ export default function ChatScreen() {
                         {/* Reactions Bar */}
                         <View style={styles.reactionContainer}>
                             {['👍', '❤️', '😂', '😮', '😢', '🙏'].map((emoji, index) => (
-                                <TouchableOpacity key={index} style={styles.reactionItem} onPress={() => setContextMenuVisible(false)}>
+                                <TouchableOpacity key={index} style={styles.reactionItem} onPress={() => handleAddReaction(emoji)}>
                                     <Text style={styles.reactionText}>{emoji}</Text>
                                 </TouchableOpacity>
                             ))}
-                            <TouchableOpacity style={styles.reactionItem} onPress={() => setContextMenuVisible(false)}>
+                            <TouchableOpacity style={styles.reactionItem} onPress={() => {
+                                setContextMenuVisible(false);
+                                // Future: more emojis
+                            }}>
                                 <IconSymbol name="plus" size={20} color="#888" />
                             </TouchableOpacity>
                         </View>
 
                         {/* Menu Actions */}
                         <View style={styles.menuList}>
-                            <TouchableOpacity style={styles.menuItem} onPress={() => setContextMenuVisible(false)}>
+                            <TouchableOpacity style={styles.menuItem} onPress={handleMessageInfo}>
                                 <IconSymbol name="info.circle" size={22} color={theme.text} />
                                 <Text style={[styles.menuItemText, { color: theme.text }]}>Message info</Text>
-                            </TouchableOpacity>
-
-                            <TouchableOpacity style={styles.menuItem} onPress={() => setContextMenuVisible(false)}>
-                                <IconSymbol name="arrow.turn.up.left" size={22} color={theme.text} />
-                                <Text style={[styles.menuItemText, { color: theme.text }]}>Reply</Text>
                             </TouchableOpacity>
 
                             <TouchableOpacity style={styles.menuItem} onPress={handleCopyMessage}>
@@ -842,26 +1741,9 @@ export default function ChatScreen() {
                                 <Text style={[styles.menuItemText, { color: theme.text }]}>Copy</Text>
                             </TouchableOpacity>
 
-                            <TouchableOpacity style={styles.menuItem} onPress={() => setContextMenuVisible(false)}>
+                            <TouchableOpacity style={styles.menuItem} onPress={handleForwardMessage}>
                                 <IconSymbol name="arrow.turn.up.right" size={22} color={theme.text} />
                                 <Text style={[styles.menuItemText, { color: theme.text }]}>Forward</Text>
-                            </TouchableOpacity>
-
-                            <TouchableOpacity style={styles.menuItem} onPress={() => setContextMenuVisible(false)}>
-                                <IconSymbol name="pin" size={22} color={theme.text} />
-                                <Text style={[styles.menuItemText, { color: theme.text }]}>Pin</Text>
-                            </TouchableOpacity>
-
-                            <TouchableOpacity style={styles.menuItem} onPress={() => setContextMenuVisible(false)}>
-                                <IconSymbol name="star" size={22} color={theme.text} />
-                                <Text style={[styles.menuItemText, { color: theme.text }]}>Star</Text>
-                            </TouchableOpacity>
-
-                            <View style={[styles.separator, { backgroundColor: colorScheme === 'dark' ? '#3d3d3d' : '#f0f0f0' }]} />
-
-                            <TouchableOpacity style={styles.menuItem} onPress={() => setContextMenuVisible(false)}>
-                                <IconSymbol name="checkmark.circle" size={22} color={theme.text} />
-                                <Text style={[styles.menuItemText, { color: theme.text }]}>Select</Text>
                             </TouchableOpacity>
 
                             <View style={[styles.separator, { backgroundColor: colorScheme === 'dark' ? '#3d3d3d' : '#f0f0f0' }]} />
@@ -877,200 +1759,3 @@ export default function ChatScreen() {
         </SafeAreaView>
     );
 }
-
-const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-    },
-    headerTitleContainer: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        paddingVertical: Platform.OS === 'android' ? 12 : 4,
-        paddingRight: 15,
-        paddingTop: Platform.OS === 'android' ? 25 : 4, // Push down for status bar on Android
-    },
-    avatar: {
-        width: 36,
-        height: 36,
-        borderRadius: 18,
-        backgroundColor: '#ccc',
-        justifyContent: 'center',
-        alignItems: 'center',
-        marginRight: 8,
-        marginLeft: -10, // Pull closer to back button
-    },
-    headerName: {
-        fontSize: 16,
-        fontWeight: 'bold',
-    },
-    headerRight: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        marginRight: 5,
-    },
-    headerIconTouch: {
-        padding: 8,
-        marginLeft: 5,
-    },
-    headerIcon: {
-        // removed as replaced by headerIconTouch
-    },
-    messagesList: {
-        padding: 16,
-        paddingBottom: 20,
-    },
-    messageBubble: {
-        padding: 8,
-        borderRadius: 8,
-        maxWidth: '75%',
-        marginBottom: 8,
-        elevation: 1,
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.18,
-        shadowRadius: 1.00,
-    },
-    myMessage: {
-        alignSelf: 'flex-end',
-        borderTopRightRadius: 0,
-    },
-    theirMessage: {
-        alignSelf: 'flex-start',
-        borderTopLeftRadius: 0,
-    },
-    messageText: {
-        fontSize: 16,
-    },
-    messageTime: {
-        fontSize: 10,
-        color: '#888',
-        alignSelf: 'flex-end',
-        marginTop: 4,
-    },
-    inputContainer: {
-        flexDirection: 'row',
-        padding: 8,
-        alignItems: 'flex-end',
-        paddingBottom: Platform.OS === 'ios' ? 25 : 8,
-    },
-    inputPill: {
-        flex: 1,
-        flexDirection: 'row',
-        alignItems: 'center',
-        borderRadius: 25,
-        paddingHorizontal: 10,
-        marginRight: 5,
-        minHeight: 40,
-    },
-    leftInPill: {
-        padding: 5,
-    },
-    rightInPill: {
-        padding: 10,
-    },
-    circularButton: {
-        width: 48,
-        height: 48,
-        borderRadius: 24,
-        justifyContent: 'center',
-        alignItems: 'center',
-        elevation: 2,
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.2,
-        shadowRadius: 1,
-    },
-    textInput: {
-        flex: 1,
-        fontSize: 16,
-        maxHeight: 120,
-        paddingVertical: 10,
-        paddingHorizontal: 10,
-        ...Platform.select({
-            web: {
-                outlineStyle: 'none',
-                height: 40, // Enforce height on web to match pill
-                marginVertical: 4,
-            } as any,
-            android: {
-                paddingVertical: 8,
-            }
-        }),
-    },
-    iconInsideInput: {
-        marginHorizontal: 5,
-    },
-    sendButton: {
-        width: 44,
-        height: 44,
-        borderRadius: 22,
-        backgroundColor: '#008069',
-        justifyContent: 'center',
-        alignItems: 'center',
-        marginLeft: 4,
-    },
-    modalOverlay: {
-        flex: 1,
-        backgroundColor: 'rgba(0,0,0,0.5)',
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    contextMenu: {
-        width: '80%',
-        borderRadius: 10,
-        padding: 10,
-        elevation: 5,
-    },
-    contextMenuItem: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        paddingVertical: 12,
-        paddingHorizontal: 10,
-    },
-    contextMenuText: {
-        fontSize: 16,
-        marginLeft: 15,
-    },
-    menuContainer: {
-        width: '65%', // Match web-like width
-        borderRadius: 12, // Slightly more rounded
-        elevation: 5,
-        paddingVertical: 10,
-        backgroundColor: '#fff', // Fallback, will be overridden by theme
-        alignSelf: 'center', // Center it
-    },
-    reactionContainer: {
-        flexDirection: 'row',
-        justifyContent: 'space-around',
-        alignItems: 'center',
-        paddingHorizontal: 10,
-        paddingBottom: 10,
-        borderBottomWidth: 1,
-        borderBottomColor: '#eee', // Separator below reactions
-    },
-    reactionItem: {
-        padding: 5,
-    },
-    reactionText: {
-        fontSize: 22,
-    },
-    menuList: {
-        paddingTop: 5,
-    },
-    menuItem: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        paddingVertical: 10,
-        paddingHorizontal: 20,
-    },
-    menuItemText: {
-        fontSize: 14.5, // WhatsApp web font size look
-        marginLeft: 15,
-        fontWeight: '400',
-    },
-    separator: {
-        height: 1,
-        width: '100%',
-        marginVertical: 5,
-    }
-});

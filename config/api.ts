@@ -1,24 +1,40 @@
 import Constants from 'expo-constants';
+import * as Device from 'expo-device';
 import { Platform } from 'react-native';
 
-const MANUAL_LAN_IP = '10.102.43.64';
+const MANUAL_LAN_IP = '192.168.1.35';
 
 // Use manual IP if provided, otherwise try to detect
-const debuggerHost = Constants.expoConfig?.hostUri;
-const localhostIp = debuggerHost ? debuggerHost.split(':')[0] : MANUAL_LAN_IP;
+const debuggerHost = Constants.expoConfig?.hostUri?.split(':')[0];
+// If using tunnel (exp.direct) or if Manual IP is set, prefer Manual IP for backend
+const localhostIp = MANUAL_LAN_IP || debuggerHost;
 
-const LOCALHOST = Platform.select({
-    android: 'http://10.0.2.2:3000',
-    default: 'http://localhost:3000',
-});
+console.log(`[API-Config] Detected debuggerHost: ${debuggerHost}`);
+console.log(`[API-Config] Using localhostIp: ${localhostIp}`);
 
-const LAN_IP = `http://${localhostIp}:3000`;
+const getApiBaseUrl = () => {
+    if (Platform.OS === 'web') {
+        if (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
+            return 'http://localhost:3000';
+        }
+        return `http://${localhostIp}:3000`;
+    }
 
-// Force manual override if detection is tricky or switching networks
-const RENDER_URL = 'https://chat-app-3-avn4.onrender.com';
+    if (Platform.OS === 'android') {
+        // If we're on an emulator, 10.0.2.2 is the standard bridge back to the host machine
+        if (!Device.isDevice) {
+            console.log('[API-Config] Android Emulator detected, using 10.0.2.2');
+            return 'http://10.0.2.2:3000';
+        }
+        return `http://${localhostIp}:3000`;
+    }
 
-// export const API_BASE_URL = LAN_IP; 
-export const API_BASE_URL = RENDER_URL;
+    return `http://${localhostIp}:3000`;
+};
+
+export const API_BASE_URL = getApiBaseUrl();
+console.log(`[API-Config] FINAL API_BASE_URL: ${API_BASE_URL}`);
+// export const API_BASE_URL = RENDER_URL;
 
 export const SOCKET_URL = API_BASE_URL;
 

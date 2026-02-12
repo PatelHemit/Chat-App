@@ -1,5 +1,6 @@
-import { ZegoSendCallInvitationButton } from '@zegocloud/zego-uikit-prebuilt-call-rn';
+import { MaterialIcons } from '@expo/vector-icons';
 import React from 'react';
+import { Alert, TouchableOpacity } from 'react-native';
 
 interface Props {
     inviteeId: string;
@@ -9,14 +10,23 @@ interface Props {
 }
 
 export const ZegoCallButton: React.FC<Props> = ({ inviteeId, inviteeName, isVideo, theme }) => {
+    if (!inviteeId || !inviteeName) {
+        return null;
+    }
+
     return (
-        <ZegoSendCallInvitationButton
-            invitees={[{
-                userID: inviteeId,
-                userName: inviteeName,
-            }]}
-            isVideoCall={isVideo}
-            resourceID={"zegouikit_call"} // Optional, for offline notifications
-        />
+        <TouchableOpacity
+            onPress={() => Alert.alert(
+                "Development Build Required",
+                "Calling features require a custom development build with ZegoCloud SDK. Install the EAS build APK to use calling."
+            )}
+            style={{ padding: 8 }}
+        >
+            <MaterialIcons
+                name={isVideo ? "videocam" : "call"}
+                size={24}
+                color={theme.headerTintColor}
+            />
+        </TouchableOpacity>
     );
 };

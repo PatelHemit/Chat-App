@@ -3,8 +3,8 @@ import { getInternalUri } from '@/config/api';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { Audio } from 'expo-av';
-import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useEffect, useState } from 'react';
+import { ActivityIndicator, Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 interface VoiceMessageBubbleProps {
     uri: string;
@@ -21,7 +21,7 @@ export const VoiceMessageBubble = ({ uri, duration, isMyMessage, profilePic }: V
     const [position, setPosition] = useState(0);
     const [totalDuration, setTotalDuration] = useState(duration || 0);
     const [loading, setLoading] = useState(false);
-    const [waveform] = useState([...Array(15)].map(() => Math.random() * 15 + 5));
+    const [waveform] = useState([...Array(60)].map(() => Math.random() * 14 + 4));
 
 
     useEffect(() => {
@@ -47,14 +47,12 @@ export const VoiceMessageBubble = ({ uri, duration, isMyMessage, profilePic }: V
                 if (status.isLoaded) {
                     if (status.isPlaying) {
                         await sound.pauseAsync();
-                        setIsPlaying(false);
                     } else {
                         if (status.positionMillis === status.durationMillis) {
                             await sound.replayAsync();
                         } else {
                             await sound.playAsync();
                         }
-                        setIsPlaying(true);
                     }
                 }
                 return;
@@ -62,24 +60,16 @@ export const VoiceMessageBubble = ({ uri, duration, isMyMessage, profilePic }: V
 
             setLoading(true);
             const finalUri = getInternalUri(uri);
-            console.log('Voice Playback URI:', finalUri);
-
             const { sound: newSound } = await Audio.Sound.createAsync(
                 { uri: finalUri },
                 { shouldPlay: true },
                 onPlaybackStatusUpdate
             );
             setSound(newSound);
-            setIsPlaying(true);
             setLoading(false);
         } catch (error: any) {
             console.error('[VOICE ERROR] Playback failed:', error);
             setLoading(false);
-            const finalUri = getInternalUri(uri);
-            Alert.alert(
-                "Playback Error",
-                `Could not load audio.\n\nURL: ${finalUri}\n\nError: ${error.message || "Unknown error"}`
-            );
         }
     };
 
@@ -92,43 +82,43 @@ export const VoiceMessageBubble = ({ uri, duration, isMyMessage, profilePic }: V
             setIsPlaying(status.isPlaying);
             if (status.didJustFinish) {
                 setIsPlaying(false);
-                setPosition(status.durationMillis); // Show full progress at end
+                setPosition(status.durationMillis);
             }
         }
     };
 
     const formatTime = (millis: number) => {
-        const minutes = Math.floor(millis / 60000);
-        const seconds = ((millis % 60000) / 1000).toFixed(0);
-        return `${minutes}:${Number(seconds) < 10 ? '0' : ''}${seconds}`;
+        const totalSeconds = Math.floor(millis / 1000);
+        const minutes = Math.floor(totalSeconds / 60);
+        const seconds = totalSeconds % 60;
+        return `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
     };
 
     return (
         <View style={styles.container}>
             {/* Avatar with Mic Badge */}
             <View style={styles.avatarContainer}>
-                {/* Profile Pic */}
-                <View style={[styles.avatarCircle, { backgroundColor: isMyMessage ? '#00A884' : '#667781' }]}>
+                <View style={[styles.avatarCircle, { backgroundColor: '#667781' }]}>
                     {profilePic ? (
                         <Image source={{ uri: getInternalUri(profilePic) }} style={styles.avatarImage} />
                     ) : (
-                        <IconSymbol name="person.fill" size={30} color="#fff" />
+                        <IconSymbol name="person.fill" size={28} color="#fff" />
                     )}
                 </View>
-                {/* Mic Badge */}
-                <View style={[styles.micBadge, { backgroundColor: isMyMessage ? '#008069' : '#fff' }]}>
-                    <IconSymbol name="mic" size={12} color={isMyMessage ? '#fff' : '#008069'} />
+                {/* Mic Badge - Always green in WhatsApp */}
+                <View style={[styles.micBadge, { backgroundColor: '#00A884' }]}>
+                    <IconSymbol name="mic.fill" size={9} color={'#fff'} />
                 </View>
             </View>
 
             {/* Controls */}
-            <TouchableOpacity onPress={playSound} style={styles.playButton}>
+            <TouchableOpacity onPress={playSound} style={styles.playButton} activeOpacity={0.7}>
                 {loading ? (
-                    <ActivityIndicator size="small" color={isMyMessage ? '#005c4b' : '#008069'} />
+                    <ActivityIndicator size="small" color="#8696a0" />
                 ) : (
                     <IconSymbol
                         name={isPlaying ? 'pause.fill' : 'play.fill'}
-                        size={32}
+                        size={28}
                         color={'#8696a0'}
                     />
                 )}
@@ -137,23 +127,29 @@ export const VoiceMessageBubble = ({ uri, duration, isMyMessage, profilePic }: V
             <View style={styles.contentContainer}>
                 {/* Waveform / Progress */}
                 <View style={styles.waveformContainer}>
-                    <View style={[styles.progressDot, { left: `${totalDuration > 0 ? (position / totalDuration) * 100 : 0}%`, backgroundColor: isMyMessage ? '#34B7F1' : '#34B7F1' }]} />
-                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                        {waveform.map((h, i) => (
-                            <View
-                                key={i}
-                                style={{
-                                    width: 2.5,
-                                    height: h,
-                                    backgroundColor: (position / totalDuration) * 100 > (i / waveform.length) * 100 ? '#34B7F1' : '#8696a0',
-                                    marginHorizontal: 1,
-                                    borderRadius: 1.25,
-                                }}
-                            />
-                        ))}
+                    <View style={{ flexDirection: 'row', alignItems: 'center', height: 20 }}>
+                        {waveform.map((h, i) => {
+                            const isPlayed = (position / (totalDuration || 1)) * 100 > (i / waveform.length) * 100;
+                            return (
+                                <View
+                                    key={i}
+                                    style={{
+                                        width: 1.2,
+                                        height: h,
+                                        backgroundColor: isPlayed ? '#34B7F1' : '#8696a044',
+                                        marginHorizontal: 0.5,
+                                        borderRadius: 0.6,
+                                    }}
+                                />
+                            );
+                        })}
                     </View>
+                    {/* Progress Dot */}
+                    <View style={[styles.progressDot, {
+                        left: `${totalDuration > 0 ? (position / totalDuration) * 100 : 0}%`,
+                    }]} />
                 </View>
-                <Text style={[styles.durationText, { color: '#8696a0' }]}>
+                <Text style={styles.durationText}>
                     {formatTime(isPlaying ? position : totalDuration)}
                 </Text>
             </View>
@@ -166,18 +162,18 @@ const styles = StyleSheet.create({
     container: {
         flexDirection: 'row',
         alignItems: 'center',
-        paddingVertical: 5,
-        paddingHorizontal: 5,
+        paddingVertical: 4,
+        paddingHorizontal: 4,
         minWidth: 200,
     },
     avatarContainer: {
         position: 'relative',
-        marginRight: 10,
+        marginRight: 6,
     },
     avatarCircle: {
-        width: 44,
-        height: 44,
-        borderRadius: 22,
+        width: 42,
+        height: 42,
+        borderRadius: 21,
         justifyContent: 'center',
         alignItems: 'center',
         overflow: 'hidden',
@@ -189,42 +185,40 @@ const styles = StyleSheet.create({
     micBadge: {
         position: 'absolute',
         bottom: 0,
-        right: -2,
-        width: 20,
-        height: 20,
-        borderRadius: 10,
+        right: -1,
+        width: 18,
+        height: 18,
+        borderRadius: 9,
         justifyContent: 'center',
         alignItems: 'center',
-        elevation: 2,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.2,
-        shadowRadius: 1,
+        borderWidth: 1.5,
+        borderColor: '#fff',
     },
     playButton: {
         padding: 0,
-        marginRight: 8,
+        marginRight: 4,
     },
     contentContainer: {
         flex: 1,
+        justifyContent: 'center',
     },
     waveformContainer: {
-        height: 30, // Area for waveform
+        height: 24,
         justifyContent: 'center',
     },
     progressDot: {
         position: 'absolute',
-        width: 12,
-        height: 12,
-        borderRadius: 6,
-        backgroundColor: '#34B7F1', // Blue dot
-        top: 9, // Centered vertically roughly
+        width: 10,
+        height: 10,
+        borderRadius: 5,
+        backgroundColor: '#34B7F1',
+        top: 7,
         zIndex: 10,
-        marginLeft: -6, // Center anchor
+        marginLeft: -5,
     },
     durationText: {
-        fontSize: 11,
+        fontSize: 10.5,
         color: '#667781',
-        marginTop: -5,
+        marginTop: 0,
     },
 });

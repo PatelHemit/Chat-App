@@ -22,7 +22,22 @@ const statusSchema = mongoose.Schema({
     viewedBy: [{
         type: mongoose.Schema.Types.ObjectId,
         ref: "User"
-    }]
+    }],
+    privacy: {
+        type: {
+            type: String,
+            enum: ['contacts', 'except', 'only'],
+            default: 'contacts'
+        },
+        allowedList: [{
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "User"
+        }],
+        excludedList: [{
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "User"
+        }]
+    }
 }, {
     timestamps: true,
 });

@@ -63,35 +63,48 @@ const markAsRead = asyncHandler(async (req, res) => {
 });
 
 // Helper function to send push notification via Expo
+const { Expo } = require('expo-server-sdk');
+const expo = new Expo();
+
 const sendPushNotification = async (expoPushTokens, title, body, data = {}) => {
-    const messages = expoPushTokens
-        .filter(token => token && token.startsWith('ExponentPushToken'))
-        .map(token => ({
+    console.log(`[Push] sendPushNotification called with ${expoPushTokens.length} tokens`);
+
+    // Filter valid tokens
+    let validTokens = expoPushTokens.filter(token => Expo.isExpoPushToken(token));
+    console.log(`[Push] Valid tokens count: ${validTokens.length}`);
+
+    if (validTokens.length === 0) {
+        console.log("[Push] NO VALID TOKENS FOUND, skipping push");
+        return;
+    }
+
+    let messages = [];
+    for (let token of validTokens) {
+        messages.push({
             to: token,
             sound: 'default',
-            title,
-            body,
-            data,
+            title: title,
+            body: body,
+            data: data,
             priority: 'high',
-        }));
-
-    if (messages.length === 0) return;
-
-    try {
-        const response = await fetch('https://exp.host/--/api/v2/push/send', {
-            method: 'POST',
-            headers: {
-                'Accept': 'application/json',
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(messages),
+            channelId: 'chat-messages', // Match the new frontend channel
         });
-
-        const result = await response.json();
-        console.log('Push notification sent:', result);
-    } catch (error) {
-        console.error('Error sending push notification:', error);
     }
+
+    // Chunk and send
+    let chunks = expo.chunkPushNotifications(messages);
+    let tickets = [];
+    for (let chunk of chunks) {
+        try {
+            console.log(`[Push] Sending chunk to Expo with ${chunk.length} messages...`);
+            let ticketChunk = await expo.sendPushNotificationsAsync(chunk);
+            console.log("[Push] Tickets received from Expo:", JSON.stringify(ticketChunk));
+            tickets.push(...ticketChunk);
+        } catch (error) {
+            console.error('[Push] ERROR sending chunk to Expo:', error);
+        }
+    }
+    return tickets;
 };
 
 module.exports = { getNotifications, createNotification, markAsRead, sendPushNotification };

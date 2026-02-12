@@ -107,6 +107,7 @@ export default function MetaAIScreen() {
             }
         } catch (error) {
             console.error("Error fetching AI history:", error);
+            setMessages([]);
         } finally {
             setLoading(false);
         }
@@ -238,7 +239,10 @@ export default function MetaAIScreen() {
                     duration: duration
                 })
             });
-            if (!response || !response.ok) throw new Error("AI Chat request failed");
+            if (!response || !response.ok) {
+                const errorData = response ? await response.json() : { error: "AI Chat request failed or timed out" };
+                throw new Error(errorData.error || "AI Chat request failed");
+            }
             const data = await response.json();
 
             const aiResponse: Message = {
@@ -250,9 +254,9 @@ export default function MetaAIScreen() {
             };
             setMessages((prev) => [...prev, aiResponse]);
 
-        } catch (error) {
+        } catch (error: any) {
             console.error(error);
-            Alert.alert("Error", "Failed to send voice message");
+            Alert.alert("Error", error.message || "Failed to send voice message");
         }
     };
 
@@ -278,8 +282,14 @@ export default function MetaAIScreen() {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${token}`
                 },
-                body: JSON.stringify({ prompt: inputText })
+                body: JSON.stringify({ prompt: prompt })
             });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error || "Failed to get AI response");
+            }
+
             const data = await response.json();
 
             // The backend now returns the saved message objects, but for UI responsiveness
@@ -293,8 +303,9 @@ export default function MetaAIScreen() {
                 time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
             };
             setMessages((prev) => [...prev, aiResponse]);
-        } catch (error) {
+        } catch (error: any) {
             console.error(error);
+            Alert.alert("Error", error.message || "Failed to send message to AI");
         }
     };
 
@@ -331,28 +342,31 @@ export default function MetaAIScreen() {
                     data={messages}
                     keyExtractor={(item) => item.id}
                     contentContainerStyle={styles.messageList}
-                    renderItem={({ item }) => (
-                        <View
-                            style={[
-                                styles.messageBubble,
-                                item.sender === 'user' ? styles.userBubble : styles.aiBubble,
-                                { backgroundColor: item.sender === 'user' ? (item.type === 'audio' ? 'transparent' : '#E7FFDB') : (colorScheme === 'dark' ? '#1F2C34' : '#FFFFFF') },
-                                item.type === 'audio' && { padding: 0 }
-                            ]}
-                        >
-                            {item.type === 'audio' ? (
-                                <VoiceMessageBubble
-                                    uri={item.text}
-                                    duration={item.duration}
-                                    isMyMessage={item.sender === 'user'}
-                                    profilePic={''}
-                                />
-                            ) : (
-                                <Text style={[styles.messageText, { color: colorScheme === 'dark' && item.sender === 'ai' ? '#fff' : '#000' }]}>{item.text}</Text>
-                            )}
-                            <Text style={[styles.messageTime, { color: colorScheme === 'dark' && item.sender === 'ai' ? '#ccc' : '#555' }]}>{item.time}</Text>
-                        </View>
-                    )}
+                    renderItem={({ item }) => {
+                        if (!item) return null;
+                        return (
+                            <View
+                                style={[
+                                    styles.messageBubble,
+                                    item.sender === 'user' ? styles.userBubble : styles.aiBubble,
+                                    { backgroundColor: item.sender === 'user' ? (item.type === 'audio' ? 'transparent' : '#E7FFDB') : (colorScheme === 'dark' ? '#1F2C34' : '#FFFFFF') },
+                                    item.type === 'audio' && { padding: 0 }
+                                ]}
+                            >
+                                {item.type === 'audio' ? (
+                                    <VoiceMessageBubble
+                                        uri={item.text}
+                                        duration={item.duration}
+                                        isMyMessage={item.sender === 'user'}
+                                        profilePic={''}
+                                    />
+                                ) : (
+                                    <Text style={[styles.messageText, { color: colorScheme === 'dark' && item.sender === 'ai' ? '#fff' : '#000' }]}>{item.text}</Text>
+                                )}
+                                <Text style={[styles.messageTime, { color: colorScheme === 'dark' && item.sender === 'ai' ? '#ccc' : '#555' }]}>{item.time}</Text>
+                            </View>
+                        );
+                    }}
                     onLayout={() => flatListRef.current?.scrollToEnd({ animated: true })}
                 />
             </ImageBackground>

@@ -20,6 +20,14 @@ const chatSchema = mongoose.Schema({
         default: "https://icon-library.com/images/anonymous-avatar-icon/anonymous-avatar-icon-25.jpg",
     },
     isAnnouncementGroup: { type: Boolean, default: false },
+    mutedBy: [{
+        user: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+        mutedUntil: { type: Date, default: null } // null = muted forever
+    }],
+    hiddenFor: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User'
+    }],
 }, {
     timestamps: true,
 });

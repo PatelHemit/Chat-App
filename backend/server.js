@@ -14,6 +14,7 @@ const callRoutes = require('./routes/callRoutes');
 const communityRoutes = require('./routes/communityRoutes');
 const notificationRoutes = require('./routes/notificationRoutes');
 const Message = require('./models/Message'); // Import Message model
+const Chat = require('./models/Chat');
 
 const app = express();
 const server = http.createServer(app);
@@ -22,6 +23,14 @@ const server = http.createServer(app);
 connectDB();
 
 // Middleware
+app.use((req, res, next) => {
+    const start = Date.now();
+    res.on('finish', () => {
+        const duration = Date.now() - start;
+        console.log(`[${new Date().toLocaleTimeString()}] ${req.method} ${req.url} - ${res.statusCode} (${duration}ms)`);
+    });
+    next();
+});
 app.use(cors());
 app.use(express.json());
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
@@ -58,6 +67,8 @@ const io = new Server(server, {
     }
 });
 
+app.set("io", io);
+
 // Global Online Users Map: <userId, socketId>
 const onlineUsers = new Map();
 // QR Session Map: <sessionId, socketId>
@@ -74,11 +85,13 @@ io.on("connection", (socket) => {
     });
 
     socket.on("setup", (userData) => {
-        socket.join(userData._id);
+        const userId = userData._id?.toString() || userData.toString();
+        socket.join(userId);
+        console.log("[Socket] User joined personal room: " + userId);
 
         // Track online user
-        onlineUsers.set(userData._id, socket.id);
-        console.log(`User Online: ${userData._id}`);
+        onlineUsers.set(userId, socket.id);
+        console.log("User Online: " + userId + (userData.platform ? ` (${userData.platform})` : ""));
 
         // Broadcast to all clients that this user is online
         io.emit("user-online", userData._id);
@@ -87,7 +100,7 @@ io.on("connection", (socket) => {
     });
 
     socket.on("check-online", (userId, callback) => {
-        const isOnline = onlineUsers.has(userId);
+        const isOnline = onlineUsers.has(userId.toString());
         if (callback) callback(isOnline);
     });
 
@@ -96,72 +109,155 @@ io.on("connection", (socket) => {
         console.log("User Joined Room: " + room);
     });
 
-    socket.on("new message", async (newMessageRecieved) => {
-        var chat = newMessageRecieved.chat;
+    socket.on("new message", async (newMessageReceived) => {
+        let chat = newMessageReceived.chat;
+        if (!chat || !chat._id) return;
 
-        if (!chat.users) return console.log("chat.users not defined");
+        try {
+            const Chat = require('./models/Chat');
+            const latestChat = await Chat.findById(chat._id)
+                .populate("users", "name profilePic email notificationsMuted")
+                .select("+mutedBy");
+            if (latestChat) {
+                chat = latestChat;
+                newMessageReceived.chat = latestChat;
+            }
+        } catch (err) {
+            console.error("[Socket] Error fetching latest chat:", err);
+        }
 
-        chat.users.forEach(async (user) => {
-            if (user._id == newMessageRecieved.sender._id) return;
+        const chatIdStr = chat._id.toString();
+        const senderIdStr = newMessageReceived.sender._id.toString();
 
-            // Check if user is online
-            const isUserOnline = onlineUsers.has(user._id);
-            if (isUserOnline) {
+        const notificationPromises = chat.users.map(async (user) => {
+            const userIdStr = user._id ? user._id.toString() : user.toString();
+            if (userIdStr === senderIdStr) return;
+
+            const socketsInRoom = io.sockets.adapter.rooms.get(chatIdStr);
+            const recipientSocketId = onlineUsers.get(userIdStr);
+            const isUserInChat = recipientSocketId && socketsInRoom && socketsInRoom.has(recipientSocketId);
+
+            const personalRoom = io.sockets.adapter.rooms.get(userIdStr);
+            const personalRoomSize = personalRoom ? personalRoom.size : 0;
+
+            if (isUserInChat) {
                 try {
-                    // Update message status to delivered in DB
-                    await Message.findByIdAndUpdate(newMessageRecieved._id, { status: "delivered" });
-                    newMessageRecieved.status = "delivered"; // Update local object to send correct status
+                    const updateObj = {};
+                    if (chat.isGroupChat) {
+                        updateObj.$addToSet = {
+                            deliveredTo: { user: userIdStr, deliveredAt: new Date() },
+                            readBy: { user: userIdStr, readAt: new Date() }
+                        };
+                    } else {
+                        updateObj.status = "read";
+                        newMessageReceived.status = "read";
+                    }
+                    await Message.findByIdAndUpdate(newMessageReceived._id, updateObj);
 
-                    // Notify the SENDER that the message was delivered
-                    const senderSocketId = onlineUsers.get(newMessageRecieved.sender._id);
+                    const senderSocketId = onlineUsers.get(senderIdStr);
                     if (senderSocketId) {
-                        io.to(senderSocketId).emit("message-status-updated", { messageId: newMessageRecieved._id, status: "delivered" });
+                        io.to(senderSocketId).emit("message-status-updated", {
+                            messageId: newMessageReceived._id.toString(),
+                            status: "read",
+                            userId: userIdStr
+                        });
                     }
                 } catch (error) {
-                    console.error("Error updating message status to delivered:", error);
+                    console.error("[Socket] Error updating status:", error);
                 }
             } else {
-                // User is offline - send push notification
-                try {
-                    const User = require('./models/User');
-                    const { sendPushNotification } = require('./controllers/notificationControllers');
+                if (recipientSocketId) {
+                    try {
+                        const updateObj = {};
+                        if (chat.isGroupChat) {
+                            updateObj.$addToSet = { deliveredTo: { user: userIdStr, deliveredAt: new Date() } };
+                        } else {
+                            updateObj.status = "delivered";
+                        }
+                        await Message.findByIdAndUpdate(newMessageReceived._id, updateObj);
 
-                    const recipient = await User.findById(user._id);
-                    if (recipient && recipient.pushTokens && recipient.pushTokens.length > 0) {
-                        const senderName = newMessageRecieved.sender.name || 'Someone';
-                        const messagePreview = newMessageRecieved.content
-                            ? (newMessageRecieved.content.length > 50
-                                ? newMessageRecieved.content.substring(0, 50) + '...'
-                                : newMessageRecieved.content)
-                            : (newMessageRecieved.fileUrl ? '📎 Attachment' : 'New message');
-
-                        await sendPushNotification(
-                            recipient.pushTokens,
-                            chat.isGroupChat ? `${senderName} in ${chat.chatName}` : senderName,
-                            messagePreview,
-                            {
-                                type: 'new_message',
-                                chatId: chat._id,
-                                senderId: newMessageRecieved.sender._id
-                            }
-                        );
+                        const senderSocketId = onlineUsers.get(senderIdStr);
+                        if (senderSocketId) {
+                            io.to(senderSocketId).emit("message-status-updated", {
+                                messageId: newMessageReceived._id.toString(),
+                                status: "delivered",
+                                userId: userIdStr
+                            });
+                        }
+                    } catch (error) {
+                        console.error("[Socket] Error marking as delivered:", error);
                     }
-                } catch (error) {
-                    console.error("Error sending push notification:", error);
+                }
+
+                // Push Notification Logic
+                const isMuted = chat.mutedBy && chat.mutedBy.some(m => {
+                    const mutedUserId = m.user._id ? m.user._id.toString() : m.user.toString();
+                    const match = (mutedUserId === userIdStr) && (!m.mutedUntil || new Date(m.mutedUntil) > new Date());
+                    if (match) console.log(`[Push] Skipping notification for ${userIdStr} - Chat is muted until ${m.mutedUntil || 'forever'}`);
+                    return match;
+                });
+
+                if (!isMuted) {
+                    try {
+                        const User = require('./models/User');
+                        const { sendPushNotification } = require('./controllers/notificationControllers');
+                        const recipient = await User.findById(userIdStr);
+                        if (recipient && recipient.notificationsMuted) {
+                            console.log(`[Push] Skipping notification for ${userIdStr} - Global Mute is ON`);
+                            return;
+                        }
+                        if (recipient && recipient.pushTokens && recipient.pushTokens.length > 0) {
+                            const senderName = newMessageReceived.sender.name || 'Someone';
+                            const messagePreview = newMessageReceived.content
+                                ? (newMessageReceived.content.length > 50 ? newMessageReceived.content.substring(0, 50) + '...' : newMessageReceived.content)
+                                : (newMessageReceived.fileUrl ? 'Media' : 'New message');
+
+                            await sendPushNotification(
+                                recipient.pushTokens,
+                                chat.isGroupChat ? `${senderName} in ${chat.chatName}` : senderName,
+                                messagePreview,
+                                { type: 'new_message', chatId: chatIdStr, senderId: senderIdStr }
+                            );
+                        }
+                    } catch (error) {
+                        console.error("[Push] Error:", error);
+                    }
                 }
             }
 
-            socket.in(user._id).emit("message received", newMessageRecieved);
+            if (personalRoomSize > 0) {
+                io.to(userIdStr).emit("message received", newMessageReceived);
+            }
         });
+
+        await Promise.all(notificationPromises);
     });
 
-    socket.on("mark-as-read", async ({ messageId, senderId }) => {
+    socket.on("mark-as-read", async ({ messageId, senderId, chatId, userId }) => {
         try {
-            await Message.findByIdAndUpdate(messageId, { status: "read" });
+            const mongoose = require('mongoose');
+            const chatObjId = new mongoose.Types.ObjectId(chatId);
+            const userObjId = new mongoose.Types.ObjectId(userId);
+            const msgObjId = new mongoose.Types.ObjectId(messageId);
+
+            const chat = await Chat.findById(chatObjId);
+            const updateObj = {};
+            if (chat && chat.isGroupChat) {
+                updateObj.$addToSet = { readBy: { user: userObjId, readAt: new Date() } };
+            } else {
+                updateObj.status = "read";
+            }
+
+            await Message.findByIdAndUpdate(msgObjId, updateObj);
+
             // Notify the SENDER that their message was read
-            const senderSocketId = onlineUsers.get(senderId);
+            const senderSocketId = onlineUsers.get(senderId.toString());
             if (senderSocketId) {
-                io.to(senderSocketId).emit("message-status-updated", { messageId, status: "read" });
+                io.to(senderSocketId).emit("message-status-updated", {
+                    messageId: messageId.toString(),
+                    status: "read",
+                    userId: userId
+                });
             }
         } catch (error) {
             console.error("Error marking message as read:", error);
@@ -170,16 +266,34 @@ io.on("connection", (socket) => {
 
     socket.on("mark-chat-read", async ({ chatId, userId }) => {
         if (!chatId || !userId) return;
+        console.log(`[Socket] mark-chat-read for chat: ${chatId}, user: ${userId}`);
         try {
-            // Update all messages in this chat sent by OTHER users to 'read'
-            await Message.updateMany(
-                { chat: chatId, sender: { $ne: userId }, status: { $ne: "read" } },
-                { $set: { status: "read" } }
-            );
+            const mongoose = require('mongoose');
+            const chatObjId = new mongoose.Types.ObjectId(chatId);
+            const userObjId = new mongoose.Types.ObjectId(userId);
 
+            const chat = await Chat.findById(chatObjId);
+            if (chat && chat.isGroupChat) {
+                // For group, add user to readBy of all messages they haven't read yet
+                const result = await Message.updateMany(
+                    { chat: chatObjId, sender: { $ne: userObjId }, "readBy.user": { $ne: userObjId } },
+                    { $addToSet: { readBy: { user: userObjId, readAt: new Date() } } }
+                );
+                console.log(`[Socket] Marked ${result.modifiedCount} group messages as read`);
+            } else {
+                // For 1-on-1, set status to 'read'
+                const result = await Message.updateMany(
+                    { chat: chatObjId, sender: { $ne: userObjId }, status: { $ne: "read" } },
+                    { $set: { status: "read" } }
+                );
+                console.log(`[Socket] Marked ${result.modifiedCount} 1-on-1 messages as read`);
+            }
+
+            console.log(`[Socket] Sending messages-read to room ${chatId} and user room ${userId}`);
             // Notify others in the room that messages have been read
-            // This tells the sender(s) of those messages to update their UI to blue ticks
-            socket.to(chatId).emit("messages-read", { chatId });
+            socket.to(chatId).emit("messages-read", { chatId, userId });
+            // ALSO notify the user's other sessions (like Home Screen) to reset counts
+            io.to(userId.toString()).emit("messages-read", { chatId, userId });
         } catch (error) {
             console.error("Error marking chat as read:", error);
         }
@@ -278,9 +392,10 @@ app.use('/api/notification', notificationRoutes);
 
 // Error Handling Middleware
 app.use((err, req, res, next) => {
-    console.error("🔥 Global Error Handler:", err.stack);
-    res.status(500).json({
-        message: "Internal Server Error",
+    const statusCode = res.statusCode === 200 ? 500 : res.statusCode;
+    console.error(`🔥 [Error] ${statusCode}:`, err.message);
+    res.status(statusCode).json({
+        message: err.message || "Internal Server Error",
         error: err.message,
         stack: process.env.NODE_ENV === 'production' ? null : err.stack
     });
@@ -289,5 +404,6 @@ app.use((err, req, res, next) => {
 // Start Server
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, '0.0.0.0', () => {
-    console.log(`Server running on port ${PORT} (accessible at http://192.168.1.36:${PORT})`);
+    console.log(`[Backend] Listening on IPv4 0.0.0.0:${PORT}`);
+    console.log(`[Backend] Accessible at http://192.168.1.35:${PORT}`);
 });
