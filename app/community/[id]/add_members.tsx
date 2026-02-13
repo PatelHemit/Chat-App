@@ -5,7 +5,7 @@ import { useColorScheme } from '@/hooks/use-color-scheme';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, FlatList, Image, Platform, Pressable, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, FlatList, Platform, Pressable, Image as RNImage, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function CommunityAddMembersScreen() {
@@ -41,6 +41,7 @@ export default function CommunityAddMembersScreen() {
     };
 
     const toggleUser = (user: any) => {
+        if (!user || !user._id) return;
         if (selectedUsers.some(u => u._id === user._id)) {
             setSelectedUsers(selectedUsers.filter(u => u._id !== user._id));
         } else {
@@ -64,7 +65,7 @@ export default function CommunityAddMembersScreen() {
                     'Authorization': `Bearer ${token}`
                 },
                 body: JSON.stringify({
-                    users: selectedUsers.map(u => u._id)
+                    users: selectedUsers.filter(u => u !== null).map(u => u._id)
                 })
             });
 
@@ -115,26 +116,27 @@ export default function CommunityAddMembersScreen() {
                     showsHorizontalScrollIndicator={false}
                     renderItem={({ item }) => (
                         <Pressable onPress={() => toggleUser(item)} style={styles.selectedChip}>
-                            <Text style={{ fontSize: 12, marginRight: 5 }}>{item.name.split(' ')[0]}</Text>
+                            <Text style={{ fontSize: 12, marginRight: 5 }}>{item.name?.split(' ')[0] || 'Unknown'}</Text>
                             <IconSymbol name="xmark.circle.fill" size={16} color="#666" />
                         </Pressable>
                     )}
-                    keyExtractor={item => item._id}
+                    keyExtractor={item => item?._id || Math.random().toString()}
                 />
             </View>
 
             {loading && <ActivityIndicator size="large" color="#008069" style={{ marginTop: 20 }} />}
 
             <FlatList
-                data={results}
-                keyExtractor={(item: any) => item._id}
+                data={results || []}
+                keyExtractor={(item: any) => item?._id || Math.random().toString()}
                 renderItem={({ item }: { item: any }) => {
+                    if (!item) return null;
                     const isSelected = selectedUsers.some(u => u._id === item._id);
                     return (
                         <Pressable onPress={() => toggleUser(item)} style={styles.userItem}>
                             <View style={styles.avatar}>
                                 {item.profilePic ? (
-                                    <Image source={{ uri: getInternalUri(item.profilePic) }} style={{ width: '100%', height: '100%' }} />
+                                    <RNImage source={{ uri: getInternalUri(item.profilePic) }} style={{ width: '100%', height: '100%' }} />
                                 ) : (
                                     <IconSymbol name="person.fill" size={24} color="#fff" />
                                 )}

@@ -9,7 +9,7 @@ import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Alert, Modal, Platform, Image as RNImage, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, Animated, Modal, Platform, Image as RNImage, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 // --- Shared Styles ---
@@ -401,6 +401,58 @@ const styles = StyleSheet.create({
         fontSize: 16,
     }
 });
+
+// --- Segmented Ring Component ---
+function SegmentedRing({ count, viewedCount = 0, size = 56, children, theme }: { count: number, viewedCount?: number, size?: number, children?: React.ReactNode, theme?: any }) {
+    if (count <= 1) {
+        return (
+            <View style={{
+                width: size,
+                height: size,
+                borderRadius: size / 2,
+                borderWidth: 2,
+                borderColor: count === 0 ? 'transparent' : (viewedCount > 0 ? '#8696A0' : '#008069'),
+                marginRight: 16,
+                justifyContent: 'center',
+                alignItems: 'center'
+            }}>
+                {children}
+            </View>
+        );
+    }
+
+    const ringSize = size + 4;
+    return (
+        <View style={{ width: ringSize, height: ringSize, marginRight: 16, justifyContent: 'center', alignItems: 'center' }}>
+            <View style={{
+                position: 'absolute',
+                width: ringSize,
+                height: ringSize,
+                borderRadius: ringSize / 2,
+                borderWidth: 2,
+                borderColor: viewedCount === count ? '#8696A0' : '#008069',
+            }} />
+            {Array.from({ length: count }).map((_, i) => (
+                <View
+                    key={i}
+                    style={{
+                        position: 'absolute',
+                        width: 8,
+                        height: 4,
+                        backgroundColor: theme?.background || '#fff',
+                        top: -1,
+                        transform: [
+                            { rotate: `${(360 / count) * i}deg` },
+                            { translateY: -1 }
+                        ],
+                        zIndex: 1
+                    }}
+                />
+            ))}
+            {children}
+        </View>
+    );
+}
 
 export function CallsContent() {
     const colorScheme = useColorScheme() ?? 'light';
@@ -862,6 +914,7 @@ export function UpdatesContent() {
     const [showMenu, setShowMenu] = useState(false);
     const videoRef = useRef<Video>(null);
     const timerRef = useRef<any>(null);
+    const progressAnim = useRef(new Animated.Value(0)).current;
 
     const fetchStatuses = async () => {
         try {
@@ -874,8 +927,6 @@ export function UpdatesContent() {
             const userId = (userInfo._id || userInfo.id)?.toString();
             setCurrentUserId(userId);
 
-            // Fetch privacy settings to filter statuses locally if needed, though backend handles it
-            // For now, just fetching statuses
             const response = await fetch(`${API_BASE_URL}/api/status`, {
                 headers: { Authorization: `Bearer ${token}` }
             });
@@ -946,15 +997,23 @@ export function UpdatesContent() {
 
     // Auto-advance logic
     useEffect(() => {
-        if (viewingStatuses.length > 0) {
+        if (viewingStatuses.length > 0 && isViewerOpen) {
             const status = viewingStatuses[currentIndex];
             const duration = status.mediaType === 'video' ? 30000 : 5000;
 
             // Mark as viewed if not my status
-            const viewerId = (status.user._id || status.user)?.toString();
-            if (viewerId !== currentUserId) {
+            const statusCreatorId = (status.user._id || status.user)?.toString();
+            if (statusCreatorId !== currentUserId) {
                 markStatusAsViewed(status._id);
             }
+
+            // Start animation
+            progressAnim.setValue(0);
+            Animated.timing(progressAnim, {
+                toValue: 1,
+                duration: duration,
+                useNativeDriver: false,
+            }).start();
 
             if (timerRef.current) clearTimeout(timerRef.current);
 
@@ -964,8 +1023,9 @@ export function UpdatesContent() {
         }
         return () => {
             if (timerRef.current) clearTimeout(timerRef.current);
+            progressAnim.stopAnimation();
         };
-    }, [currentIndex, viewingStatuses]);
+    }, [currentIndex, viewingStatuses, isViewerOpen]);
 
     const markStatusAsViewed = async (statusId: string) => {
         try {
@@ -985,12 +1045,29 @@ export function UpdatesContent() {
         if (currentIndex < viewingStatuses.length - 1) {
             setCurrentIndex(currentIndex + 1);
         } else {
+            // End of current user's statuses - try next user
+            const currentGroupIndex = groupedStatuses.findIndex(g => g.user._id === viewingUser?._id);
+            if (currentGroupIndex !== -1 && currentGroupIndex < groupedStatuses.length - 1) {
+                const nextGroup = groupedStatuses[currentGroupIndex + 1];
+                openViewer(nextGroup.user, nextGroup.statuses);
+            } else {
+                closeViewer();
+            }
         }
     };
 
     const prevStatus = () => {
         if (currentIndex > 0) {
             setCurrentIndex(currentIndex - 1);
+        } else {
+            // Try previous user? For now just stay on first status or close
+            const currentGroupIndex = groupedStatuses.findIndex(g => g.user._id === viewingUser?._id);
+            if (currentGroupIndex > 0) {
+                const prevGroup = groupedStatuses[currentGroupIndex - 1];
+                setViewingUser(prevGroup.user);
+                setViewingStatuses(prevGroup.statuses);
+                setCurrentIndex(prevGroup.statuses.length - 1);
+            }
         }
     };
 
@@ -1081,12 +1158,14 @@ export function UpdatesContent() {
             allowsEditing: true,
             quality: 0.7,
             videoMaxDuration: 30,
+            allowsMultipleSelection: true,
         });
 
-        if (!result.canceled && result.assets[0]) {
-            const asset = result.assets[0];
-            const type = asset.type === 'video' ? 'video' : 'image';
-            uploadStatus(asset.uri, type);
+        if (!result.canceled && result.assets) {
+            for (const asset of result.assets) {
+                const type = asset.type === 'video' ? 'video' : 'image';
+                await uploadStatus(asset.uri, type);
+            }
         }
     };
 
@@ -1171,15 +1250,13 @@ export function UpdatesContent() {
                         onPress={myStatuses.length > 0 ? () => openViewer({ name: "My Status" }, myStatuses) : pickMedia}
                         disabled={uploading}
                     >
-                        <View style={styles.avatarContainer}>
+                        <SegmentedRing count={myStatuses.length} viewedCount={myStatuses.filter(s => s.viewedBy.length > 0).length} theme={theme} size={54}>
                             {myStatuses.length > 0 ? (
-                                <View style={[styles.statusRing, { borderColor: '#008069', marginRight: 0, width: 54, height: 54 }]}>
-                                    <Image
-                                        source={{ uri: getInternalUri(myStatuses[myStatuses.length - 1].mediaUrl) }}
-                                        style={{ width: 44, height: 44, borderRadius: 22 }}
-                                        contentFit="cover"
-                                    />
-                                </View>
+                                <Image
+                                    source={{ uri: getInternalUri(myStatuses[myStatuses.length - 1].mediaUrl) }}
+                                    style={{ width: 44, height: 44, borderRadius: 22 }}
+                                    contentFit="cover"
+                                />
                             ) : (
                                 <>
                                     <IconSymbol name="person.fill" size={30} color="#fff" />
@@ -1188,7 +1265,7 @@ export function UpdatesContent() {
                                     </View>
                                 </>
                             )}
-                        </View>
+                        </SegmentedRing>
                         <View style={{ marginLeft: myStatuses.length > 0 ? 16 : 0 }}>
                             <Text style={[styles.sectionItemTitle, { color: theme.text }]}>My Status</Text>
                             <Text style={styles.sectionItemSubtitle}>
@@ -1203,7 +1280,7 @@ export function UpdatesContent() {
 
                     {filteredGroupedStatuses.map((group, i) => (
                         <TouchableOpacity key={group.user?._id || i} style={styles.statusItem} onPress={() => openViewer(group.user, group.statuses)}>
-                            <View style={[styles.statusRing, { borderColor: '#008069' }]}>
+                            <SegmentedRing count={group.statuses.length} viewedCount={group.statuses.filter((s: any) => s.viewedBy.some((v: any) => (v._id || v).toString() === currentUserId)).length} theme={theme}>
                                 <View style={[styles.statusAvatar, { overflow: 'hidden' }]}>
                                     {group.user?.profilePic ? (
                                         <Image source={{ uri: getInternalUri(group.user.profilePic) }} style={{ width: '100%', height: '100%' }} contentFit="cover" />
@@ -1211,7 +1288,7 @@ export function UpdatesContent() {
                                         <IconSymbol name="person.fill" size={25} color="#fff" />
                                     )}
                                 </View>
-                            </View>
+                            </SegmentedRing>
                             <View>
                                 <Text style={[styles.sectionItemTitle, { color: theme.text }]}>{group.user?.name || "Unknown User"}</Text>
                                 <Text style={styles.sectionItemSubtitle}>{formatTime(group.latestTime)}</Text>
@@ -1237,9 +1314,14 @@ export function UpdatesContent() {
                         <View style={styles.progressBarContainer}>
                             {viewingStatuses.map((_, index) => (
                                 <View key={index} style={styles.progressBarBackground}>
-                                    <View style={[
+                                    <Animated.View style={[
                                         styles.progressBarFill,
-                                        { width: index < currentIndex ? '100%' : (index === currentIndex ? '100%' : '0%') }
+                                        {
+                                            width: index < currentIndex ? '100%' : (index === currentIndex ? progressAnim.interpolate({
+                                                inputRange: [0, 1],
+                                                outputRange: ['0%', '100%']
+                                            }) : '0%')
+                                        }
                                     ]} />
                                 </View>
                             ))}

@@ -99,7 +99,7 @@ export default function RootLayout() {
 
         // Navigate to chat if notification contains chatId
         if (data.chatId) {
-          router.push(`/ chat / ${data.chatId} `);
+          router.push(`/chat/${data.chatId}`);
         }
       }
     );

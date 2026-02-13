@@ -18,7 +18,13 @@ const createStatus = asyncHandler(async (req, res) => {
     }
 
     const user = await User.findById(req.user._id);
-    const { type, excludedUsers, includedUsers } = user.statusPrivacy || { type: 'contacts' };
+
+    // Explicitly get the values to avoid Mongoose subdocument issues
+    const privacyType = user.statusPrivacy && user.statusPrivacy.type ? user.statusPrivacy.type : 'contacts';
+    const excludedList = user.statusPrivacy && user.statusPrivacy.excludedUsers ? user.statusPrivacy.excludedUsers : [];
+    const allowedList = user.statusPrivacy && user.statusPrivacy.includedUsers ? user.statusPrivacy.includedUsers : [];
+
+    console.log(`[Status-Create] user=${user.name}, type=${privacyType}, excluded=${excludedList.length}, allowed=${allowedList.length}`);
 
     const newStatus = await Status.create({
         user: req.user._id,
@@ -26,14 +32,13 @@ const createStatus = asyncHandler(async (req, res) => {
         mediaType: mediaType || "image",
         caption,
         privacy: {
-            type,
-            excludedList: excludedUsers || [],
-            allowedList: includedUsers || []
+            type: privacyType,
+            excludedList: excludedList,
+            allowedList: allowedList
         }
     });
 
     const fullStatus = await Status.findById(newStatus._id).populate("user", "name profilePic");
-
     res.status(201).json(fullStatus);
 });
 
@@ -41,7 +46,8 @@ const createStatus = asyncHandler(async (req, res) => {
 // @route           GET /api/status
 // @access          Protected
 const getStatuses = asyncHandler(async (req, res) => {
-    const currentUserId = req.user._id;
+    const mongoose = require("mongoose");
+    const currentUserId = new mongoose.Types.ObjectId(req.user._id);
 
     // Filter logic:
     // 1. Own statuses
@@ -52,24 +58,40 @@ const getStatuses = asyncHandler(async (req, res) => {
     // Note: This logic assumes "contacts" means everyone for now, as we don't have a specific friend graph.
     // If strict contacts check is needed, we'd need to check mutuals.
 
+    console.log(`[Status-Get] Fetching for user: ${currentUserId} (${req.user.name})`);
+
+    console.log(`[Status-Get] Fetching for user: ${currentUserId}`);
+
     const statuses = await Status.find({
         $or: [
             { user: currentUserId }, // My statuses
-            { "privacy.type": { $in: ["contacts", null] } }, // Default/Contacts
+            {
+                "privacy.type": "contacts",
+                user: { $ne: currentUserId } // Others who share with contacts
+            },
+            {
+                "privacy.type": { $exists: false },
+                user: { $ne: currentUserId }
+            },
+            {
+                "privacy.type": null,
+                user: { $ne: currentUserId }
+            },
             {
                 "privacy.type": "except",
-                "privacy.excludedList": { $ne: currentUserId }
+                "privacy.excludedList": { $nin: [currentUserId] }
             },
             {
                 "privacy.type": "only",
-                "privacy.allowedList": currentUserId
+                "privacy.allowedList": { $in: [currentUserId] }
             }
         ]
     })
         .populate("user", "name profilePic")
         .populate("viewedBy", "name profilePic")
-        .sort({ createdAt: 1 });
+        .sort({ createdAt: 1 }); // Chronological order for sequential viewing
 
+    console.log(`[Status-Get] Found ${statuses.length} statuses for ${req.user.name}`);
     res.json(statuses);
 });
 
@@ -105,15 +127,16 @@ const updateStatusPrivacy = asyncHandler(async (req, res) => {
     const { type, excludedUsers, includedUsers } = req.body;
     const user = await User.findById(req.user._id);
 
-    if (type) {
-        user.statusPrivacy.type = type;
-        // If switching types, we might want to clear others or keep them?
-        // Usually, we keep them so switching back remembers selection.
+    if (!user.statusPrivacy) {
+        user.statusPrivacy = { type: 'contacts', excludedUsers: [], includedUsers: [] };
     }
+
+    if (type) user.statusPrivacy.type = type;
     if (excludedUsers) user.statusPrivacy.excludedUsers = excludedUsers;
     if (includedUsers) user.statusPrivacy.includedUsers = includedUsers;
 
     await user.save();
+    console.log(`[Status-Privacy-Update] User ${user.name} updated privacy: type=${user.statusPrivacy.type}, excluded=${user.statusPrivacy.excludedUsers.length}, included=${user.statusPrivacy.includedUsers.length}`);
     res.json(user.statusPrivacy);
 });
 

@@ -28,6 +28,7 @@ import * as FileSystem from 'expo-file-system/legacy';
 import * as Haptics from 'expo-haptics';
 import * as ImagePicker from 'expo-image-picker';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
+import * as WebBrowser from 'expo-web-browser';
 import { useEffect, useRef, useState } from 'react';
 import {
     ActivityIndicator,
@@ -278,6 +279,45 @@ const styles = StyleSheet.create({
         shadowRadius: 1,
         borderWidth: 1,
         borderColor: '#f0f0f0',
+    },
+    documentCard: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        padding: 8,
+        borderRadius: 8,
+        minWidth: 200,
+        marginBottom: 4,
+    },
+    documentIconContainer: {
+        width: 40,
+        height: 48,
+        justifyContent: 'center',
+    },
+    docTypeFolder: {
+        width: 32,
+        height: 40,
+        borderRadius: 4,
+        justifyContent: 'center',
+        alignItems: 'center',
+        elevation: 1,
+    },
+    docTypeText: {
+        color: '#fff',
+        fontWeight: 'bold',
+        fontSize: 14,
+    },
+    documentName: {
+        fontSize: 14,
+        fontWeight: '500',
+    },
+    documentMeta: {
+        fontSize: 11,
+        color: '#8696A0',
+        marginTop: 2,
+    },
+    downloadIcon: {
+        padding: 5,
+        marginLeft: 5,
     }
 });
 
@@ -293,6 +333,7 @@ export default function ChatScreen() {
     const [chatName, setChatName] = useState(name);
     const [isMuted, setIsMuted] = useState(false);
     const [isBlocked, setIsBlocked] = useState(false);
+    const [isBlockingMe, setIsBlockingMe] = useState(false);
     const [isUserOnline, setIsUserOnline] = useState(false);
     const [headerMenuVisible, setHeaderMenuVisible] = useState(false);
     const [muteModalVisible, setMuteModalVisible] = useState(false);
@@ -441,7 +482,7 @@ export default function ChatScreen() {
                     });
                     const blockData = await blockRes.json();
                     setIsBlocked(blockData.isBlockedByMe);
-                    // We could also store isBlockingMe if needed later
+                    setIsBlockingMe(blockData.isBlockingMe);
                 }
             }
         } catch (error) {
@@ -728,7 +769,7 @@ export default function ChatScreen() {
 
             if (!result.canceled && result.assets[0]) {
                 const asset = result.assets[0];
-                uploadAndSendMedia(asset.uri, 'document', asset.name);
+                uploadAndSendMedia(asset.uri, 'document', asset.name, asset.size, asset.mimeType);
             }
         } catch (error) {
             console.error('Error picking document:', error);
@@ -758,7 +799,7 @@ export default function ChatScreen() {
         }
     };
 
-    const uploadAndSendMedia = async (uri: string, type: 'image' | 'video' | 'document', fileName?: string) => {
+    const uploadAndSendMedia = async (uri: string, type: 'image' | 'video' | 'document', fileName?: string, fileSize?: number, mimeType?: string) => {
         try {
             const token = await AsyncStorage.getItem('userToken');
 
@@ -799,7 +840,12 @@ export default function ChatScreen() {
                     content: fileUrl,
                     chatId: id,
                     type: type,
-                    fileName: fileName,
+                    fileMetadata: {
+                        fileName: fileName,
+                        fileSize: fileSize,
+                        fileExtension: fileName?.split('.').pop()?.toUpperCase(),
+                        mimeType: mimeType
+                    }
                 }),
             });
 
@@ -838,7 +884,18 @@ export default function ChatScreen() {
                 }),
             });
 
+            if (response.status === 403) {
+                const errorData = await response.json();
+                Alert.alert("Action Required", errorData.message || "You cannot send messages to this contact.");
+                return;
+            }
+
             const newMessage = await response.json();
+            if (!response.ok) {
+                Alert.alert("Error", newMessage.message || "Failed to send message");
+                return;
+            }
+
             // Default status is sent
             newMessage.status = newMessage.status || 'sent';
 
@@ -1102,39 +1159,70 @@ export default function ChatScreen() {
 
     const handleOpenDocument = async (msg: any) => {
         const uri = getInternalUri(msg.content || msg.fileUrl);
-        if (!uri) return;
+        if (!uri) {
+            Alert.alert("Error", "Invalid document link");
+            return;
+        }
 
         try {
             if (Platform.OS === 'web') {
-                import('react-native').then(({ Linking }) => {
-                    if (typeof Linking.openURL === 'function') {
-                        Linking.openURL(uri);
-                    }
-                });
+                await WebBrowser.openBrowserAsync(uri);
                 return;
             }
 
-            // For Mobile: Download and Share
-            const fileExt = msg.fileName ? (msg.fileName.split('.').pop() || 'tmp') : (uri.split('.').pop() || 'bin');
-            // @ts-ignore
+            const metadata = msg.fileMetadata || {};
+            const fileName = metadata.fileName || msg.fileName || 'document';
+            const fileExt = metadata.fileExtension?.toLowerCase() || fileName.split('.').pop()?.toLowerCase() || 'bin';
+            const mimeType = metadata.mimeType;
+
             const localUri = `${FileSystem.cacheDirectory}${msg._id}.${fileExt}`;
 
-            if (Platform.OS === 'android') ToastAndroid.show("Opening document...", ToastAndroid.SHORT);
+            // 1. Check if already downloaded
+            const fileInfo = await FileSystem.getInfoAsync(localUri);
+            let finalLocalUri = localUri;
 
-            const downloadResult = await FileSystem.downloadAsync(uri, localUri);
+            if (!fileInfo.exists) {
+                if (Platform.OS === 'android') ToastAndroid.show("Downloading document...", ToastAndroid.SHORT);
+                const downloadResult = await FileSystem.downloadAsync(uri, localUri);
+
+                if (downloadResult.status !== 200) {
+                    throw new Error(`Download failed with status ${downloadResult.status}`);
+                }
+                finalLocalUri = downloadResult.uri;
+            }
+
+            // 2. Prepare for sharing/opening
+            if (Platform.OS === 'android') ToastAndroid.show("Opening...", ToastAndroid.SHORT);
 
             if (Sharing && typeof Sharing.shareAsync === 'function') {
-                await Sharing.shareAsync(downloadResult.uri);
-            } else {
-                import('react-native').then(({ Linking }) => {
-                    if (typeof Linking.openURL === 'function') {
-                        Linking.openURL(uri);
+                let shareUri = finalLocalUri;
+
+                if (Platform.OS === 'android' && FileSystem.getContentUriAsync) {
+                    try {
+                        shareUri = await FileSystem.getContentUriAsync(finalLocalUri);
+                    } catch (e) {
+                        console.log("getContentUriAsync failed", e);
                     }
+                }
+
+                await Sharing.shareAsync(shareUri, {
+                    mimeType: mimeType,
+                    UTI: mimeType,
+                    dialogTitle: fileName
                 });
+            } else {
+                await WebBrowser.openBrowserAsync(uri);
             }
         } catch (error) {
             console.error("handleOpenDocument Error:", error);
-            if (Platform.OS === 'android') ToastAndroid.show("Failed to open document", ToastAndroid.SHORT);
+            Alert.alert(
+                "Cannot Open Document",
+                "Would you like to open it in your browser instead?",
+                [
+                    { text: "Cancel", style: "cancel" },
+                    { text: "Open in Browser", onPress: () => WebBrowser.openBrowserAsync(uri) }
+                ]
+            );
         }
     };
 
@@ -1252,6 +1340,27 @@ export default function ChatScreen() {
             } else {
                 ToastAndroid.show("Failed to process media", ToastAndroid.SHORT);
             }
+        }
+    };
+
+    const formatFileSize = (bytes?: number) => {
+        if (!bytes) return "0 B";
+        const k = 1024;
+        const sizes = ["B", "KB", "MB", "GB", "TB"];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + " " + sizes[i];
+    };
+
+    const getDocColor = (ext?: string) => {
+        switch (ext?.toUpperCase()) {
+            case 'PDF': return '#F44336';
+            case 'DOC':
+            case 'DOCX': return '#2196F3';
+            case 'XLS':
+            case 'XLSX': return '#4CAF50';
+            case 'PPT':
+            case 'PPTX': return '#FF5722';
+            default: return '#9E9E9E';
         }
     };
 
@@ -1386,15 +1495,23 @@ export default function ChatScreen() {
                 </View>
             )}
 
-            {/* Blocked Banner */}
+            {/* Blocked Banners */}
             {isBlocked && (
                 <View style={{ padding: 10, backgroundColor: 'rgba(255,0,0,0.1)', alignItems: 'center' }}>
-                    <Text style={{ color: 'red', fontSize: 14, textAlign: 'center' }}>
-                        You blocked this contact. You cannot send messages.
+                    <Text style={{ color: 'red', fontSize: 13, textAlign: 'center' }}>
+                        You blocked this contact. Tap to unblock.
                     </Text>
                     <TouchableOpacity onPress={handleBlockToggle} style={{ marginTop: 5 }}>
                         <Text style={{ color: 'red', fontWeight: 'bold' }}>UNBLOCK</Text>
                     </TouchableOpacity>
+                </View>
+            )}
+
+            {isBlockingMe && (
+                <View style={{ padding: 10, backgroundColor: 'rgba(128,128,128,0.1)', alignItems: 'center' }}>
+                    <Text style={{ color: '#666', fontSize: 13, textAlign: 'center' }}>
+                        You are blocked by this contact. You cannot send messages.
+                    </Text>
                 </View>
             )}
 
@@ -1409,7 +1526,15 @@ export default function ChatScreen() {
                 data={messages}
                 keyExtractor={(item) => item._id}
                 renderItem={({ item }) => {
-                    const isMyMessage = item.sender._id === currentUserId || item.sender === currentUserId;
+                    const isMyMessage = (item.sender?._id || item.sender) === currentUserId;
+                    if (!item.sender) {
+                        return (
+                            <View style={[styles.messageBubble, styles.myMessage, { backgroundColor: theme.messageSent }]}>
+                                <Text style={[styles.messageText, { color: theme.text }]}>{item.content}</Text>
+                                <Text style={styles.messageTime}>Error: Orphaned message</Text>
+                            </View>
+                        );
+                    }
                     return (
                         <TouchableOpacity
                             onLongPress={() => handleLongPress(item)}
@@ -1456,15 +1581,32 @@ export default function ChatScreen() {
                                     </TouchableOpacity>
                                 ) : item.type === 'document' ? (
                                     <TouchableOpacity
-                                        style={{ flexDirection: 'row', alignItems: 'center', padding: 8 }}
+                                        style={[
+                                            styles.documentCard,
+                                            { backgroundColor: isMyMessage ? 'rgba(0,0,0,0.05)' : 'rgba(0,0,0,0.03)' }
+                                        ]}
                                         onPress={() => handleOpenDocument(item)}
                                     >
-                                        <IconSymbol name="doc.fill" size={32} color="#888" />
-                                        <View style={{ marginLeft: 8, flex: 1 }}>
-                                            <Text style={[styles.messageText, { color: theme.text }]} numberOfLines={1}>
-                                                {item.fileName || 'Document'}
+                                        <View style={styles.documentIconContainer}>
+                                            <View style={[
+                                                styles.docTypeFolder,
+                                                { backgroundColor: getDocColor(item.fileMetadata?.fileExtension) }
+                                            ]}>
+                                                <Text style={styles.docTypeText}>
+                                                    {item.fileMetadata?.fileExtension?.charAt(0) || 'D'}
+                                                </Text>
+                                            </View>
+                                        </View>
+                                        <View style={{ flex: 1, marginLeft: 10 }}>
+                                            <Text style={[styles.documentName, { color: theme.text }]} numberOfLines={1}>
+                                                {item.fileMetadata?.fileName || item.fileName || 'Document'}
                                             </Text>
-                                            <Text style={{ fontSize: 12, color: '#888' }}>Tap to view</Text>
+                                            <Text style={styles.documentMeta}>
+                                                {formatFileSize(item.fileMetadata?.fileSize || item.fileSize)} • {item.fileMetadata?.fileExtension || 'FILE'}
+                                            </Text>
+                                        </View>
+                                        <View style={styles.downloadIcon}>
+                                            <IconSymbol name="arrow.down.to.line" size={18} color="#8696A0" />
                                         </View>
                                     </TouchableOpacity>
                                 ) : (
@@ -1526,14 +1668,16 @@ export default function ChatScreen() {
                 keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
                 style={styles.inputContainer}>
 
-                {isBlocked ? (
+                {isBlocked || isBlockingMe ? (
                     <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.05)', padding: 15, borderRadius: 10, alignItems: 'center' }}>
                         <Text style={{ color: '#666', fontSize: 14, textAlign: 'center' }}>
-                            You blocked this contact. Tap to unblock.
+                            {isBlocked ? "You blocked this contact. Tap to unblock." : "You are blocked. You cannot send messages."}
                         </Text>
-                        <TouchableOpacity onPress={handleBlockToggle} style={{ marginTop: 8 }}>
-                            <Text style={{ color: '#00A884', fontWeight: 'bold' }}>UNBLOCK</Text>
-                        </TouchableOpacity>
+                        {isBlocked && (
+                            <TouchableOpacity onPress={handleBlockToggle} style={{ marginTop: 8 }}>
+                                <Text style={{ color: '#00A884', fontWeight: 'bold' }}>UNBLOCK</Text>
+                            </TouchableOpacity>
+                        )}
                     </View>
                 ) : (
                     <>

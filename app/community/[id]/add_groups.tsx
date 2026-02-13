@@ -95,8 +95,8 @@ export default function CommunityAddGroupsScreen() {
                 </View>
             ) : (
                 <FlatList
-                    data={groups}
-                    keyExtractor={(item: any) => item._id}
+                    data={groups || []}
+                    keyExtractor={(item: any) => item?._id || Math.random().toString()}
                     ListEmptyComponent={
                         <View style={styles.centered}>
                             <Text style={{ color: '#888', marginTop: 50 }}>No available groups found.</Text>
@@ -105,22 +105,25 @@ export default function CommunityAddGroupsScreen() {
                             </Text>
                         </View>
                     }
-                    renderItem={({ item }) => (
-                        <TouchableOpacity onPress={() => addGroup(item)} style={styles.groupItem}>
-                            <View style={styles.avatar}>
-                                {item.groupPic ? (
-                                    <Image source={{ uri: getInternalUri(item.groupPic) }} style={{ width: '100%', height: '100%' }} />
-                                ) : (
-                                    <IconSymbol name="person.3.fill" size={24} color="#fff" />
-                                )}
-                            </View>
-                            <View style={{ flex: 1 }}>
-                                <Text style={[styles.groupName, { color: theme.text }]}>{item.chatName}</Text>
-                                <Text style={styles.groupMeta}>{item.users.length} members</Text>
-                            </View>
-                            <IconSymbol name="plus.circle.fill" size={24} color="#008069" />
-                        </TouchableOpacity>
-                    )}
+                    renderItem={({ item }) => {
+                        if (!item) return null;
+                        return (
+                            <TouchableOpacity onPress={() => addGroup(item)} style={styles.groupItem}>
+                                <View style={styles.avatar}>
+                                    {item.groupPic ? (
+                                        <Image source={{ uri: getInternalUri(item.groupPic) }} style={{ width: '100%', height: '100%' }} />
+                                    ) : (
+                                        <IconSymbol name="person.3.fill" size={24} color="#fff" />
+                                    )}
+                                </View>
+                                <View style={{ flex: 1 }}>
+                                    <Text style={[styles.groupName, { color: theme.text }]}>{item.chatName || 'Unknown Group'}</Text>
+                                    <Text style={styles.groupMeta}>{item.users?.length || 0} members</Text>
+                                </View>
+                                <IconSymbol name="plus.circle.fill" size={24} color="#008069" />
+                            </TouchableOpacity>
+                        );
+                    }}
                 />
             )}
         </SafeAreaView>

@@ -4,7 +4,7 @@ import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router, useLocalSearchParams } from 'expo-router';
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { ActivityIndicator, Image, SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 export default function CommunityGroupsScreen() {
@@ -83,7 +83,7 @@ export default function CommunityGroupsScreen() {
                         </TouchableOpacity>
                     )}
 
-                    {(community.groups || []).map((group: any) => (
+                    {(community.groups || []).filter((g: any) => g !== null).map((group: any) => (
                         <TouchableOpacity
                             key={group._id}
                             style={styles.groupItem}

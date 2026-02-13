@@ -3,7 +3,7 @@ import { API_BASE_URL, getInternalUri } from '@/config/api';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useRouter } from 'expo-router';
+import { Stack, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, FlatList, Image, Modal, Platform, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -94,24 +94,19 @@ export default function StatusPrivacyScreen() {
         setIsModalOpen(true);
         setLoading(true);
 
-        // Fetch all contacts (users)
         try {
             const token = await AsyncStorage.getItem('userToken');
-            // Fetch all users logic - reusing /api/user endpoint
-            // In a real app, this should be /api/chat/contacts or similar
             const response = await fetch(`${API_BASE_URL}/api/user`, {
                 headers: { Authorization: `Bearer ${token}` }
             });
             const data = await response.json();
 
-            // Filter out self if returned
             const myInfo = await AsyncStorage.getItem('userInfo');
             const myId = myInfo ? JSON.parse(myInfo)._id : null;
             const contacts = data.filter((u: any) => u._id !== myId);
 
             setAllUsers(contacts);
 
-            // Pre-select based on mode
             const currentList = mode === 'except' ? excludedUsers : includedUsers;
             setTempSelectedUsers(currentList.map(u => u._id));
 
@@ -131,7 +126,6 @@ export default function StatusPrivacyScreen() {
     };
 
     const saveUserSelection = () => {
-        // Map selected IDs back to user objects
         const selectedObjects = allUsers.filter(u => tempSelectedUsers.includes(u._id));
 
         if (selectionMode === 'except') {
@@ -149,19 +143,23 @@ export default function StatusPrivacyScreen() {
 
     return (
         <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
-            {/* Header */}
-            <View style={[styles.header, { backgroundColor: theme.headerBackground }]}>
-                <TouchableOpacity onPress={() => router.back()} style={{ marginRight: 15 }}>
-                    <IconSymbol name="arrow.left" size={24} color={theme.headerTintColor} />
+            <Stack.Screen options={{ headerShown: false }} />
+
+            {/* Custom WhatsApp Teal Header */}
+            <View style={[styles.header, { backgroundColor: '#008069' }]}>
+                <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+                    <IconSymbol name="arrow.left" size={24} color="#FFFFFF" />
                 </TouchableOpacity>
-                <Text style={[styles.headerTitle, { color: theme.headerTintColor }]}>Status privacy</Text>
+                <Text style={styles.headerTitle}>Status privacy</Text>
             </View>
 
             {loading ? (
                 <ActivityIndicator size="large" color="#008069" style={{ marginTop: 50 }} />
             ) : (
                 <View style={styles.content}>
-                    <Text style={[styles.sectionTitle, { color: theme.text }]}>Who can see my status updates</Text>
+                    <Text style={[styles.sectionTitle, { color: colorScheme === 'dark' ? '#9BA1A6' : '#667781' }]}>
+                        Who can see my status updates
+                    </Text>
 
                     <TouchableOpacity style={styles.option} onPress={() => setSelectedType('contacts')}>
                         <View style={styles.radioContainer}>
@@ -178,9 +176,11 @@ export default function StatusPrivacyScreen() {
                                 {selectedType === 'except' && <View style={styles.radioInner} />}
                             </View>
                         </View>
-                        <View>
+                        <View style={{ flex: 1 }}>
                             <Text style={[styles.optionText, { color: theme.text }]}>My contacts except...</Text>
-                            {excludedUsers.length > 0 && <Text style={styles.subText}>{excludedUsers.length} excluded</Text>}
+                            {excludedUsers.length > 0 && (
+                                <Text style={styles.subText}>{excludedUsers.length} excluded</Text>
+                            )}
                         </View>
                     </TouchableOpacity>
 
@@ -190,38 +190,43 @@ export default function StatusPrivacyScreen() {
                                 {selectedType === 'only' && <View style={styles.radioInner} />}
                             </View>
                         </View>
-                        <View>
+                        <View style={{ flex: 1 }}>
                             <Text style={[styles.optionText, { color: theme.text }]}>Only share with...</Text>
-                            {includedUsers.length > 0 && <Text style={styles.subText}>{includedUsers.length} selected</Text>}
+                            {includedUsers.length > 0 && (
+                                <Text style={styles.subText}>{includedUsers.length} selected</Text>
+                            )}
                         </View>
                     </TouchableOpacity>
 
-                    <Text style={styles.footerText}>
+                    <Text style={[styles.footerText, { color: colorScheme === 'dark' ? '#9BA1A6' : '#667781' }]}>
                         Changes to your privacy settings won't affect status updates that you've sent already.
                     </Text>
 
-                    <TouchableOpacity
-                        style={[styles.saveButton, { opacity: saving ? 0.7 : 1 }]}
-                        onPress={handleSave}
-                        disabled={saving}
-                    >
-                        {saving ? <ActivityIndicator color="#fff" /> : <Text style={styles.saveButtonText}>Done</Text>}
-                    </TouchableOpacity>
+                    <View style={styles.saveButtonContainer}>
+                        <TouchableOpacity
+                            style={[styles.saveButton, { opacity: saving ? 0.7 : 1 }]}
+                            onPress={handleSave}
+                            disabled={saving}
+                        >
+                            {saving ? <ActivityIndicator color="#fff" /> : <Text style={styles.saveButtonText}>Done</Text>}
+                        </TouchableOpacity>
+                    </View>
                 </View>
             )}
 
             {/* User Selection Modal */}
             <Modal visible={isModalOpen} animationType="slide" onRequestClose={() => setIsModalOpen(false)}>
                 <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
-                    <View style={[styles.header, { backgroundColor: theme.headerBackground }]}>
-                        <TouchableOpacity onPress={() => setIsModalOpen(false)} style={{ marginRight: 15 }}>
-                            <IconSymbol name="arrow.left" size={24} color={theme.headerTintColor} />
+                    {/* Teal Modal Header */}
+                    <View style={[styles.header, { backgroundColor: '#008069' }]}>
+                        <TouchableOpacity onPress={() => setIsModalOpen(false)} style={styles.backButton}>
+                            <IconSymbol name="arrow.left" size={24} color="#FFFFFF" />
                         </TouchableOpacity>
                         <View>
-                            <Text style={[styles.headerTitle, { color: theme.headerTintColor }]}>
+                            <Text style={[styles.headerTitle, { color: '#FFFFFF' }]}>
                                 {selectionMode === 'except' ? 'Hide status from...' : 'Share status with...'}
                             </Text>
-                            <Text style={{ color: 'rgba(255,255,255,0.8)', fontSize: 12 }}>
+                            <Text style={{ color: 'rgba(255,255,255,0.8)', fontSize: 13 }}>
                                 {tempSelectedUsers.length} selected
                             </Text>
                         </View>
@@ -255,11 +260,12 @@ export default function StatusPrivacyScreen() {
                                     </View>
                                     <View style={{ flex: 1 }}>
                                         <Text style={[styles.userName, { color: theme.text }]}>{item.name}</Text>
-                                        <Text style={styles.userPhone}>{item.phone}</Text>
+                                        <Text style={[styles.userPhone, { color: colorScheme === 'dark' ? '#9BA1A6' : '#667781' }]}>{item.phone}</Text>
                                     </View>
                                     <View style={[styles.checkbox, {
                                         backgroundColor: isSelected ? (selectionMode === 'except' ? '#ff3b30' : '#008069') : 'transparent',
-                                        borderColor: isSelected ? 'transparent' : '#888'
+                                        borderColor: isSelected ? 'transparent' : '#888',
+                                        borderWidth: isSelected ? 0 : 2
                                     }]}>
                                         {isSelected && <IconSymbol name="checkmark" size={14} color="#fff" />}
                                     </View>
@@ -284,81 +290,95 @@ const styles = StyleSheet.create({
     header: {
         flexDirection: 'row',
         alignItems: 'center',
-        padding: 15,
+        paddingVertical: 15,
+        paddingHorizontal: 15,
         elevation: 4,
+        height: 60,
+    },
+    backButton: {
+        marginRight: 20,
     },
     headerTitle: {
-        fontSize: 20,
-        fontWeight: 'bold',
+        fontSize: 19,
+        fontWeight: '500',
+        color: '#FFFFFF',
     },
     content: {
         padding: 20,
+        flex: 1,
     },
     sectionTitle: {
-        fontSize: 14,
-        fontWeight: 'bold',
-        marginBottom: 20,
-        opacity: 0.7,
+        fontSize: 13,
+        fontWeight: '600',
+        marginBottom: 25,
+        textTransform: 'none',
     },
     option: {
         flexDirection: 'row',
         alignItems: 'center',
-        marginBottom: 25,
+        marginBottom: 30,
     },
     radioContainer: {
-        marginRight: 15,
+        marginRight: 20,
     },
     radioOuter: {
-        width: 20,
-        height: 20,
-        borderRadius: 10,
+        width: 22,
+        height: 22,
+        borderRadius: 11,
         borderWidth: 2,
         justifyContent: 'center',
         alignItems: 'center',
     },
     radioInner: {
-        width: 10,
-        height: 10,
-        borderRadius: 5,
+        width: 12,
+        height: 12,
+        borderRadius: 6,
         backgroundColor: '#008069',
     },
     optionText: {
         fontSize: 16,
-        fontWeight: '500',
     },
     subText: {
-        fontSize: 12,
-        color: '#666',
+        fontSize: 13,
+        color: '#008069',
         marginTop: 2,
     },
     footerText: {
         fontSize: 13,
-        color: '#666',
-        textAlign: 'center',
-        marginTop: 30,
-        marginBottom: 30,
-        lineHeight: 18,
+        textAlign: 'left',
+        marginTop: 10,
+        marginBottom: 40,
+        lineHeight: 20,
+    },
+    saveButtonContainer: {
+        position: 'absolute',
+        bottom: 40,
+        left: 0,
+        right: 0,
+        alignItems: 'center',
     },
     saveButton: {
         backgroundColor: '#008069',
         paddingVertical: 12,
+        paddingHorizontal: 40,
         borderRadius: 25,
+        minWidth: 150,
         alignItems: 'center',
-        alignSelf: 'center',
-        width: '50%',
+        elevation: 2,
     },
     saveButtonText: {
         color: 'white',
         fontWeight: 'bold',
-        fontSize: 16,
+        fontSize: 15,
     },
     // Modal Styles
     searchContainer: {
         flexDirection: 'row',
         alignItems: 'center',
-        margin: 10,
+        margin: 15,
         padding: 10,
-        borderRadius: 20,
+        borderRadius: 25,
+        height: 45,
     },
     input: {
         flex: 1,
@@ -371,12 +391,13 @@ const styles = StyleSheet.create({
     userItem: {
         flexDirection: 'row',
         alignItems: 'center',
-        padding: 15,
+        paddingVertical: 12,
+        paddingHorizontal: 15,
     },
     avatar: {
-        width: 40,
-        height: 40,
-        borderRadius: 20,
+        width: 45,
+        height: 45,
+        borderRadius: 22.5,
         backgroundColor: '#ccc',
         justifyContent: 'center',
         alignItems: 'center',
@@ -384,24 +405,23 @@ const styles = StyleSheet.create({
     },
     userName: {
         fontSize: 16,
-        fontWeight: 'bold',
+        fontWeight: '500',
     },
     userPhone: {
-        color: '#666',
         fontSize: 14,
+        marginTop: 2,
     },
     checkbox: {
-        width: 22,
-        height: 22,
-        borderRadius: 11,
-        borderWidth: 2,
+        width: 20,
+        height: 20,
+        borderRadius: 10,
         justifyContent: 'center',
         alignItems: 'center',
     },
     fab: {
         position: 'absolute',
-        bottom: 20,
-        right: 20,
+        bottom: 30,
+        right: 25,
         width: 56,
         height: 56,
         borderRadius: 28,
@@ -409,5 +429,9 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
         elevation: 6,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 3 },
+        shadowOpacity: 0.3,
+        shadowRadius: 4.65,
     }
 });

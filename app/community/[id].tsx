@@ -5,7 +5,7 @@ import { useColorScheme } from '@/hooks/use-color-scheme';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as ImagePicker from 'expo-image-picker';
 import { router, useLocalSearchParams } from 'expo-router';
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, Image, Platform, SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 export default function CommunityInfoScreen() {
@@ -16,8 +16,16 @@ export default function CommunityInfoScreen() {
     const [loading, setLoading] = useState(true);
     const [uploading, setUploading] = useState(false);
     const [activeTab, setActiveTab] = useState<'community' | 'announcements'>('community');
+    const [currentUserId, setCurrentUserId] = useState<string>("");
 
     useEffect(() => {
+        const getUserId = async () => {
+            const userInfo = await AsyncStorage.getItem('userInfo');
+            if (userInfo) {
+                setCurrentUserId(JSON.parse(userInfo)._id);
+            }
+        };
+        getUserId();
         fetchCommunityData();
     }, [id]);
 
@@ -238,32 +246,36 @@ export default function CommunityInfoScreen() {
                         <View style={styles.membersSection}>
                             <Text style={[styles.membersHeader, { color: '#8696A0' }]}>Community members</Text>
 
-                            {(community.users || []).map((user: any, index: number) => (
-                                <TouchableOpacity key={user._id || index} style={styles.memberItem}>
-                                    <View style={styles.memberAvatar}>
-                                        {user.profilePic ? (
-                                            <Image source={{ uri: getInternalUri(user.profilePic) }} style={styles.avatarImage} />
-                                        ) : (
-                                            <View style={[styles.avatarPlaceholder, { backgroundColor: '#ccc' }]}>
-                                                <IconSymbol name="person.fill" size={24} color="#fff" />
+                            {(community.users || []).map((user: any, index: number) => {
+                                if (!user) return null;
+                                const isAdmin = user._id === (community.admin?._id || community.admin);
+                                return (
+                                    <TouchableOpacity key={user._id || index} style={styles.memberItem}>
+                                        <View style={styles.memberAvatar}>
+                                            {user.profilePic ? (
+                                                <Image source={{ uri: getInternalUri(user.profilePic) }} style={styles.avatarImage} />
+                                            ) : (
+                                                <View style={[styles.avatarPlaceholder, { backgroundColor: '#ccc' }]}>
+                                                    <IconSymbol name="person.fill" size={24} color="#fff" />
+                                                </View>
+                                            )}
+                                        </View>
+                                        <View style={styles.memberInfo}>
+                                            <Text style={[styles.memberName, { color: theme.text }]}>
+                                                {user.name} {user._id === currentUserId && "(You)"}
+                                            </Text>
+                                            {user.about && (
+                                                <Text style={styles.memberAbout} numberOfLines={1}>{user.about}</Text>
+                                            )}
+                                        </View>
+                                        {isAdmin && (
+                                            <View style={styles.ownerBadge}>
+                                                <Text style={styles.ownerBadgeText}>Community Owner</Text>
                                             </View>
                                         )}
-                                    </View>
-                                    <View style={styles.memberInfo}>
-                                        <Text style={[styles.memberName, { color: theme.text }]}>
-                                            {user.name}
-                                        </Text>
-                                        {user.about && (
-                                            <Text style={styles.memberAbout} numberOfLines={1}>{user.about}</Text>
-                                        )}
-                                    </View>
-                                    {user._id === community.admin?._id && (
-                                        <View style={styles.ownerBadge}>
-                                            <Text style={styles.ownerBadgeText}>Community Owner</Text>
-                                        </View>
-                                    )}
-                                </TouchableOpacity>
-                            ))}
+                                    </TouchableOpacity>
+                                );
+                            })}
                         </View>
                     </View>
                 ) : (
