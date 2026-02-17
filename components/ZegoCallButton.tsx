@@ -1,6 +1,9 @@
 import React from 'react';
-import { Platform, TouchableOpacity } from 'react-native';
+import { Alert, Platform, TouchableOpacity } from 'react-native';
 import { IconSymbol } from './ui/icon-symbol';
+
+// This file is used on Web where ZegoCloud native modules are not available.
+// The native implementation is in ZegoCallButton.native.tsx
 
 interface Props {
     inviteeId: string;
@@ -9,10 +12,12 @@ interface Props {
     theme: any;
 }
 
-export const ZegoCallButton: React.FC<Props> = ({ inviteeId, inviteeName, isVideo, theme }) => {
+export const ZegoCallButton: React.FC<Props> = ({ isVideo, theme }) => {
     const handlePress = () => {
         if (Platform.OS === 'web') {
             alert("Calling feature is only available on Mobile app (Android/iOS).");
+        } else {
+            Alert.alert("Feature Not Supported", "Calling is not supported on this platform version.");
         }
     };
 

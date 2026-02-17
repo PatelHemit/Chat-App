@@ -13,22 +13,15 @@ console.log(`[API-Config] Detected debuggerHost: ${debuggerHost}`);
 console.log(`[API-Config] Using localhostIp: ${localhostIp}`);
 
 const getApiBaseUrl = () => {
-    if (Platform.OS === 'web') {
-        if (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
-            return 'http://localhost:3000';
-        }
-        return `http://${localhostIp}:3000`;
+    // Android emulator bridge
+    if (Platform.OS === 'android' && !Device.isDevice) {
+        return 'http://10.0.2.2:3000';
     }
-
-    if (Platform.OS === 'android') {
-        // If we're on an emulator, 10.0.2.2 is the standard bridge back to the host machine
-        if (!Device.isDevice) {
-            console.log('[API-Config] Android Emulator detected, using 10.0.2.2');
-            return 'http://10.0.2.2:3000';
-        }
-        return `http://${localhostIp}:3000`;
+    // Web localhost
+    if (Platform.OS === 'web' && typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
+        return 'http://localhost:3000';
     }
-
+    // Default to LAN IP
     return `http://${localhostIp}:3000`;
 };
 
@@ -36,9 +29,8 @@ const getApiBaseUrl = () => {
 const RENDER_URL = 'https://chat-app-3-avn4.onrender.com';
 
 // Use Render URL for production, local for development
-export const API_BASE_URL = getApiBaseUrl();
+export const API_BASE_URL = RENDER_URL; // getApiBaseUrl(); // Switched to Render for testing
 console.log(`[API-Config] FINAL API_BASE_URL: ${API_BASE_URL}`);
-// export const API_BASE_URL = RENDER_URL;
 
 export const SOCKET_URL = API_BASE_URL;
 

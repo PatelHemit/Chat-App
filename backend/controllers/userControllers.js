@@ -1,5 +1,6 @@
 const asyncHandler = require("express-async-handler");
 const User = require("../models/User");
+const logNotif = require("../utils/logger");
 
 // @description     Get or Search all users
 // @route           GET /api/user?search=
@@ -48,7 +49,7 @@ const updateProfile = asyncHandler(async (req, res) => {
 // @access          Protected
 const registerPushToken = asyncHandler(async (req, res) => {
     const { pushToken } = req.body;
-    console.log(`[PushToken] Register request from user ${req.user._id}:`, pushToken);
+    logNotif(`[PushToken] Register request from user ${req.user._id}: ${pushToken}`);
 
     if (!pushToken) {
         console.log(`[PushToken] Error: Token missing in payload`);
@@ -74,12 +75,12 @@ const registerPushToken = asyncHandler(async (req, res) => {
 
     // Add token if it doesn't already exist
     if (!user.pushTokens.includes(pushToken)) {
-        console.log(`[PushToken] Adding new token: ${pushToken.substring(0, 20)}...`);
+        logNotif(`[PushToken] Adding new token for ${user.name || user.phone}`);
         user.pushTokens.push(pushToken);
         await user.save();
-        console.log(`[PushToken] Token saved successfully`);
+        logNotif(`[PushToken] Token saved successfully`);
     } else {
-        console.log(`[PushToken] Token already exists for user`);
+        logNotif(`[PushToken] Token already exists for user ${user.name || user.phone}`);
     }
 
     res.json({ success: true, message: "Push token registered" });

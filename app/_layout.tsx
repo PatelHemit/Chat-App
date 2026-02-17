@@ -66,7 +66,7 @@ export default function RootLayout() {
               const userInfo = await AsyncStorage.getItem('userInfo');
               if (userInfo) {
                 const user = JSON.parse(userInfo);
-                const { onUserLogin } = require('@/services/CallingService.native');
+                const { onUserLogin } = require('@/services/CallingService');
                 await onUserLogin(user._id, user.name || user.phone);
               }
             } catch (error) {
@@ -131,6 +131,13 @@ export default function RootLayout() {
 
       socket.on('connect', () => {
         console.log("[Web-Notif] Socket connected");
+        if (Platform.OS === 'web') {
+          if (!('Notification' in window)) {
+            console.error("[Web-Notif] ❌ Notification API is NOT available. This is likely because you are using an HTTP IP (192.168.x.x). Browsers only allow notifications on 'localhost' or 'HTTPS'.");
+          } else {
+            console.log("[Web-Notif] ✅ Notification API is available. Current permission:", Notification.permission);
+          }
+        }
         socket.emit('setup', userInfo);
       });
 
@@ -141,6 +148,7 @@ export default function RootLayout() {
           const currentPath = pathnameRef.current;
           const chat = newMessageReceived.chat;
           if (!chat) return;
+          const chatId = typeof chat === 'string' ? chat : chat._id;
 
           // FETCH LATEST INFO ALWAYS TO BE SAFE
           const latestUserStr = await AsyncStorage.getItem('userInfo');
@@ -148,15 +156,17 @@ export default function RootLayout() {
           const latestUser = JSON.parse(latestUserStr);
           const myId = latestUser._id;
 
+          console.log(`[Web-Notif] Processing message for chat: ${chatId}. My ID: ${myId}`);
+
           // 0. Check Global Mute Setting
           if (latestUser.notificationsMuted) {
-            console.log("[Web-Notif] GLOBAL MUTE IS ON - Skipping for", myId);
+            console.log("[Web-Notif] 🔕 GLOBAL MUTE IS ON - Skipping");
             return;
           }
 
           // 1. Check if we are ALREADY in this chat screen
-          if (currentPath === `/chat/${chat._id}`) {
-            console.log("[Web-Notif] Already in chat, skipping");
+          if (currentPath === `/chat/${chatId}`) {
+            console.log("[Web-Notif] 👁️ Already in chat, skipping notification");
             return;
           }
 

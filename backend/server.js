@@ -15,6 +15,7 @@ const communityRoutes = require('./routes/communityRoutes');
 const notificationRoutes = require('./routes/notificationRoutes');
 const Message = require('./models/Message'); // Import Message model
 const Chat = require('./models/Chat');
+const logNotif = require('./utils/logger');
 
 const app = express();
 const server = http.createServer(app);
@@ -69,7 +70,7 @@ const io = new Server(server, {
 
 app.set("io", io);
 
-// Global Online Users Map: <userId, socketId>
+// Global Online Users Map: <userId, Set of socketIds>
 const onlineUsers = new Map();
 // QR Session Map: <sessionId, socketId>
 const qrSessions = new Map();
@@ -89,9 +90,13 @@ io.on("connection", (socket) => {
         socket.join(userId);
         console.log("[Socket] User joined personal room: " + userId);
 
-        // Track online user
-        onlineUsers.set(userId, socket.id);
-        console.log("User Online: " + userId + (userData.platform ? ` (${userData.platform})` : ""));
+        // Track online user (support multiple devices/tabs)
+        if (!onlineUsers.has(userId)) {
+            onlineUsers.set(userId, new Set());
+        }
+        onlineUsers.get(userId).add(socket.id);
+
+        console.log(`[Socket] User Online: ${userId} (Sessions: ${onlineUsers.get(userId).size})${userData.platform ? ` - ${userData.platform}` : ""}`);
 
         // Broadcast to all clients that this user is online
         io.emit("user-online", userData._id);
@@ -133,9 +138,16 @@ io.on("connection", (socket) => {
             const userIdStr = user._id ? user._id.toString() : user.toString();
             if (userIdStr === senderIdStr) return;
 
+            const userSocketIds = onlineUsers.get(userIdStr);
+            const isUserOnline = userSocketIds && userSocketIds.size > 0;
+
+            // A user is "in chat" if AT LEAST ONE of their active sockets is in the chat room
             const socketsInRoom = io.sockets.adapter.rooms.get(chatIdStr);
-            const recipientSocketId = onlineUsers.get(userIdStr);
-            const isUserInChat = recipientSocketId && socketsInRoom && socketsInRoom.has(recipientSocketId);
+            const isUserInChat = isUserOnline && socketsInRoom && Array.from(userSocketIds).some(sid => socketsInRoom.has(sid));
+
+            logNotif(`[Notif-Logic] Recipient: ${user.name} (${userIdStr})`);
+            logNotif(`[Notif-Logic] -- Online: ${!!isUserOnline} (Sessions: ${userSocketIds?.size || 0})`);
+            logNotif(`[Notif-Logic] -- In Chat Room: ${!!isUserInChat}`);
 
             const personalRoom = io.sockets.adapter.rooms.get(userIdStr);
             const personalRoomSize = personalRoom ? personalRoom.size : 0;
@@ -166,7 +178,9 @@ io.on("connection", (socket) => {
                     console.error("[Socket] Error updating status:", error);
                 }
             } else {
-                if (recipientSocketId) {
+                // Not in chat room, check if push should be sent
+                logNotif(`[Notif-Logic] -- Proceeding to Push logic...`);
+                if (isUserOnline) {
                     try {
                         const updateObj = {};
                         if (chat.isGroupChat) {
@@ -190,10 +204,11 @@ io.on("connection", (socket) => {
                 }
 
                 // Push Notification Logic
-                const isMuted = chat.mutedBy && chat.mutedBy.some(m => {
+                const isMuted = chat.mutedBy && Array.isArray(chat.mutedBy) && chat.mutedBy.some(m => {
+                    if (!m.user) return false;
                     const mutedUserId = m.user._id ? m.user._id.toString() : m.user.toString();
                     const match = (mutedUserId === userIdStr) && (!m.mutedUntil || new Date(m.mutedUntil) > new Date());
-                    if (match) console.log(`[Push] Skipping notification for ${userIdStr} - Chat is muted until ${m.mutedUntil || 'forever'}`);
+                    if (match) logNotif(`[Push] 🔕 SKIPPING: User ${userIdStr} has muted this chat until ${m.mutedUntil || 'forever'}`);
                     return match;
                 });
 
@@ -203,7 +218,7 @@ io.on("connection", (socket) => {
                         const { sendPushNotification } = require('./controllers/notificationControllers');
                         const recipient = await User.findById(userIdStr);
                         if (recipient && recipient.notificationsMuted) {
-                            console.log(`[Push] Skipping notification for ${userIdStr} - Global Mute is ON`);
+                            logNotif(`[Push] Skipping notification for ${userIdStr} - Global Mute is ON`);
                             return;
                         }
                         if (recipient && recipient.pushTokens && recipient.pushTokens.length > 0) {
@@ -225,8 +240,9 @@ io.on("connection", (socket) => {
                 }
             }
 
-            if (personalRoomSize > 0) {
+            if (isUserOnline) {
                 io.to(userIdStr).emit("message received", newMessageReceived);
+                logNotif(`[Notif-Logic] -- Emitted 'message received' to user room: ${userIdStr}`);
             }
         });
 
@@ -250,9 +266,9 @@ io.on("connection", (socket) => {
 
             await Message.findByIdAndUpdate(msgObjId, updateObj);
 
-            // Notify the SENDER that their message was read
-            const senderSocketId = onlineUsers.get(senderId.toString());
-            if (senderSocketId) {
+            // Notify the SENDER sessions that their message was read
+            const senderSocketIds = onlineUsers.get(senderId.toString());
+            if (senderSocketIds) {
                 io.to(senderSocketId).emit("message-status-updated", {
                     messageId: messageId.toString(),
                     status: "read",
@@ -304,17 +320,25 @@ io.on("connection", (socket) => {
 
         // Find and remove user from onlineUsers
         let disconnectedUserId = null;
-        for (let [userId, socketId] of onlineUsers.entries()) {
-            if (socketId === socket.id) {
+        for (let [userId, socketIds] of onlineUsers.entries()) {
+            if (socketIds.has(socket.id)) {
                 disconnectedUserId = userId;
                 break;
             }
         }
 
         if (disconnectedUserId) {
-            onlineUsers.delete(disconnectedUserId);
-            console.log(`User Offline: ${disconnectedUserId}`);
-            io.emit("user-offline", disconnectedUserId);
+            const userSessions = onlineUsers.get(disconnectedUserId);
+            if (userSessions) {
+                userSessions.delete(socket.id);
+                if (userSessions.size === 0) {
+                    onlineUsers.delete(disconnectedUserId);
+                    console.log(`User Offline: ${disconnectedUserId} (All sessions closed)`);
+                    io.emit("user-offline", disconnectedUserId);
+                } else {
+                    console.log(`User Session Closed: ${disconnectedUserId} (Remaining: ${userSessions.size})`);
+                }
+            }
         }
     });
 });
@@ -405,5 +429,6 @@ app.use((err, req, res, next) => {
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, '0.0.0.0', () => {
     console.log(`[Backend] Listening on IPv4 0.0.0.0:${PORT}`);
-    console.log(`[Backend] Accessible at http://192.168.1.35:${PORT}`);
+    console.log(`[Backend] Accessible locally at http://localhost:${PORT}`);
+    // No hardcoded IPs to avoid confusion
 });

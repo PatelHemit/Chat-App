@@ -14,6 +14,7 @@
     },
     "android": {
       "package": "com.patelhemit.chatapp",
+      "softwareKeyboardLayoutMode": "resize",
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
@@ -33,7 +34,12 @@
         "android.permission.BLUETOOTH",
         "android.permission.BLUETOOTH_CONNECT",
         "android.permission.SYSTEM_ALERT_WINDOW",
-        "android.permission.WAKE_LOCK"
+        "android.permission.WAKE_LOCK",
+        "android.permission.READ_PHONE_STATE",
+        "android.permission.FOREGROUND_SERVICE",
+        "android.permission.FOREGROUND_SERVICE_MICROPHONE",
+        "android.permission.FOREGROUND_SERVICE_CAMERA",
+        "android.permission.POST_NOTIFICATIONS"
       ],
       "googleServicesFile": "./google-services.json"
     },

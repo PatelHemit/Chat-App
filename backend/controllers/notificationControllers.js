@@ -1,5 +1,6 @@
 const asyncHandler = require("express-async-handler");
 const Notification = require("../models/Notification");
+const logNotif = require("../utils/logger");
 
 // @description     Get all Notifications for the logged-in user
 // @route           GET /api/notification
@@ -67,14 +68,14 @@ const { Expo } = require('expo-server-sdk');
 const expo = new Expo();
 
 const sendPushNotification = async (expoPushTokens, title, body, data = {}) => {
-    console.log(`[Push] sendPushNotification called with ${expoPushTokens.length} tokens`);
+    logNotif(`[Push] sendPushNotification called with ${expoPushTokens.length} tokens`);
 
     // Filter valid tokens
     let validTokens = expoPushTokens.filter(token => Expo.isExpoPushToken(token));
-    console.log(`[Push] Valid tokens count: ${validTokens.length}`);
+    logNotif(`[Push] Valid tokens count: ${validTokens.length}`);
 
     if (validTokens.length === 0) {
-        console.log("[Push] NO VALID TOKENS FOUND, skipping push");
+        logNotif("[Push] NO VALID TOKENS FOUND, skipping push");
         return;
     }
 
@@ -96,12 +97,12 @@ const sendPushNotification = async (expoPushTokens, title, body, data = {}) => {
     let tickets = [];
     for (let chunk of chunks) {
         try {
-            console.log(`[Push] Sending chunk to Expo with ${chunk.length} messages...`);
+            logNotif(`[Push] Sending chunk to Expo with ${chunk.length} messages...`);
             let ticketChunk = await expo.sendPushNotificationsAsync(chunk);
-            console.log("[Push] Tickets received from Expo:", JSON.stringify(ticketChunk));
+            logNotif(`[Push] Tickets received from Expo: ${JSON.stringify(ticketChunk)}`);
             tickets.push(...ticketChunk);
         } catch (error) {
-            console.error('[Push] ERROR sending chunk to Expo:', error);
+            logNotif(`[Push] ERROR sending chunk to Expo: ${error.message}`);
         }
     }
     return tickets;

@@ -138,6 +138,16 @@ export default function SettingsScreen() {
 
     const performLogout = async () => {
         try {
+            // Uninitialize ZegoCloud if on native
+            if (Platform.OS !== 'web') {
+                try {
+                    const { onUserLogout } = require('@/services/CallingService');
+                    await onUserLogout();
+                } catch (err) {
+                    console.log("[Settings] Call service logout skipped or failed", err);
+                }
+            }
+
             await AsyncStorage.removeItem('userToken');
             await AsyncStorage.removeItem('userInfo');
 

@@ -24,8 +24,6 @@ const createStatus = asyncHandler(async (req, res) => {
     const excludedList = user.statusPrivacy && user.statusPrivacy.excludedUsers ? user.statusPrivacy.excludedUsers : [];
     const allowedList = user.statusPrivacy && user.statusPrivacy.includedUsers ? user.statusPrivacy.includedUsers : [];
 
-    console.log(`[Status-Create] user=${user.name}, type=${privacyType}, excluded=${excludedList.length}, allowed=${allowedList.length}`);
-
     const newStatus = await Status.create({
         user: req.user._id,
         mediaUrl,
@@ -55,12 +53,7 @@ const getStatuses = asyncHandler(async (req, res) => {
     // 3. Except logic: user NOT in excludedList
     // 4. Only logic: user IN allowedList
 
-    // Note: This logic assumes "contacts" means everyone for now, as we don't have a specific friend graph.
     // If strict contacts check is needed, we'd need to check mutuals.
-
-    console.log(`[Status-Get] Fetching for user: ${currentUserId} (${req.user.name})`);
-
-    console.log(`[Status-Get] Fetching for user: ${currentUserId}`);
 
     const statuses = await Status.find({
         $or: [
@@ -91,7 +84,6 @@ const getStatuses = asyncHandler(async (req, res) => {
         .populate("viewedBy", "name profilePic")
         .sort({ createdAt: 1 }); // Chronological order for sequential viewing
 
-    console.log(`[Status-Get] Found ${statuses.length} statuses for ${req.user.name}`);
     res.json(statuses);
 });
 
@@ -136,7 +128,6 @@ const updateStatusPrivacy = asyncHandler(async (req, res) => {
     if (includedUsers) user.statusPrivacy.includedUsers = includedUsers;
 
     await user.save();
-    console.log(`[Status-Privacy-Update] User ${user.name} updated privacy: type=${user.statusPrivacy.type}, excluded=${user.statusPrivacy.excludedUsers.length}, included=${user.statusPrivacy.includedUsers.length}`);
     res.json(user.statusPrivacy);
 });
 

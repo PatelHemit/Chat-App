@@ -144,14 +144,15 @@ class NotificationService {
             }
 
             console.log('[PushToken] SUCCESS: Token registered with backend');
+            this.isRegistering = false;
         } catch (error: any) {
             console.error('[PushToken] CRITICAL ERROR:', error);
-            // More detailed error checking
-            if (error?.message === 'Network request failed') {
-                console.warn('[PushToken] Check if the server is accessible at:', url);
-            }
-        } finally {
-            this.isRegistering = false;
+            // Auto-retry after 10 seconds if it's a network error
+            console.log('[PushToken] Will retry in 10 seconds...');
+            setTimeout(() => {
+                this.isRegistering = false;
+                this.sendTokenToBackend(token, userToken, apiUrl);
+            }, 10000);
         }
     }
 
@@ -206,12 +207,14 @@ class NotificationService {
      * Send a notification on Web
      */
     async sendWebNotification(title: string, body: string, data: any = {}) {
-        if (Platform.OS !== 'web' || !('Notification' in window)) {
-            console.log("[Web-Notif] Notifications not supported or not on web");
+        if (Platform.OS !== 'web') return;
+
+        if (!('Notification' in window)) {
+            console.warn("[Web-Notif] ❌ NOT SUPPORTED: Browser does NOT support notifications (might be due to insecure origin/non-HTTPS)");
             return;
         }
 
-        console.log("[Web-Notif] Attempting to show notification. Permission:", Notification.permission);
+        console.log("[Web-Notif] Attempting to show notification. Current permission:", Notification.permission);
 
         // If permission not granted, request it
         if (Notification.permission !== 'granted') {

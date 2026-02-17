@@ -18,9 +18,10 @@ const userSchema = new mongoose.Schema({
         type: String,
         default: ""
     },
-    pushTokens: [{
-        type: String
-    }],
+    pushTokens: {
+        type: [String],
+        default: []
+    },
     blockedUsers: [{
         type: mongoose.Schema.Types.ObjectId,
         ref: "User"
