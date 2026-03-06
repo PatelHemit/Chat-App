@@ -6524,3 +6524,115 @@
 [2026-03-06T06:55:48.398Z] [Socket] User Online: 697a0403862d2253f71c1d12 (Sessions: 1)
 [2026-03-06T06:55:48.402Z] [Socket] User joined personal room: 697a0403862d2253f71c1d12
 [2026-03-06T06:55:48.403Z] [Socket] User Online: 697a0403862d2253f71c1d12 (Sessions: 2)
+[2026-03-06T07:06:06.160Z] [PushToken] Register request from user 6996adb45e25a10f4831078d: ExponentPushToken[60TQ2OFdHCvsdjySVJlGh9]
+[2026-03-06T07:06:06.180Z] [PushToken] Token already exists for user Shilpa ben
+[2026-03-06T07:06:06.410Z] [FCMToken] Register request from user 6996adb45e25a10f4831078d: ecMB8BCtS_28Qkebsljj...
+[2026-03-06T07:06:06.429Z] [FCMToken] FCM Token already exists for Shilpa ben
+[2026-03-06T07:06:07.279Z] [Socket] User joined personal room: 6996adb45e25a10f4831078d
+[2026-03-06T07:06:07.280Z] [Socket] User Online: 6996adb45e25a10f4831078d (Sessions: 1)
+[2026-03-06T07:16:15.342Z] [Socket] User joined personal room: 6996adb45e25a10f4831078d
+[2026-03-06T07:16:15.345Z] [Socket] User Online: 6996adb45e25a10f4831078d (Sessions: 1)
+[2026-03-06T07:23:16.738Z] [PushToken] Register request from user 697a0403862d2253f71c1d12: ExponentPushToken[0O35C1DnhJkPkelyVvNwZ_]
+[2026-03-06T07:23:16.763Z] [PushToken] Token already exists for user Priya
+[2026-03-06T07:23:16.969Z] [FCMToken] Register request from user 697a0403862d2253f71c1d12: fI7ErA7mTbO32GDx92y1...
+[2026-03-06T07:23:16.989Z] [FCMToken] FCM Token already exists for Priya
+[2026-03-06T07:23:17.558Z] [Socket] User joined personal room: 697a0403862d2253f71c1d12
+[2026-03-06T07:23:17.559Z] [Socket] User Online: 697a0403862d2253f71c1d12 (Sessions: 1)
+[2026-03-06T07:23:17.594Z] [Socket] User joined personal room: 697a0403862d2253f71c1d12
+[2026-03-06T07:23:17.595Z] [Socket] User Online: 697a0403862d2253f71c1d12 (Sessions: 2)
+[2026-03-06T07:24:19.653Z] [PushToken] Register request from user 6996adb45e25a10f4831078d: ExponentPushToken[60TQ2OFdHCvsdjySVJlGh9]
+[2026-03-06T07:24:19.681Z] [PushToken] Token already exists for user Shilpa ben
+[2026-03-06T07:24:19.955Z] [FCMToken] Register request from user 6996adb45e25a10f4831078d: ecMB8BCtS_28Qkebsljj...
+[2026-03-06T07:24:19.984Z] [FCMToken] FCM Token already exists for Shilpa ben
+[2026-03-06T07:24:21.052Z] [Socket] User joined personal room: 6996adb45e25a10f4831078d
+[2026-03-06T07:24:21.053Z] [Socket] User Online: 6996adb45e25a10f4831078d (Sessions: 1)
+[2026-03-06T07:24:21.100Z] [Socket] User joined personal room: 6996adb45e25a10f4831078d
+[2026-03-06T07:24:21.101Z] [Socket] User Online: 6996adb45e25a10f4831078d (Sessions: 2)
+[2026-03-06T07:45:06.504Z] [Socket] User joined personal room: 697a0403862d2253f71c1d12
+[2026-03-06T07:45:06.505Z] [Socket] User Online: 697a0403862d2253f71c1d12 (Sessions: 1)
+[2026-03-06T07:45:06.660Z] [Socket] User joined personal room: 6996adb45e25a10f4831078d
+[2026-03-06T07:45:06.660Z] [Socket] User Online: 6996adb45e25a10f4831078d (Sessions: 1)
+[2026-03-06T07:45:06.662Z] [Socket] User joined personal room: 6996adb45e25a10f4831078d
+[2026-03-06T07:45:06.662Z] [Socket] User Online: 6996adb45e25a10f4831078d (Sessions: 2)
+[2026-03-06T07:45:08.534Z] [Socket] User joined personal room: 697a0403862d2253f71c1d12
+[2026-03-06T07:45:08.534Z] [Socket] User Online: 697a0403862d2253f71c1d12 (Sessions: 2)
+[2026-03-06T07:50:38.940Z] [PushToken] Register request from user 6996adb45e25a10f4831078d: ExponentPushToken[60TQ2OFdHCvsdjySVJlGh9]
+[2026-03-06T07:50:38.961Z] [PushToken] Token already exists for user Shilpa ben
+[2026-03-06T07:50:39.452Z] [FCMToken] Register request from user 6996adb45e25a10f4831078d: ecMB8BCtS_28Qkebsljj...
+[2026-03-06T07:50:39.577Z] [FCMToken] FCM Token already exists for Shilpa ben
+[2026-03-06T07:50:40.804Z] [Socket] User joined personal room: 6996adb45e25a10f4831078d
+[2026-03-06T07:50:40.805Z] [Socket] User Online: 6996adb45e25a10f4831078d (Sessions: 1)
+[2026-03-06T07:50:40.822Z] [Socket] User joined personal room: 6996adb45e25a10f4831078d
+[2026-03-06T07:50:40.823Z] [Socket] User Online: 6996adb45e25a10f4831078d (Sessions: 2)
+[2026-03-06T07:51:16.198Z] [PushToken] Register request from user 697a0403862d2253f71c1d12: ExponentPushToken[0O35C1DnhJkPkelyVvNwZ_]
+[2026-03-06T07:51:16.219Z] [PushToken] Token already exists for user Priya
+[2026-03-06T07:51:16.378Z] [FCMToken] Register request from user 697a0403862d2253f71c1d12: fI7ErA7mTbO32GDx92y1...
+[2026-03-06T07:51:16.397Z] [FCMToken] FCM Token already exists for Priya
+[2026-03-06T07:51:18.277Z] [Socket] User joined personal room: 697a0403862d2253f71c1d12
+[2026-03-06T07:51:18.278Z] [Socket] User Online: 697a0403862d2253f71c1d12 (Sessions: 1)
+[2026-03-06T07:51:19.513Z] [Socket] User joined personal room: 697a0403862d2253f71c1d12
+[2026-03-06T07:51:19.514Z] [Socket] User Online: 697a0403862d2253f71c1d12 (Sessions: 2)
+[2026-03-06T07:54:42.412Z] [Socket] User joined personal room: 697a0403862d2253f71c1d12
+[2026-03-06T07:54:42.416Z] [Socket] User Online: 697a0403862d2253f71c1d12 (Sessions: 1)
+[2026-03-06T07:54:42.424Z] [Socket] User joined personal room: 697a0403862d2253f71c1d12
+[2026-03-06T07:54:42.429Z] [Socket] User Online: 697a0403862d2253f71c1d12 (Sessions: 2)
+[2026-03-06T08:07:29.814Z] [Socket] User joined personal room: 697a0403862d2253f71c1d12
+[2026-03-06T08:07:29.816Z] [Socket] User Online: 697a0403862d2253f71c1d12 (Sessions: 1)
+[2026-03-06T08:07:29.818Z] [Socket] User joined personal room: 697a0403862d2253f71c1d12
+[2026-03-06T08:07:29.819Z] [Socket] User Online: 697a0403862d2253f71c1d12 (Sessions: 2)
+[2026-03-06T08:16:23.882Z] [Socket] User joined personal room: 697a0403862d2253f71c1d12
+[2026-03-06T08:16:23.883Z] [Socket] User Online: 697a0403862d2253f71c1d12 (Sessions: 1)
+[2026-03-06T08:16:23.887Z] [Socket] User joined personal room: 697a0403862d2253f71c1d12
+[2026-03-06T08:16:23.888Z] [Socket] User Online: 697a0403862d2253f71c1d12 (Sessions: 2)
+[2026-03-06T08:24:36.511Z] [PushToken] Register request from user 6996adb45e25a10f4831078d: ExponentPushToken[60TQ2OFdHCvsdjySVJlGh9]
+[2026-03-06T08:24:36.710Z] [PushToken] Token already exists for user Shilpa ben
+[2026-03-06T08:24:37.101Z] [FCMToken] Register request from user 6996adb45e25a10f4831078d: ecMB8BCtS_28Qkebsljj...
+[2026-03-06T08:24:37.169Z] [FCMToken] FCM Token already exists for Shilpa ben
+[2026-03-06T08:24:38.319Z] [Socket] User joined personal room: 6996adb45e25a10f4831078d
+[2026-03-06T08:24:38.320Z] [Socket] User Online: 6996adb45e25a10f4831078d (Sessions: 1)
+[2026-03-06T08:25:14.679Z] [PushToken] Register request from user 697a0403862d2253f71c1d12: ExponentPushToken[0O35C1DnhJkPkelyVvNwZ_]
+[2026-03-06T08:25:14.699Z] [PushToken] Token already exists for user Priya
+[2026-03-06T08:25:14.850Z] [FCMToken] Register request from user 697a0403862d2253f71c1d12: fI7ErA7mTbO32GDx92y1...
+[2026-03-06T08:25:14.870Z] [FCMToken] FCM Token already exists for Priya
+[2026-03-06T08:25:15.355Z] [Socket] User joined personal room: 697a0403862d2253f71c1d12
+[2026-03-06T08:25:15.356Z] [Socket] User Online: 697a0403862d2253f71c1d12 (Sessions: 1)
+[2026-03-06T08:25:30.319Z] [Socket] User joined personal room: 69774857485a231537194d64
+[2026-03-06T08:25:30.320Z] [Socket] User Online: 69774857485a231537194d64 (Sessions: 1)
+[2026-03-06T08:25:30.344Z] [Socket] User joined personal room: 69774857485a231537194d64
+[2026-03-06T08:25:30.344Z] [Socket] User Online: 69774857485a231537194d64 (Sessions: 2)
+[2026-03-06T08:26:04.361Z] [Socket] Call from Hemit to 697a0403862d2253f71c1d12 (isVideo: false)
+[2026-03-06T08:26:04.484Z] [Socket] Sending 'incoming-call' to user 697a0403862d2253f71c1d12 (1 active sessions)
+[2026-03-06T08:26:04.585Z] [PushNotif] Processing 13 Expo labels for Priya
+[2026-03-06T08:26:05.037Z] [PushNotif] Ticket for ExponentPushToken[MrIBepJ...: [{"status":"ok","id":"019cc240-fda9-774e-9d6d-1813fe194666"}]
+[2026-03-06T08:26:05.403Z] [PushNotif] Ticket for ExponentPushToken[MrIBepJ...: [{"status":"ok","id":"019cc240-fee8-762b-849c-4e306dab412d"}]
+[2026-03-06T08:26:05.837Z] [PushNotif] Ticket for ExponentPushToken[t5LvlwI...: [{"status":"ok","id":"019cc241-0058-7515-90e1-a21952fef288"}]
+[2026-03-06T08:26:06.149Z] [PushNotif] Ticket for ExponentPushToken[eRsPexC...: [{"status":"ok","id":"019cc241-0206-70ba-a833-6d9439ea42fb"}]
+[2026-03-06T08:26:06.531Z] [PushNotif] Ticket for ExponentPushToken[ipNuT3J...: [{"status":"ok","id":"019cc241-034e-729e-a1ee-f9ec2f461959"}]
+[2026-03-06T08:26:06.848Z] [PushNotif] Ticket for ExponentPushToken[NuMwUBM...: [{"status":"ok","id":"019cc241-04c7-7039-8b72-ece894f50cc3"}]
+[2026-03-06T08:26:07.247Z] [PushNotif] Ticket for ExponentPushToken[nyBHpGA...: [{"status":"ok","id":"019cc241-05fa-757c-938d-f7826ce8716c"}]
+[2026-03-06T08:26:07.614Z] [PushNotif] Ticket for ExponentPushToken[mhAfXaB...: [{"status":"ok","id":"019cc241-0787-702f-b157-03d67e3b6af9"}]
+[2026-03-06T08:26:07.922Z] [PushNotif] Ticket for ExponentPushToken[m3zfVRG...: [{"status":"ok","id":"019cc241-08f8-7109-b2f1-bbcb95efb18d"}]
+[2026-03-06T08:26:08.237Z] [PushNotif] Ticket for ExponentPushToken[Cd3EHfK...: [{"status":"ok","id":"019cc241-0a36-7088-8291-14ead1442803"}]
+[2026-03-06T08:26:08.579Z] [PushNotif] Ticket for ExponentPushToken[kk7mGkE...: [{"status":"ok","id":"019cc241-0b6b-73e2-a1a3-7d39055c0584"}]
+[2026-03-06T08:26:08.878Z] [PushNotif] Ticket for ExponentPushToken[6C-E7VF...: [{"status":"ok","id":"019cc241-0cc2-777f-af81-0b7567163c76"}]
+[2026-03-06T08:26:09.399Z] [PushNotif] Ticket for ExponentPushToken[0O35C1D...: [{"status":"error","message":"Unable to retrieve the FCM server key for the recipient's app. Make sure you have provided a server key as directed by the Expo FCM documentation.","details":{"error":"InvalidCredentials","fault":"developer"}}]
+[2026-03-06T08:26:09.423Z] [FCM] Sending call data message to Priya (1 FCM tokens)
+[2026-03-06T08:26:10.119Z] [FCM] Data message sent successfully to token fI7ErA7mTb...
+[2026-03-06T08:27:52.812Z] [Socket] User joined personal room: 69774857485a231537194d64
+[2026-03-06T08:27:52.813Z] [Socket] User Online: 69774857485a231537194d64 (Sessions: 1)
+[2026-03-06T08:27:52.826Z] [Socket] User joined personal room: 69774857485a231537194d64
+[2026-03-06T08:27:52.827Z] [Socket] User Online: 69774857485a231537194d64 (Sessions: 2)
+[2026-03-06T08:28:53.479Z] [Socket] User joined personal room: 6996adb45e25a10f4831078d
+[2026-03-06T08:28:53.480Z] [Socket] User Online: 6996adb45e25a10f4831078d (Sessions: 1)
+[2026-03-06T08:33:13.082Z] [Socket] User joined personal room: 69774857485a231537194d64
+[2026-03-06T08:33:13.083Z] [Socket] User Online: 69774857485a231537194d64 (Sessions: 1)
+[2026-03-06T08:33:13.099Z] [Socket] User joined personal room: 69774857485a231537194d64
+[2026-03-06T08:33:13.100Z] [Socket] User Online: 69774857485a231537194d64 (Sessions: 2)
+[2026-03-06T08:33:36.449Z] [Socket] User joined personal room: 69774857485a231537194d64
+[2026-03-06T08:33:36.450Z] [Socket] User Online: 69774857485a231537194d64 (Sessions: 1)
+[2026-03-06T08:33:36.467Z] [Socket] User joined personal room: 69774857485a231537194d64
+[2026-03-06T08:33:36.469Z] [Socket] User Online: 69774857485a231537194d64 (Sessions: 2)
+[2026-03-06T08:56:34.817Z] [Socket] User joined personal room: 69774857485a231537194d64
+[2026-03-06T08:56:34.817Z] [Socket] User Online: 69774857485a231537194d64 (Sessions: 1)
+[2026-03-06T08:56:38.298Z] [Socket] User joined personal room: 69774857485a231537194d64
+[2026-03-06T08:56:38.299Z] [Socket] User Online: 69774857485a231537194d64 (Sessions: 2)

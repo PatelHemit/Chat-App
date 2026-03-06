@@ -51,7 +51,7 @@ import {
     TouchableOpacity,
     View
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const styles = StyleSheet.create({
     container: {
@@ -123,7 +123,6 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         padding: 8,
         alignItems: 'flex-end',
-        paddingBottom: Platform.OS === 'ios' ? 25 : 8,
     },
     inputPill: {
         flex: 1,
@@ -328,6 +327,7 @@ export default function ChatScreen() {
     const { id, name, profilePic, otherUserId } = useLocalSearchParams<{ id: string; name: string; profilePic: string; otherUserId: string }>();
     const { initiateCall } = useCall();
     const [message, setMessage] = useState('');
+    const insets = useSafeAreaInsets();
     const [messages, setMessages] = useState<any[]>([]);
     const [loading, setLoading] = useState(false);
     const [isEmojiOpen, setIsEmojiOpen] = useState(false);
@@ -1603,26 +1603,6 @@ export default function ChatScreen() {
                 </View>
             )}
 
-            {/* Blocked Banners */}
-            {isBlocked && (
-                <View style={{ padding: 10, backgroundColor: 'rgba(255,0,0,0.1)', alignItems: 'center' }}>
-                    <Text style={{ color: 'red', fontSize: 13, textAlign: 'center' }}>
-                        You blocked this contact. Tap to unblock.
-                    </Text>
-                    <TouchableOpacity onPress={handleBlockToggle} style={{ marginTop: 5 }}>
-                        <Text style={{ color: 'red', fontWeight: 'bold' }}>UNBLOCK</Text>
-                    </TouchableOpacity>
-                </View>
-            )}
-
-            {isBlockingMe && (
-                <View style={{ padding: 10, backgroundColor: 'rgba(128,128,128,0.1)', alignItems: 'center' }}>
-                    <Text style={{ color: '#666', fontSize: 13, textAlign: 'center' }}>
-                        You are blocked by this contact. You cannot send messages.
-                    </Text>
-                </View>
-            )}
-
             <ImageBackground
                 source={{ uri: 'https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png' }}
                 style={StyleSheet.absoluteFillObject}
@@ -1631,10 +1611,30 @@ export default function ChatScreen() {
             />
 
             <KeyboardAvoidingView
-                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-                keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
+                behavior={Platform.OS === 'ios' ? 'padding' : 'padding'}
+                keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 98}
                 style={{ flex: 1 }}
             >
+                {/* Blocked Banners */}
+                {isBlocked && (
+                    <View style={{ padding: 10, backgroundColor: 'rgba(255,0,0,0.1)', alignItems: 'center', zIndex: 10 }}>
+                        <Text style={{ color: 'red', fontSize: 13, textAlign: 'center' }}>
+                            You blocked this contact. Tap to unblock.
+                        </Text>
+                        <TouchableOpacity onPress={handleBlockToggle} style={{ marginTop: 5 }}>
+                            <Text style={{ color: 'red', fontWeight: 'bold' }}>UNBLOCK</Text>
+                        </TouchableOpacity>
+                    </View>
+                )}
+
+                {isBlockingMe && (
+                    <View style={{ padding: 10, backgroundColor: 'rgba(128,128,128,0.1)', alignItems: 'center', zIndex: 10 }}>
+                        <Text style={{ color: '#666', fontSize: 13, textAlign: 'center' }}>
+                            You are blocked by this contact. You cannot send messages.
+                        </Text>
+                    </View>
+                )}
+
                 <FlatList
                     style={{ flex: 1 }}
                     data={messages}
