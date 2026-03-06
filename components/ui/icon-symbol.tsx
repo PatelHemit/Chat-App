@@ -27,7 +27,9 @@ const MAPPING = {
   'person.fill': 'person',
   'plus.message.fill': 'chat',
   'video': 'videocam',
+  'video.fill': 'videocam',
   'phone': 'call',
+  'phone.fill': 'call',
   'mic': 'mic',
   'mic.fill': 'mic',
   'plus': 'add',
@@ -76,6 +78,10 @@ const MAPPING = {
   'xmark': 'close',
   'chevron.up': 'expand-less',
   'chevron.down': 'expand-more',
+  'message.fill': 'chat',
+  'arrow.up.right': 'call-made',
+  'arrow.down.left': 'call-received',
+  'delete.backward.fill': 'backspace',
 } as Partial<IconMapping>;
 
 /**

@@ -1,15 +1,25 @@
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useRouter } from 'expo-router';
-import { Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { API_BASE_URL } from '@/config/api';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
+import { useEffect } from 'react';
 
 export default function WelcomeScreen() {
     const router = useRouter();
     const colorScheme = useColorScheme() ?? 'light';
     const theme = Colors[colorScheme];
+
+    useEffect(() => {
+        if (Platform.OS !== 'web') {
+            console.log(`[Diagnostic] WelcomeScreen Mount - API_BASE_URL: ${API_BASE_URL}`);
+            // Small alert to confirm IP on physical phone
+            // Alert.alert("Connection Diagnostic", `API URL: ${API_BASE_URL}`);
+        }
+    }, []);
 
     return (
         <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
@@ -45,6 +55,20 @@ export default function WelcomeScreen() {
                         <FontAwesome name="phone" size={20} color={theme.text} style={{ marginRight: 10 }} />
                         <Text style={[styles.qrButtonText, { color: theme.text }]}>Login with Phone Number</Text>
                     </TouchableOpacity>
+                )}
+
+                {Platform.OS !== 'web' && (
+                    <View style={{ marginTop: 40, padding: 10, backgroundColor: 'rgba(0,0,0,0.05)', borderRadius: 8 }}>
+                        <Text style={{ fontSize: 10, color: '#666', textAlign: 'center' }}>
+                            Debug IP: {API_BASE_URL}
+                        </Text>
+                        <TouchableOpacity
+                            onPress={() => Alert.alert("System Config", `Backend URL: ${API_BASE_URL}\nPlatform: ${Platform.OS}`)}
+                            style={{ marginTop: 5 }}
+                        >
+                            <Text style={{ fontSize: 10, color: '#008069', fontWeight: 'bold', textAlign: 'center' }}>Verify Connection</Text>
+                        </TouchableOpacity>
+                    </View>
                 )}
             </View>
         </SafeAreaView>

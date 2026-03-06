@@ -9,11 +9,12 @@ import * as ImagePicker from 'expo-image-picker';
 import { Link, useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, FlatList, Platform, Pressable, Image as RNImage, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function HomeScreen() {
   const router = useRouter();
   const params = useLocalSearchParams();
+  const insets = useSafeAreaInsets();
 
   const colorScheme = useColorScheme() ?? 'light';
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
@@ -350,7 +351,7 @@ export default function HomeScreen() {
                         <IconSymbol name="bell.slash" size={16} color="#888" style={{ marginRight: 8 }} />
                       )}
                       {item.unreadCount > 0 && (
-                        <View style={[styles.badge, { backgroundColor: isMuted ? '#888' : Colors[colorScheme].tint }]}>
+                        <View style={StyleSheet.flatten([styles.badge, { backgroundColor: isMuted ? '#888' : Colors[colorScheme].tint }])}>
                           <Text style={styles.badgeText}>{item.unreadCount}</Text>
                         </View>
                       )}
@@ -363,13 +364,13 @@ export default function HomeScreen() {
         />
       )}
       <Link href="/meta-ai" asChild>
-        <Pressable style={styles.aiFab}>
-          <IconSymbol name="sparkles" size={24} color="#fff" />
+        <Pressable style={StyleSheet.flatten([styles.aiFab, { bottom: 125 + insets.bottom, right: 24 }])}>
+          <IconSymbol name="sparkles" size={20} color="#fff" />
         </Pressable>
       </Link>
       <Link href="/chat/new" asChild>
-        <Pressable style={StyleSheet.flatten([styles.fab, { backgroundColor: Colors[colorScheme].tint }])}>
-          <IconSymbol name="plus.message.fill" size={24} color="#fff" />
+        <Pressable style={StyleSheet.flatten([styles.fab, { bottom: 62 + insets.bottom, right: 20 }])}>
+          <IconSymbol name="message.fill" size={24} color="#fff" />
         </Pressable>
       </Link>
     </SafeAreaView>
@@ -466,46 +467,39 @@ const styles = StyleSheet.create({
   },
   fab: {
     position: 'absolute',
-    right: 20,
-    bottom: 20,
     width: 56,
     height: 56,
     borderRadius: 28,
+    backgroundColor: '#008069',
     justifyContent: 'center',
     alignItems: 'center',
-    elevation: 6,
+    elevation: 4,
     shadowColor: "#000",
     shadowOffset: {
       width: 0,
-      height: 3,
+      height: 2,
     },
-    shadowOpacity: 0.27,
-    shadowRadius: 4.65,
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
   },
   aiFab: {
     position: 'absolute',
-    right: 24, // Slightly smaller or aligned
-    bottom: 90, // Positioned above the main FAB
     width: 48,
     height: 48,
     borderRadius: 24,
-    // backgroundColor: 'transparent', // Using a gradient usually, but here solid or image
-    // For Meta AI, it often looks like a rainbow circle or blue/purple
-    // Let's use a nice distinct color for now, maybe a deep purple or blue
-    // Or we can try to make it look like the multi-color ring if possible, but simple for now:
-    borderWidth: 2,
+    borderWidth: 1.5,
     borderColor: '#fff',
-    backgroundColor: '#615EF0', // Example Meta AI-ish color
+    backgroundColor: '#615EF0',
     justifyContent: 'center',
     alignItems: 'center',
-    elevation: 6,
+    elevation: 4,
     shadowColor: "#000",
     shadowOffset: {
       width: 0,
-      height: 3,
+      height: 2,
     },
-    shadowOpacity: 0.27,
-    shadowRadius: 4.65,
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
     zIndex: 10,
   },
 });

@@ -10,7 +10,8 @@ import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, Animated, Modal, Platform, Image as RNImage, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import DialPadModal from './DialPadModal';
 
 // --- Shared Styles ---
 const styles = StyleSheet.create({
@@ -46,7 +47,7 @@ const styles = StyleSheet.create({
     fab: {
         position: 'absolute',
         right: 20,
-        bottom: 20,
+        bottom: 80, // Moved up to avoid overlap with 60px tab bar
         width: 56,
         height: 56,
         borderRadius: 28,
@@ -457,17 +458,24 @@ function SegmentedRing({ count, viewedCount = 0, size = 56, children, theme }: {
 export function CallsContent() {
     const colorScheme = useColorScheme() ?? 'light';
     const theme = Colors[colorScheme];
+    const insets = useSafeAreaInsets();
     const [calls, setCalls] = useState<any[]>([]);
     const [filteredCalls, setFilteredCalls] = useState<any[]>([]);
     const [loading, setLoading] = useState(false);
     const [isSearching, setIsSearching] = useState(false);
     const [searchQuery, setSearchQuery] = useState("");
+    const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+    const [isDialPadVisible, setIsDialPadVisible] = useState(false);
 
     const fetchCalls = async () => {
         try {
             setLoading(true);
             const token = await AsyncStorage.getItem('userToken');
-            if (!token) return;
+            const userInfoStr = await AsyncStorage.getItem('userInfo');
+            if (!token || !userInfoStr) return;
+
+            const userInfo = JSON.parse(userInfoStr);
+            setCurrentUserId(userInfo._id);
 
             const response = await fetch(`${API_BASE_URL}/api/call`, {
                 headers: { Authorization: `Bearer ${token}` }
@@ -492,7 +500,7 @@ export function CallsContent() {
         }
 
         const filtered = calls.filter((call) => {
-            const isCaller = call.caller?._id === call.caller?._id;
+            const isCaller = call.caller?._id === currentUserId;
             const otherUser = isCaller ? call.receiver : call.caller;
             return otherUser?.name?.toLowerCase().includes(query.toLowerCase());
         });
@@ -546,8 +554,9 @@ export function CallsContent() {
                         <ActivityIndicator size="small" color={theme.tint} />
                     ) : filteredCalls.length > 0 ? (
                         filteredCalls.map((call, i) => {
-                            const isCaller = call.caller?._id === call.caller?._id; // Simplified, in real app compare with currentUserId
-                            const otherUser = call.caller?._id === call.caller?._id ? call.receiver : call.caller;
+                            const isCaller = call.caller?._id === currentUserId;
+                            const otherUser = isCaller ? call.receiver : call.caller;
+                            const isMissed = call.status === 'missed' && !isCaller;
 
                             return (
                                 <View key={call._id || i} style={styles.callItem}>
@@ -559,12 +568,12 @@ export function CallsContent() {
                                         )}
                                     </View>
                                     <View style={styles.callInfo}>
-                                        <Text style={[styles.itemName, { color: theme.text }]}>{otherUser?.name || "Unknown"}</Text>
+                                        <Text style={[styles.itemName, { color: isMissed ? '#FF3B30' : theme.text }]}>{otherUser?.name || "Unknown"}</Text>
                                         <View style={styles.callMeta}>
                                             <IconSymbol
-                                                name={call.status === 'missed' ? "arrow.down.left" : "arrow.up.right"}
+                                                name={isCaller ? "arrow.up.right" : "arrow.down.left"}
                                                 size={14}
-                                                color={call.status === 'missed' ? "red" : "green"}
+                                                color={isMissed ? "#FF3B30" : "#25D366"}
                                             />
                                             <Text style={[styles.itemDate, { color: '#8696A0' }]}>
                                                 {" "}{new Date(call.createdAt).toLocaleDateString()} {new Date(call.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
@@ -580,9 +589,17 @@ export function CallsContent() {
                     )}
                 </View>
             </ScrollView>
-            <View style={[styles.fab, { backgroundColor: theme.tint }]}>
-                <IconSymbol name="phone" size={24} color="#fff" />
-            </View>
+            <TouchableOpacity
+                style={[styles.fab, { backgroundColor: theme.tint, bottom: 65 + insets.bottom }]}
+                onPress={() => setIsDialPadVisible(true)}
+            >
+                <IconSymbol name="phone.fill" size={24} color="#fff" />
+            </TouchableOpacity>
+
+            <DialPadModal
+                visible={isDialPadVisible}
+                onClose={() => setIsDialPadVisible(false)}
+            />
         </SafeAreaView>
     );
 }
@@ -898,6 +915,7 @@ export function UpdatesContent() {
     const router = useRouter();
     const colorScheme = useColorScheme() ?? 'light';
     const theme = Colors[colorScheme];
+    const insets = useSafeAreaInsets();
     const [groupedStatuses, setGroupedStatuses] = useState<any[]>([]);
     const [filteredGroupedStatuses, setFilteredGroupedStatuses] = useState<any[]>([]);
     const [myStatuses, setMyStatuses] = useState<any[]>([]);
@@ -1300,7 +1318,7 @@ export function UpdatesContent() {
                     )}
                 </View>
             </ScrollView>
-            <View style={[styles.fab, { backgroundColor: theme.tint }]}>
+            <View style={[styles.fab, { backgroundColor: theme.tint, bottom: 65 + insets.bottom }]}>
                 <TouchableOpacity onPress={pickMedia}>
                     <IconSymbol name="camera" size={24} color="#fff" />
                 </TouchableOpacity>

@@ -6,11 +6,12 @@ const MANUAL_LAN_IP = '192.168.1.35';
 
 // Use manual IP if provided, otherwise try to detect
 const debuggerHost = Constants.expoConfig?.hostUri?.split(':')[0];
-// If using tunnel (exp.direct) or if Manual IP is set, prefer Manual IP for backend
-const localhostIp = MANUAL_LAN_IP || debuggerHost;
+// Use manual IP if provided, otherwise try to detect from Expo
+const localhostIp = MANUAL_LAN_IP || debuggerHost || '127.0.0.1';
 
 console.log(`[API-Config] Detected debuggerHost: ${debuggerHost}`);
-console.log(`[API-Config] Using localhostIp: ${localhostIp}`);
+console.log(`[API-Config] Manual IP Set: ${MANUAL_LAN_IP}`);
+console.log(`[API-Config] Effective Local IP: ${localhostIp}`);
 
 const getApiBaseUrl = () => {
     // Android emulator bridge
@@ -29,8 +30,10 @@ const getApiBaseUrl = () => {
 const RENDER_URL = 'https://chat-app-3-avn4.onrender.com';
 
 // Use Render URL for production, local for development
-export const API_BASE_URL = RENDER_URL; // getApiBaseUrl(); // Switched to Render for testing
-console.log(`[API-Config] FINAL API_BASE_URL: ${API_BASE_URL}`);
+export const API_BASE_URL = getApiBaseUrl(); // RENDER_URL; // Reverted to Local for testing
+console.log(`[API-Config] ****************************************`);
+console.log(`[API-Config] * FINAL API_BASE_URL: ${API_BASE_URL}`);
+console.log(`[API-Config] ****************************************`);
 
 export const SOCKET_URL = API_BASE_URL;
 

@@ -4,10 +4,10 @@ import { API_BASE_URL } from '@/config/api';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Audio } from 'expo-av';
+import { Audio, InterruptionModeAndroid, InterruptionModeIOS } from 'expo-av';
 import * as Haptics from 'expo-haptics';
 import { Stack, useRouter } from 'expo-router';
-import React, { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
     Alert,
     FlatList,
@@ -133,6 +133,8 @@ export default function MetaAIScreen() {
                 await Audio.setAudioModeAsync({
                     allowsRecordingIOS: true,
                     playsInSilentModeIOS: true,
+                    interruptionModeAndroid: InterruptionModeAndroid.DoNotMix,
+                    interruptionModeIOS: InterruptionModeIOS.DoNotMix,
                 });
 
                 const { recording: newRecording } = await Audio.Recording.createAsync(

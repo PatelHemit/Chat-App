@@ -13,9 +13,26 @@ const statusRoutes = require('./routes/statusRoutes');
 const callRoutes = require('./routes/callRoutes');
 const communityRoutes = require('./routes/communityRoutes');
 const notificationRoutes = require('./routes/notificationRoutes');
+const { Expo } = require('expo-server-sdk');
+const expo = new Expo();
+const User = require('./models/User');
 const Message = require('./models/Message'); // Import Message model
 const Chat = require('./models/Chat');
+const Call = require('./models/Call');
 const logNotif = require('./utils/logger');
+
+// Initialize Firebase Admin SDK for FCM
+const admin = require('firebase-admin');
+try {
+    const serviceAccount = require('./serviceAccountKey.json');
+    admin.initializeApp({
+        credential: admin.credential.cert(serviceAccount),
+    });
+    console.log('[Firebase] Admin SDK initialized successfully');
+} catch (e) {
+    console.error('[Firebase] Admin SDK init error:', e.message);
+}
+
 
 const app = express();
 const server = http.createServer(app);
@@ -86,9 +103,20 @@ io.on("connection", (socket) => {
     });
 
     socket.on("setup", (userData) => {
-        const userId = userData._id?.toString() || userData.toString();
+        if (!userData) {
+            console.warn("[Socket] setup event received with NULL userData. Skipping.");
+            return;
+        }
+
+        const userId = userData._id?.toString() || (typeof userData === 'string' ? userData : null);
+
+        if (!userId) {
+            console.warn("[Socket] setup event: Could not extract userId from payload.", userData);
+            return;
+        }
+
         socket.join(userId);
-        console.log("[Socket] User joined personal room: " + userId);
+        logNotif("[Socket] User joined personal room: " + userId);
 
         // Track online user (support multiple devices/tabs)
         if (!onlineUsers.has(userId)) {
@@ -96,10 +124,10 @@ io.on("connection", (socket) => {
         }
         onlineUsers.get(userId).add(socket.id);
 
-        console.log(`[Socket] User Online: ${userId} (Sessions: ${onlineUsers.get(userId).size})${userData.platform ? ` - ${userData.platform}` : ""}`);
+        logNotif(`[Socket] User Online: ${userId} (Sessions: ${onlineUsers.get(userId).size})${userData.platform ? ` - ${userData.platform}` : ""}`);
 
         // Broadcast to all clients that this user is online
-        io.emit("user-online", userData._id);
+        io.emit("user-online", userId);
 
         socket.emit("connected");
     });
@@ -223,9 +251,16 @@ io.on("connection", (socket) => {
                         }
                         if (recipient && recipient.pushTokens && recipient.pushTokens.length > 0) {
                             const senderName = newMessageReceived.sender.name || 'Someone';
-                            const messagePreview = newMessageReceived.content
-                                ? (newMessageReceived.content.length > 50 ? newMessageReceived.content.substring(0, 50) + '...' : newMessageReceived.content)
-                                : (newMessageReceived.fileUrl ? 'Media' : 'New message');
+                            const msgType = newMessageReceived.type || 'text';
+                            let messagePreview;
+                            if (msgType === 'image') messagePreview = '📷 Photo';
+                            else if (msgType === 'video') messagePreview = '🎥 Video';
+                            else if (msgType === 'audio') messagePreview = '🎵 Voice message';
+                            else if (msgType === 'document') messagePreview = '📄 Document';
+                            else {
+                                const content = newMessageReceived.content || '';
+                                messagePreview = content.length > 50 ? content.substring(0, 50) + '...' : content || 'New message';
+                            }
 
                             await sendPushNotification(
                                 recipient.pushTokens,
@@ -313,6 +348,154 @@ io.on("connection", (socket) => {
         } catch (error) {
             console.error("Error marking chat as read:", error);
         }
+    });
+
+    // Call Signaling Events
+    socket.on("call-user", async ({ to, from, roomName, isVideoCall }) => {
+        logNotif(`[Socket] Call from ${from.name} to ${to} (isVideo: ${isVideoCall})`);
+
+        let callId = null;
+        try {
+            const newCall = await Call.create({
+                caller: from._id,
+                receiver: to,
+                type: isVideoCall ? 'video' : 'audio',
+                status: 'missed', // Default to missed until answered
+                startedAt: new Date()
+            });
+            callId = newCall._id;
+            console.log(`[Socket] Call log created: ${callId}`);
+        } catch (err) {
+            console.error("[Socket] Error creating call log:", err);
+        }
+
+        // 1. Emit socket event for real-time foreground handling
+        const recipientRooms = io.sockets.adapter.rooms.get(to);
+        const onlineSessions = recipientRooms ? recipientRooms.size : 0;
+        logNotif(`[Socket] Sending 'incoming-call' to user ${to} (${onlineSessions} active sessions)`);
+        io.to(to).emit("incoming-call", {
+            from,
+            roomName,
+            isVideoCall,
+            callId
+        });
+
+        // Also notify the caller about the callId so they can update it
+        socket.emit("call-initiated", { callId });
+
+        // 2. Send Push Notification for background/killed state (Expo)
+        try {
+            const recipient = await User.findById(to);
+            if (recipient && recipient.pushTokens && recipient.pushTokens.length > 0) {
+                const tokenCount = recipient.pushTokens.length;
+                logNotif(`[PushNotif] Processing ${tokenCount} Expo labels for ${recipient.name || to}`);
+
+                const sanitizedFrom = {
+                    _id: from._id,
+                    name: from.name,
+                    profilePic: from.profilePic,
+                    phone: from.phone
+                };
+
+                // Send individually to isolate "Conflicting Project" errors
+                for (let pushToken of [...recipient.pushTokens]) {
+                    if (!Expo.isExpoPushToken(pushToken)) {
+                        logNotif(`[PushNotif] Pruning INVALID token: ${pushToken}`);
+                        await User.findByIdAndUpdate(to, { $pull: { pushTokens: pushToken } });
+                        continue;
+                    }
+
+                    try {
+                        const ticket = await expo.sendPushNotificationsAsync([{
+                            to: pushToken,
+                            sound: 'default',
+                            title: `Incoming ${isVideoCall ? 'Video' : 'Voice'} Call`,
+                            body: `${from.name} is calling you...`,
+                            data: {
+                                type: 'incoming-call',
+                                from: sanitizedFrom,
+                                roomName,
+                                isVideoCall: isVideoCall ? '1' : '0',
+                                callId
+                            },
+                            priority: 'high',
+                            channelId: 'incoming-calls'
+                        }]);
+
+                        logNotif(`[PushNotif] Ticket for ${pushToken.substring(0, 25)}...: ${JSON.stringify(ticket)}`);
+
+                        // Prune if ticket indicates error
+                        if (ticket[0].status === 'error') {
+                            const error = ticket[0].details?.error;
+                            if (error === 'DeviceNotRegistered' || ticket[0].message?.includes('project')) {
+                                logNotif(`[PushNotif] Pruning unusable token: ${pushToken.substring(0, 20)}... (Error: ${error || 'Project mismatch'})`);
+                                await User.findByIdAndUpdate(to, { $pull: { pushTokens: pushToken } });
+                            }
+                        }
+                    } catch (err) {
+                        logNotif(`[PushNotif] ERROR sending to ${pushToken.substring(0, 20)}...: ${err.message}`);
+                        if (err.message.includes('project')) {
+                            logNotif(`[PushNotif] Pruning conflicting project token`);
+                            await User.findByIdAndUpdate(to, { $pull: { pushTokens: pushToken } });
+                        }
+                    }
+                }
+            }
+        } catch (error) {
+            logNotif(`[PushNotif] CRITICAL error in Expo flow: ${error.message}`);
+        }
+
+        // 3. Send FCM Data Message for CallKeep
+        try {
+            const recipientForFcm = await User.findById(to).select('name fcmTokens');
+            if (recipientForFcm && recipientForFcm.fcmTokens && recipientForFcm.fcmTokens.length > 0) {
+                logNotif(`[FCM] Sending call data message to ${recipientForFcm.name} (${recipientForFcm.fcmTokens.length} FCM tokens)`);
+                for (const fcmToken of recipientForFcm.fcmTokens) {
+                    try {
+                        const fcmMessage = {
+                            token: fcmToken,
+                            data: {
+                                type: 'incoming-call',
+                                callerId: from._id?.toString() || '',
+                                callerName: from.name || 'Unknown',
+                                callerPic: from.profilePic || '',
+                                roomName: roomName || '',
+                                isVideoCall: isVideoCall ? '1' : '0',  // '1'=video, '0'=voice; use numeric to avoid 'false' string being truthy
+                                callId: callId?.toString() || '',
+                                sender: JSON.stringify(from),
+                            },
+                            android: {
+                                priority: 'high',
+                                ttl: 30000,
+                            },
+                        };
+                        const fcmResult = await admin.messaging().send(fcmMessage);
+                        logNotif(`[FCM] Data message sent successfully to token ${fcmToken.substring(0, 10)}...`);
+                    } catch (fcmErr) {
+                        logNotif(`[FCM] Error sending to token ${fcmToken.substring(0, 10)}...: ${fcmErr.message}`);
+                        if (fcmErr.code === 'messaging/registration-token-not-registered' ||
+                            fcmErr.code === 'messaging/invalid-registration-token') {
+                            await User.findByIdAndUpdate(to, { $pull: { fcmTokens: fcmToken } });
+                            logNotif(`[FCM] Removed invalid token from DB`);
+                        }
+                    }
+                }
+            } else {
+                logNotif(`[FCM] User ${to} has 0 FCM tokens registered.`);
+            }
+        } catch (fcmError) {
+            logNotif(`[FCM] CRITICAL error in FCM flow: ${fcmError.message}`);
+        }
+    });
+
+    socket.on("answer-call", ({ to, accepted, roomName, isVideoCall }) => {
+        console.log(`[Socket] Call to ${to} ${accepted ? 'Accepted' : 'Rejected'}, isVideoCall: ${isVideoCall}`);
+        io.to(to).emit("call-answered", { accepted, roomName, isVideoCall });
+    });
+
+    socket.on("end-call", ({ to }) => {
+        console.log(`[Socket] Call ended for ${to}`);
+        io.to(to).emit("call-ended");
     });
 
     socket.on("disconnect", () => {

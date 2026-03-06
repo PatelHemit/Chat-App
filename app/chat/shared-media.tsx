@@ -110,12 +110,14 @@ export default function SharedMediaScreen() {
         if (!uri) return;
 
         try {
-            if (Platform.OS === 'web') {
+            if ((Platform.OS as any) === 'web') {
                 Linking.openURL(uri);
                 return;
             }
 
-            const fileExt = item.fileMetadata?.name?.split('.').pop() || uri.split('.').pop() || 'bin';
+            const pathParts = uri.split('?')[0].split('/');
+            const nameFromUrl = pathParts[pathParts.length - 1];
+            const fileExt = item.fileMetadata?.name?.split('.').pop() || nameFromUrl.split('.').pop() || 'bin';
             const localUri = `${FileSystem.cacheDirectory}${item._id}.${fileExt}`;
 
             if (Platform.OS === 'android') ToastAndroid.show("Opening document...", ToastAndroid.SHORT);

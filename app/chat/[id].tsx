@@ -1,12 +1,14 @@
 import { CustomEmojiPicker } from '@/components/CustomEmojiPicker';
 import { VoiceMessageBubble } from '@/components/VoiceMessageBubble';
-import { ZegoCallButton } from '@/components/ZegoCallButton';
+
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { API_BASE_URL, getInternalUri } from '@/config/api';
 import { Colors } from '@/constants/theme';
+import { useCall } from '@/context/CallContext';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Audio, ResizeMode, Video } from 'expo-av';
+import { Audio, InterruptionModeAndroid, InterruptionModeIOS } from 'expo-av';
+import { useVideoPlayer, VideoView } from 'expo-video';
 // Lazy load native modules to prevent crashes if they are missing
 let Clipboard: any = null;
 let Sharing: any = null;
@@ -321,17 +323,20 @@ const styles = StyleSheet.create({
     }
 });
 
+
 export default function ChatScreen() {
     const { id, name, profilePic, otherUserId } = useLocalSearchParams<{ id: string; name: string; profilePic: string; otherUserId: string }>();
+    const { initiateCall } = useCall();
     const [message, setMessage] = useState('');
     const [messages, setMessages] = useState<any[]>([]);
     const [loading, setLoading] = useState(false);
     const [isEmojiOpen, setIsEmojiOpen] = useState(false);
     const [currentUserId, setCurrentUserId] = useState("");
+    const [currentUserName, setCurrentUserName] = useState("");
     const [currentUserProfilePic, setCurrentUserProfilePic] = useState("");
     const [chatPic, setChatPic] = useState(profilePic);
     const [chatName, setChatName] = useState(name);
-    const [isMuted, setIsMuted] = useState(false);
+    const [isMuted, setIsMuted] = useState(false); // Chat notification sounds
     const [isBlocked, setIsBlocked] = useState(false);
     const [isBlockingMe, setIsBlockingMe] = useState(false);
     const [isUserOnline, setIsUserOnline] = useState(false);
@@ -343,6 +348,8 @@ export default function ChatScreen() {
     const [fullImageVisible, setFullImageVisible] = useState(false);
     const [activeImageUrl, setActiveImageUrl] = useState<string | null>(null);
     const [activeMediaType, setActiveMediaType] = useState<'image' | 'video'>('image');
+    const [isVideoMuted, setIsVideoMuted] = useState(false); // Default to unmuted
+    const [isVideoLoaded, setIsVideoLoaded] = useState(false); // New state to track if video is ready
     const [selectedMedia, setSelectedMedia] = useState<any>(null);
     const [replyingTo, setReplyingTo] = useState<any>(null);
     const [searchResults, setSearchResults] = useState<number[]>([]);
@@ -362,6 +369,10 @@ export default function ChatScreen() {
     const recordingDurationRef = useRef(0);
     const recordingInterval = useRef<any>(null);
     const blinkAnim = useRef(new Animated.Value(1)).current;
+    const scrollViewRef = useRef<any>(null);
+    // Video ref removed as we use expo-video now
+
+    const progressAnim = useRef(new Animated.Value(0)).current;
 
     const colorScheme = useColorScheme() ?? 'light';
     const theme = Colors[colorScheme];
@@ -388,6 +399,26 @@ export default function ChatScreen() {
         }
     }, [isRecording]);
 
+    useEffect(() => {
+        // Configure audio mode to prevent focus issues
+        const configureAudio = async () => {
+            try {
+                await Audio.setAudioModeAsync({
+                    allowsRecordingIOS: true,
+                    playsInSilentModeIOS: true,
+                    interruptionModeAndroid: InterruptionModeAndroid.DuckOthers,
+                    interruptionModeIOS: InterruptionModeIOS.DuckOthers,
+                    shouldDuckAndroid: true,
+                    staysActiveInBackground: false,
+                    playThroughEarpieceAndroid: false,
+                });
+            } catch (err) {
+                console.log("Error configuring audio mode:", err);
+            }
+        };
+        configureAudio();
+    }, []);
+
     const fetchWithRetry = async (url: string, options: any, retries = 2, delay = 1000) => {
         for (let i = 0; i < retries; i++) {
             try {
@@ -411,6 +442,7 @@ export default function ChatScreen() {
                 if (userInfo) {
                     const user = JSON.parse(userInfo);
                     setCurrentUserId(user._id);
+                    setCurrentUserName(user.name);
                     setCurrentUserProfilePic(user.profilePic);
                 }
 
@@ -622,6 +654,8 @@ export default function ChatScreen() {
                 await Audio.setAudioModeAsync({
                     allowsRecordingIOS: true,
                     playsInSilentModeIOS: true,
+                    interruptionModeAndroid: InterruptionModeAndroid.DuckOthers,
+                    interruptionModeIOS: InterruptionModeIOS.DuckOthers,
                 });
 
                 console.log('Starting recording..');
@@ -805,7 +839,26 @@ export default function ChatScreen() {
 
             // 1. Upload file
             const formData = new FormData();
-            const name = fileName || `${type}-${Date.now()}.${type === 'image' ? 'jpg' : type === 'video' ? 'mp4' : 'pdf'}`;
+
+            // Detect actual extension from URI to avoid hardcoding mp4/jpeg
+            const uriExtension = uri.split('.').pop()?.split('?')[0]?.toLowerCase() || '';
+            const defaultExt = type === 'image' ? 'jpg' : type === 'video' ? 'mp4' : 'bin';
+            const actualExt = uriExtension || defaultExt;
+            const name = fileName || `${type}-${Date.now()}.${actualExt}`;
+
+            // Detect mimeType from extension if not provided
+            const getMimeType = (ext: string, fileType: string) => {
+                if (fileType === 'image') {
+                    const imageMimes: Record<string, string> = { jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png', gif: 'image/gif', webp: 'image/webp', heic: 'image/heic', heif: 'image/heif' };
+                    return imageMimes[ext] || 'image/jpeg';
+                }
+                if (fileType === 'video') {
+                    const videoMimes: Record<string, string> = { mp4: 'video/mp4', mov: 'video/quicktime', avi: 'video/x-msvideo', mkv: 'video/x-matroska', webm: 'video/webm', '3gp': 'video/3gpp' };
+                    return videoMimes[ext] || 'video/mp4';
+                }
+                return mimeType || 'application/octet-stream';
+            };
+            const resolvedMimeType = mimeType || getMimeType(actualExt, type);
 
             if (Platform.OS === 'web') {
                 const response = await fetch(uri);
@@ -816,7 +869,7 @@ export default function ChatScreen() {
                 formData.append('file', {
                     uri,
                     name,
-                    type: type === 'image' ? 'image/jpeg' : type === 'video' ? 'video/mp4' : 'application/pdf',
+                    type: resolvedMimeType,
                 });
             }
 
@@ -1144,6 +1197,14 @@ export default function ChatScreen() {
         }
     };
 
+    // Cleanup: stop video and reset state when modal closes
+    useEffect(() => {
+        if (!fullImageVisible) {
+            setIsVideoLoaded(false);
+            // Player stops automatically when unmounted
+        }
+    }, [fullImageVisible]);
+
     const handleReplyMessage = () => {
         setReplyingTo(selectedMessage);
         setContextMenuVisible(false);
@@ -1172,8 +1233,32 @@ export default function ChatScreen() {
 
             const metadata = msg.fileMetadata || {};
             const fileName = metadata.fileName || msg.fileName || 'document';
-            const fileExt = metadata.fileExtension?.toLowerCase() || fileName.split('.').pop()?.toLowerCase() || 'bin';
-            const mimeType = metadata.mimeType;
+            // Robust extension extraction: get last part of path, then last part after dot
+            const pathParts = uri.split('?')[0].split('/');
+            const nameFromUrl = pathParts[pathParts.length - 1];
+            const fileExt = metadata.fileExtension?.toLowerCase() || nameFromUrl.split('.').pop()?.toLowerCase() || 'bin';
+
+            // Infer mimeType if missing
+            const getMimeFromExt = (ext: string) => {
+                const map: Record<string, string> = {
+                    pdf: 'application/pdf',
+                    doc: 'application/msword',
+                    docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                    xls: 'application/vnd.ms-excel',
+                    xlsx: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                    txt: 'text/plain',
+                    jpg: 'image/jpeg',
+                    jpeg: 'image/jpeg',
+                    png: 'image/png'
+                };
+                return map[ext] || 'application/octet-stream';
+            };
+            const mimeType = metadata.mimeType || getMimeFromExt(fileExt);
+
+            if ((Platform.OS as any) === 'web') {
+                window.open(uri, '_blank');
+                return;
+            }
 
             const localUri = `${FileSystem.cacheDirectory}${msg._id}.${fileExt}`;
 
@@ -1195,17 +1280,7 @@ export default function ChatScreen() {
             if (Platform.OS === 'android') ToastAndroid.show("Opening...", ToastAndroid.SHORT);
 
             if (Sharing && typeof Sharing.shareAsync === 'function') {
-                let shareUri = finalLocalUri;
-
-                if (Platform.OS === 'android' && FileSystem.getContentUriAsync) {
-                    try {
-                        shareUri = await FileSystem.getContentUriAsync(finalLocalUri);
-                    } catch (e) {
-                        console.log("getContentUriAsync failed", e);
-                    }
-                }
-
-                await Sharing.shareAsync(shareUri, {
+                await Sharing.shareAsync(finalLocalUri, {
                     mimeType: mimeType,
                     UTI: mimeType,
                     dialogTitle: fileName
@@ -1213,11 +1288,12 @@ export default function ChatScreen() {
             } else {
                 await WebBrowser.openBrowserAsync(uri);
             }
-        } catch (error) {
+        } catch (error: any) {
             console.error("handleOpenDocument Error:", error);
+            const errorMsg = error?.message || String(error);
             Alert.alert(
                 "Cannot Open Document",
-                "Would you like to open it in your browser instead?",
+                `Error: ${errorMsg}\n\nWould you like to open it in your browser instead?`,
                 [
                     { text: "Cancel", style: "cancel" },
                     { text: "Open in Browser", onPress: () => WebBrowser.openBrowserAsync(uri) }
@@ -1282,10 +1358,22 @@ export default function ChatScreen() {
 
                 if (Platform.OS === 'android') ToastAndroid.show("Preparing media...", ToastAndroid.SHORT);
 
-                const fileExt = uri.split('.').pop() || 'bin';
+                const pathParts = uri.split('?')[0].split('/');
+                const nameFromUrl = pathParts[pathParts.length - 1];
+                const fileExt = nameFromUrl.split('.').pop() || 'bin';
+
+                if ((Platform.OS as any) === 'web') {
+                    // Browser security prevents direct image buffer copy from URL without canvas
+                    // we fallback to copying the link
+                    if (Clipboard && typeof Clipboard.setStringAsync === 'function') {
+                        await Clipboard.setStringAsync(uri);
+                        // console.log("Web: Link copied to clipboard");
+                    }
+                    return;
+                }
+
                 // @ts-ignore
                 const localUri = `${FileSystem.cacheDirectory}copy_temp.${fileExt}`;
-
                 const downloadResult = await FileSystem.downloadAsync(uri, localUri);
 
                 if (selectedMessage.type === 'image') {
@@ -1401,18 +1489,35 @@ export default function ChatScreen() {
                     ),
                     headerRight: () => (
                         <View style={styles.headerRight}>
-                            <ZegoCallButton
-                                inviteeId={otherUserId}
-                                inviteeName={chatName}
-                                isVideo={true}
-                                theme={theme}
-                            />
-                            <ZegoCallButton
-                                inviteeId={otherUserId}
-                                inviteeName={chatName}
-                                isVideo={false}
-                                theme={theme}
-                            />
+
+                            <TouchableOpacity style={styles.headerIconTouch} onPress={() => {
+                                console.log(`[ChatScreen] Video Call pressed. otherUserId: ${otherUserId}, currentUserId: ${currentUserId}`);
+                                if (!otherUserId || !currentUserId) {
+                                    if (Platform.OS === 'web') alert("Call failed: User information not yet synchronized.");
+                                    return;
+                                }
+                                initiateCall(otherUserId, {
+                                    _id: currentUserId,
+                                    name: currentUserName || "User",
+                                    profilePic: currentUserProfilePic
+                                }, true);
+                            }}>
+                                <IconSymbol name="video.fill" size={22} color={theme.headerTintColor} />
+                            </TouchableOpacity>
+                            <TouchableOpacity style={styles.headerIconTouch} onPress={() => {
+                                console.log(`[ChatScreen] Voice Call pressed. otherUserId: ${otherUserId}, currentUserId: ${currentUserId}`);
+                                if (!otherUserId || !currentUserId) {
+                                    if (Platform.OS === 'web') alert("Call failed: User information not yet synchronized.");
+                                    return;
+                                }
+                                initiateCall(otherUserId, {
+                                    _id: currentUserId,
+                                    name: currentUserName || "User",
+                                    profilePic: currentUserProfilePic
+                                }, false);
+                            }}>
+                                <IconSymbol name="phone.fill" size={22} color={theme.headerTintColor} />
+                            </TouchableOpacity>
                             <TouchableOpacity style={styles.headerIconTouch} onPress={() => setHeaderMenuVisible(true)}>
                                 <IconSymbol name="ellipsis.vertical" size={22} color={theme.headerTintColor} />
                             </TouchableOpacity>
@@ -1569,7 +1674,22 @@ export default function ChatScreen() {
                                         />
                                     </TouchableOpacity>
                                 ) : item.type === 'video' ? (
-                                    <TouchableOpacity onPress={() => {
+                                    <TouchableOpacity onPress={async () => {
+                                        // Pre-warm: forcefully take exclusive audio focus BEFORE modal opens
+                                        try {
+                                            await Audio.setAudioModeAsync({
+                                                allowsRecordingIOS: false,
+                                                playsInSilentModeIOS: true,
+                                                interruptionModeAndroid: InterruptionModeAndroid.DoNotMix,
+                                                interruptionModeIOS: InterruptionModeIOS.DoNotMix,
+                                                shouldDuckAndroid: false,
+                                                staysActiveInBackground: true,
+                                            });
+                                        } catch (e) {
+                                            console.log("[VIDEO] Pre-warm audio mode failed:", e);
+                                        }
+                                        setIsVideoLoaded(false);
+                                        setIsVideoMuted(false);
                                         setActiveImageUrl(item.content);
                                         setActiveMediaType('video');
                                         setFullImageVisible(true);
@@ -1853,16 +1973,16 @@ export default function ChatScreen() {
                             resizeMode="contain"
                         />
                     ) : (
-                        <Video
-                            source={{ uri: getInternalUri(activeImageUrl!) }}
-                            style={{ width: '100%', height: '80%' }}
-                            useNativeControls
-                            resizeMode={ResizeMode.CONTAIN}
-                            isLooping
-                            shouldPlay
+                        <FullScreenVideoPlayer
+                            url={getInternalUri(activeImageUrl!)}
+                            isMuted={isVideoMuted}
+                            onError={() => {
+                                console.log("[VIDEO] expo-video focus error muted fallback");
+                                setIsVideoMuted(true);
+                                if (Platform.OS === 'android') ToastAndroid.show("Playing muted (sound blocked).", ToastAndroid.SHORT);
+                            }}
                         />
                     )}
-
                     <View style={{ position: 'absolute', bottom: 40, left: 0, right: 0, alignItems: 'center' }}>
                         <TouchableOpacity
                             style={{ backgroundColor: 'rgba(255,255,255,0.2)', padding: 15, borderRadius: 30 }}
@@ -1870,7 +1990,18 @@ export default function ChatScreen() {
                                 if (activeImageUrl) {
                                     const uri = getInternalUri(activeImageUrl);
                                     if (uri) {
-                                        const fileExt = uri.split('.').pop() || 'bin';
+                                        const pathParts = uri.split('?')[0].split('/');
+                                        const nameFromUrl = pathParts[pathParts.length - 1];
+                                        const fileExt = nameFromUrl.split('.').pop() || 'bin';
+
+                                        if ((Platform.OS as any) === 'web') {
+                                            if (Clipboard && typeof Clipboard.setStringAsync === 'function') {
+                                                await Clipboard.setStringAsync(uri);
+                                                // if (Platform.OS === 'android') ToastAndroid.show("Link copied", ToastAndroid.SHORT);
+                                            }
+                                            return;
+                                        }
+
                                         // @ts-ignore
                                         const localUri = `${FileSystem.cacheDirectory}share_temp.${fileExt}`;
                                         await FileSystem.downloadAsync(uri, localUri);
@@ -1887,6 +2018,17 @@ export default function ChatScreen() {
                         >
                             <IconSymbol name="square.and.arrow.up" size={24} color="#fff" />
                         </TouchableOpacity>
+
+                        {activeMediaType === 'video' && isVideoMuted && (
+                            <TouchableOpacity
+                                style={{ backgroundColor: 'rgba(255,200,0,0.5)', paddingHorizontal: 20, paddingVertical: 10, borderRadius: 20, marginTop: 15 }}
+                                onPress={() => {
+                                    setIsVideoMuted(false);
+                                }}
+                            >
+                                <Text style={{ color: '#fff', fontWeight: 'bold' }}>Tap to Unmute</Text>
+                            </TouchableOpacity>
+                        )}
                     </View>
                 </View>
             </Modal>
@@ -1945,6 +2087,89 @@ export default function ChatScreen() {
                     </View>
                 </TouchableOpacity>
             </Modal>
-        </SafeAreaView>
+        </SafeAreaView >
     );
 }
+
+const incomingStyles = StyleSheet.create({
+    overlay: {
+        flex: 1,
+        backgroundColor: '#075E54', // WhatsApp Green
+    },
+    container: {
+        flex: 1,
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        paddingVertical: 100,
+    },
+    info: {
+        alignItems: 'center',
+    },
+    avatar: {
+        width: 120,
+        height: 120,
+        borderRadius: 60,
+        backgroundColor: 'rgba(255,255,255,0.2)',
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginBottom: 20,
+        overflow: 'hidden',
+    },
+    avatarImg: {
+        width: '100%',
+        height: '100%',
+    },
+    name: {
+        fontSize: 28,
+        color: '#fff',
+        fontWeight: 'bold',
+        marginBottom: 10,
+    },
+    status: {
+        fontSize: 18,
+        color: 'rgba(255,255,255,0.8)',
+    },
+    actions: {
+        flexDirection: 'row',
+        width: '100%',
+        justifyContent: 'space-around',
+        paddingHorizontal: 40,
+    },
+    button: {
+        width: 70,
+        height: 70,
+        borderRadius: 35,
+        justifyContent: 'center',
+        alignItems: 'center',
+        elevation: 5,
+    },
+    decline: {
+        backgroundColor: '#FF3B30',
+    },
+    accept: {
+        backgroundColor: '#4CD964',
+    },
+});
+
+const FullScreenVideoPlayer = ({ url, isMuted, onError }: { url: string, isMuted: boolean, onError: (e: any) => void }) => {
+    const player = useVideoPlayer(url, player => {
+        player.loop = true;
+        player.muted = isMuted;
+        player.play();
+    });
+
+    useEffect(() => {
+        if (player) {
+            player.muted = isMuted;
+        }
+    }, [isMuted, player]);
+
+    return (
+        <VideoView
+            style={{ width: '100%', height: '80%' }}
+            player={player}
+            allowsFullscreen
+            allowsPictureInPicture
+        />
+    );
+};

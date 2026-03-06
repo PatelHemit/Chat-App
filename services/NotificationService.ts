@@ -1,8 +1,11 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import messaging from '@react-native-firebase/messaging';
 import Constants from 'expo-constants';
 import * as Device from 'expo-device';
 import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
+
+import logger from './PersistentLogger';
 
 // Configure how notifications are handled when app is in foreground
 Notifications.setNotificationHandler({
@@ -19,10 +22,10 @@ Notifications.setNotificationHandler({
         }
 
         return {
-            shouldShowAlert: false, // Don't show system banner in foreground, we handle it via socket/local logic
+            shouldShowAlert: true,  // ✅ Show banner even in foreground
             shouldPlaySound: soundOn,
             shouldSetBadge: true,
-            shouldShowBanner: false,
+            shouldShowBanner: true, // ✅ Show banner
             shouldShowList: true,
         };
     },
@@ -31,12 +34,15 @@ Notifications.setNotificationHandler({
 class NotificationService {
     private expoPushToken: string | null = null;
     private isRegistering = false;
+    private retryCount = 0;
+    private maxRetries = 5;
 
     /**
      * Register for push notifications and get the Expo push token
      */
     async registerForPushNotifications(): Promise<string | null> {
         if (!Device.isDevice) {
+            await logger.info('[PushNotif] Skipped: Not a physical device');
             console.log('Must use physical device for Push Notifications');
             return null;
         }
@@ -51,6 +57,7 @@ class NotificationService {
             }
 
             if (finalStatus !== 'granted') {
+                await logger.warn('[PushNotif] Permission NOT granted');
                 console.log('Failed to get push token for push notification!');
                 return null;
             }
@@ -60,6 +67,7 @@ class NotificationService {
 
             if (!projectId) {
                 console.error('Project ID not found in app config');
+                alert('Error: Project ID not found for notifications.');
                 return null;
             }
 
@@ -68,7 +76,9 @@ class NotificationService {
             });
 
             this.expoPushToken = token.data;
+            await logger.info('[PushNotif] Generated Expo Push Token', { token: this.expoPushToken });
             console.log('Expo Push Token:', this.expoPushToken);
+            // alert(`Push Token Generated: ${this.expoPushToken}`); // Debugging
 
             // Android-specific channel setup
             if (Platform.OS === 'android') {
@@ -78,10 +88,20 @@ class NotificationService {
                     vibrationPattern: [0, 250, 250, 250],
                     lightColor: '#FF231F7C',
                 });
+
+                await Notifications.setNotificationChannelAsync('incoming-calls', {
+                    name: 'Incoming Calls',
+                    importance: Notifications.AndroidImportance.MAX,
+                    vibrationPattern: [0, 500, 500, 500, 500, 500, 500, 500], // Longer vibration for calls
+                    lightColor: '#FF231F7C',
+                    lockscreenVisibility: Notifications.AndroidNotificationVisibility.PUBLIC,
+                    bypassDnd: true,
+                });
             }
 
             return this.expoPushToken;
-        } catch (error) {
+        } catch (error: any) {
+            await logger.error('[PushNotif] Registration Error', { error: error.message });
             console.error('Error registering for push notifications:', error);
             return null;
         }
@@ -113,19 +133,51 @@ class NotificationService {
     }
 
     /**
+     * Get the notification that triggered the app launch (if any)
+     */
+    async getInitialNotification(): Promise<Notifications.NotificationResponse | null> {
+        return await Notifications.getLastNotificationResponseAsync();
+    }
+
+    /**
+     * Register for Firebase Cloud Messaging token
+     */
+    async registerFCMToken(): Promise<string | null> {
+        if (Platform.OS === 'web' || !Device.isDevice) return null;
+
+        try {
+            // Request permission for iOS (Android is managed via Manifest/User prompt)
+            const authStatus = await messaging().requestPermission();
+            const enabled =
+                authStatus === messaging.AuthorizationStatus.AUTHORIZED ||
+                authStatus === messaging.AuthorizationStatus.PROVISIONAL;
+
+            if (enabled) {
+                const token = await messaging().getToken();
+                await logger.info('[FCM] Token generated', { token: token.substring(0, 10) });
+                return token;
+            }
+            await logger.warn('[FCM] Permission NOT enabled');
+            return null;
+        } catch (error: any) {
+            await logger.error('[FCM] Token Error', { error: error.message });
+            return null;
+        }
+    }
+
+    /**
      * Send the push token to backend
      */
     async sendTokenToBackend(token: string, userToken: string, apiUrl: string) {
         if (this.isRegistering) {
-            console.log('[PushToken] Registration already in progress, skipping...');
+            await logger.info('[PushToken] Registration already in progress, skipping...');
             return;
         }
 
         const url = `${apiUrl}/api/user/register-push-token`;
         this.isRegistering = true;
 
-        console.log(`[PushToken] Attempting to register token with URL: ${url}`);
-        console.log(`[PushToken] Token: ${token.substring(0, 10)}... UserToken present: ${!!userToken}`);
+        await logger.info('[PushToken] Attempting backend registration', { url, tokenSnippet: token.substring(0, 10) });
 
         try {
             const response = await fetch(url, {
@@ -139,20 +191,41 @@ class NotificationService {
 
             if (!response.ok) {
                 const errorText = await response.text();
-                console.error(`[PushToken] Backend Error (${response.status}):`, errorText);
+                await logger.error('[PushToken] Backend Error', { status: response.status, error: errorText });
                 throw new Error(`Failed to register push token: ${response.status} ${errorText}`);
             }
 
-            console.log('[PushToken] SUCCESS: Token registered with backend');
+            await logger.info('[PushToken] SUCCESS: Token registered with backend');
             this.isRegistering = false;
         } catch (error: any) {
-            console.error('[PushToken] CRITICAL ERROR:', error);
-            // Auto-retry after 10 seconds if it's a network error
-            console.log('[PushToken] Will retry in 10 seconds...');
-            setTimeout(() => {
-                this.isRegistering = false;
-                this.sendTokenToBackend(token, userToken, apiUrl);
-            }, 10000);
+            await logger.error('[PushToken] Network Error', { error: error.message });
+            this.isRegistering = false;
+        }
+    }
+
+    /**
+     * Send the FCM token to backend
+     */
+    async sendFCMTokenToBackend(token: string, userToken: string, apiUrl: string) {
+        const url = `${apiUrl}/api/user/register-fcm-token`;
+        try {
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${userToken}`,
+                },
+                body: JSON.stringify({ fcmToken: token }),
+            });
+
+            if (!response.ok) {
+                const errorText = await response.text();
+                await logger.error('[FCM] Backend Error', { status: response.status, error: errorText });
+            } else {
+                await logger.info('[FCM] SUCCESS: Token registered with backend');
+            }
+        } catch (error: any) {
+            await logger.error('[FCM] Network Error', { error: error.message });
         }
     }
 

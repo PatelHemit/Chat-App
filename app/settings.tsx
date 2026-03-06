@@ -290,6 +290,7 @@ export default function SettingsScreen() {
                     <Text style={[styles.menuText, { color: theme.text }]}>Blocked Contacts</Text>
                 </TouchableOpacity>
 
+
                 <TouchableOpacity
                     style={[styles.menuItem, { backgroundColor: colorScheme === 'dark' ? '#1f2c34' : '#fff' }]}
                     onPress={handleDeleteAccount}

@@ -1,28 +1,30 @@
 const mongoose = require('mongoose');
+const dotenv = require('dotenv');
+const path = require('path');
+
+dotenv.config({ path: path.join(__dirname, '.env') });
+
 const User = require('./models/User');
-require('dotenv').config();
 
 const checkTokens = async () => {
     try {
-        const uri = process.env.MONGO_URI || "mongodb://localhost:27017/chat-app";
-        console.log("Connecting to:", uri.includes("@") ? "Remote Cluster" : uri);
-        await mongoose.connect(uri);
+        await mongoose.connect(process.env.MONGO_URI);
         console.log("Connected to MongoDB");
 
-        const users = await User.find({}, "name phone pushTokens");
-        console.log("\n--- User Push Tokens ---");
+        const users = await User.find({}, 'name phone pushTokens');
+        console.log("\nRegistered Users and Tokens:");
         users.forEach(u => {
-            console.log(`User: ${u.name || u.phone}`);
-            console.log(`Tokens count: ${u.pushTokens ? u.pushTokens.length : 0}`);
-            if (u.pushTokens && u.pushTokens.length > 0) {
-                u.pushTokens.forEach((t, i) => console.log(`  [${i}] ${t.substring(0, 20)}...`));
+            console.log(`- ${u.name || u.phone}: ${u.pushTokens.length} tokens`);
+            if (u.pushTokens.length > 0) {
+                u.pushTokens.forEach(t => console.log(`  [${t}]`));
             }
-            console.log("------------------------");
         });
 
         await mongoose.disconnect();
-    } catch (err) {
-        console.error(err);
+        process.exit(0);
+    } catch (error) {
+        console.error("Error:", error);
+        process.exit(1);
     }
 };
 

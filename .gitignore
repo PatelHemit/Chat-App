@@ -44,6 +44,7 @@ app-example
 
 # Firebase & Sensitive Files
 firebase-service-account.json
+serviceAccountKey.json
 # google-services.json  # Temporarily allowed for EAS build
 GoogleService-Info.plist
 .env

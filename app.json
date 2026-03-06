@@ -10,7 +10,8 @@
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.patelhemit.chatapp"
+      "bundleIdentifier": "com.patelhemit.chatapp",
+      "bitcode": false
     },
     "android": {
       "package": "com.patelhemit.chatapp",
@@ -31,15 +32,17 @@
         "android.permission.ACCESS_WIFI_STATE",
         "android.permission.INTERNET",
         "android.permission.VIBRATE",
-        "android.permission.BLUETOOTH",
-        "android.permission.BLUETOOTH_CONNECT",
+        "android.permission.POST_NOTIFICATIONS",
+        "android.permission.BIND_TELECOM_CONNECTION_SERVICE",
+        "android.permission.READ_PHONE_STATE",
+        "android.permission.CALL_PHONE",
+        "android.permission.FOREGROUND_SERVICE",
         "android.permission.SYSTEM_ALERT_WINDOW",
         "android.permission.WAKE_LOCK",
-        "android.permission.READ_PHONE_STATE",
-        "android.permission.FOREGROUND_SERVICE",
-        "android.permission.FOREGROUND_SERVICE_MICROPHONE",
-        "android.permission.FOREGROUND_SERVICE_CAMERA",
-        "android.permission.POST_NOTIFICATIONS"
+        "android.permission.BLUETOOTH",
+        "android.permission.MANAGE_OWN_CALLS",
+        "android.permission.USE_FULL_SCREEN_INTENT",
+        "android.permission.READ_PHONE_NUMBERS"
       ],
       "googleServicesFile": "./google-services.json"
     },
@@ -48,6 +51,7 @@
       "favicon": "./assets/images/favicon.png"
     },
     "plugins": [
+      "./plugins/withCallKeep",
       "expo-router",
       [
         "expo-camera",
@@ -77,25 +81,27 @@
         "expo-build-properties",
         {
           "android": {
-            "kotlinVersion": "2.0.0",
-            "packagingOptions": {
-              "pickFirst": [
-                "**/libc++_shared.so",
-                "**/libjingle_peerconnection_so.so"
-              ]
-            }
+            "kotlinVersion": "2.0.0"
           }
         }
       ],
       [
         "expo-notifications",
         {
-          "icon": "./assets/images/icon.png",
-          "color": "#ffffff"
+          "icon": "./assets/images/icon.png"
+        }
+      ],
+      [
+        "@config-plugins/react-native-webrtc",
+        {
+          "cameraPermission": "Allow $(PRODUCT_NAME) to access your camera for video calls.",
+          "microphonePermission": "Allow $(PRODUCT_NAME) to access your microphone for calls."
         }
       ],
       "@react-native-firebase/app",
-      "@react-native-firebase/auth"
+      "@react-native-firebase/auth",
+      "@react-native-firebase/messaging",
+      "expo-video"
     ],
     "experiments": {
       "typedRoutes": true,
@@ -104,7 +110,7 @@
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "3d430310-4f25-45c6-96db-c69ce5fe47bd"
+        "projectId": "929a1fb2-7408-44f6-b0ea-c19c00944c5c"
       }
     }
   }

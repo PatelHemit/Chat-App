@@ -11,7 +11,10 @@ const {
     getMessageInfo
 } = require('../controllers/messageControllers');
 
+const { generateLiveKitToken } = require('../controllers/livekitController');
 const router = express.Router();
+
+router.route('/livekit/token').post(protect, generateLiveKitToken);
 
 router.route('/').post(protect, sendMessage);
 router.route('/:chatId').get(protect, allMessages);

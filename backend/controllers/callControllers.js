@@ -50,4 +50,33 @@ const getCallHistory = asyncHandler(async (req, res) => {
     res.json(calls);
 });
 
-module.exports = { createCallLog, getCallHistory };
+// @desc    Update a call log (status, duration)
+// @route   PUT /api/call/:id
+// @access  Protected
+const updateCallLog = asyncHandler(async (req, res) => {
+    const { status, duration } = req.body;
+    const callId = req.params.id;
+
+    const call = await Call.findById(callId);
+
+    if (!call) {
+        res.status(404);
+        throw new Error("Call log not found");
+    }
+
+    // Only allow caller or receiver to update the log
+    if (call.caller.toString() !== req.user._id.toString() &&
+        call.receiver.toString() !== req.user._id.toString()) {
+        res.status(401);
+        throw new Error("User not authorized to update this call log");
+    }
+
+    call.status = status || call.status;
+    call.duration = duration || call.duration;
+
+    const updatedCall = await call.save();
+
+    res.json(updatedCall);
+});
+
+module.exports = { createCallLog, getCallHistory, updateCallLog };

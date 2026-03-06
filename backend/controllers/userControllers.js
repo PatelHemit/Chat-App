@@ -6,11 +6,12 @@ const logNotif = require("../utils/logger");
 // @route           GET /api/user?search=
 // @access          Protected
 const allUsers = asyncHandler(async (req, res) => {
-    const keyword = req.query.search
+    const search = req.query.search ? req.query.search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') : "";
+    const keyword = search
         ? {
             $or: [
-                { name: { $regex: req.query.search, $options: "i" } },
-                { phone: { $regex: req.query.search, $options: "i" } },
+                { name: { $regex: search, $options: "i" } },
+                { phone: { $regex: search, $options: "i" } },
             ],
         }
         : {};
@@ -84,6 +85,38 @@ const registerPushToken = asyncHandler(async (req, res) => {
     }
 
     res.json({ success: true, message: "Push token registered" });
+});
+
+// @description     Register FCM Token
+// @route           POST /api/user/register-fcm-token
+// @access          Protected
+const registerFcmToken = asyncHandler(async (req, res) => {
+    const { fcmToken } = req.body;
+    logNotif(`[FCMToken] Register request from user ${req.user._id}: ${fcmToken?.substring(0, 20)}...`);
+
+    if (!fcmToken) {
+        res.status(400);
+        throw new Error("FCM token is required");
+    }
+
+    const user = await User.findById(req.user._id);
+    if (!user) {
+        res.status(404);
+        throw new Error("User not found");
+    }
+
+    if (!user.fcmTokens) user.fcmTokens = [];
+
+    if (!user.fcmTokens.includes(fcmToken)) {
+        logNotif(`[FCMToken] Adding new FCM token for ${user.name || user.phone}`);
+        user.fcmTokens.push(fcmToken);
+        await user.save();
+        logNotif(`[FCMToken] FCM Token saved successfully`);
+    } else {
+        logNotif(`[FCMToken] FCM Token already exists for ${user.name || user.phone}`);
+    }
+
+    res.json({ success: true, message: "FCM token registered" });
 });
 
 // @description     Block a User
@@ -217,4 +250,108 @@ const toggleNotifications = asyncHandler(async (req, res) => {
     res.json({ success: true, notificationsMuted: user.notificationsMuted });
 });
 
-module.exports = { allUsers, updateProfile, registerPushToken, blockUser, unblockUser, getBlockedUsers, deleteAccount, getBlockStatus, toggleNotifications };
+// @description     Test Push Notification
+// @route           POST /api/user/test-push
+// @access          Protected
+const testPushNotification = asyncHandler(async (req, res) => {
+    const { sendPushNotification } = require("./notificationControllers");
+    const user = await User.findById(req.user._id);
+
+    if (!user || !user.pushTokens || user.pushTokens.length === 0) {
+        res.status(400);
+        throw new Error("User has no push tokens registered");
+    }
+
+    logNotif(`[Test-Push] Sending test notification to ${user.name} (${user.pushTokens.length} tokens)`);
+
+    const tickets = await sendPushNotification(
+        user.pushTokens,
+        "Test Notification",
+        "This is a test notification from the app!",
+        { type: "test" }
+    );
+
+    res.json({ success: true, tickets });
+});
+
+// @description     Test Call Notification
+// @route           POST /api/user/test-call-push
+// @access          Protected
+const testCallPushNotification = asyncHandler(async (req, res) => {
+    const { Expo } = require("expo-server-sdk");
+    const admin = require("firebase-admin");
+    const expo = new Expo();
+    const user = await User.findById(req.user._id);
+
+    if (!user) {
+        res.status(404);
+        throw new Error("User not found");
+    }
+
+    const results = { expo: [], fcm: [] };
+
+    // 1. Send Expo Push Notification (for Heads-up)
+    if (user.pushTokens && user.pushTokens.length > 0) {
+        const messages = [];
+        for (let pushToken of user.pushTokens) {
+            if (Expo.isExpoPushToken(pushToken)) {
+                messages.push({
+                    to: pushToken,
+                    sound: 'default',
+                    title: 'Test Incoming Call',
+                    body: 'This is a high-priority call test notification',
+                    data: {
+                        type: 'incoming-call',
+                        from: { _id: user._id.toString(), name: 'Test Sender' },
+                        roomName: 'test-room-' + Date.now(),
+                        isVideoCall: false,
+                        callId: 'test-id'
+                    },
+                    priority: 'high',
+                    channelId: 'incoming-calls'
+                });
+            }
+        }
+
+        if (messages.length > 0) {
+            let chunks = expo.chunkPushNotifications(messages);
+            for (let chunk of chunks) {
+                let ticketChunk = await expo.sendPushNotificationsAsync(chunk);
+                results.expo.push(...ticketChunk);
+            }
+        }
+    }
+
+    // 2. Send FCM Data Message (for CallKeep Background UI)
+    if (user.fcmTokens && user.fcmTokens.length > 0) {
+        logNotif(`[Test-Call] Sending FCM data messages to ${user.name} (${user.fcmTokens.length} tokens)`);
+        for (const fcmToken of user.fcmTokens) {
+            try {
+                const fcmMessage = {
+                    token: fcmToken,
+                    data: {
+                        type: 'incoming-call',
+                        callerId: user._id.toString(),
+                        callerName: 'Test Caller',
+                        roomName: 'test-room-' + Date.now(),
+                        isVideoCall: 'false',
+                        callId: 'test-call-id',
+                        sender: JSON.stringify({ _id: user._id, name: 'Test Caller' })
+                    },
+                    android: {
+                        priority: 'high',
+                        ttl: 30000,
+                    },
+                };
+                const fcmResult = await admin.messaging().send(fcmMessage);
+                results.fcm.push({ token: fcmToken.substring(0, 10), success: true, result: fcmResult });
+            } catch (fcmErr) {
+                results.fcm.push({ token: fcmToken.substring(0, 10), success: false, error: fcmErr.message });
+            }
+        }
+    }
+
+    res.json({ success: true, results });
+});
+
+module.exports = { allUsers, updateProfile, registerPushToken, registerFcmToken, blockUser, unblockUser, getBlockedUsers, deleteAccount, getBlockStatus, toggleNotifications, testPushNotification, testCallPushNotification };

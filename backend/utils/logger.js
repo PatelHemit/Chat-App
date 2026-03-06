@@ -1,7 +1,13 @@
 const fs = require('fs');
 const path = require('path');
 
-const logFile = path.join(__dirname, 'logs', 'notifications.log');
+const logDir = path.join(__dirname, 'logs');
+const logFile = path.join(logDir, 'notifications.log');
+
+// Ensure logs directory exists
+if (!fs.existsSync(logDir)) {
+    fs.mkdirSync(logDir, { recursive: true });
+}
 
 const logNotif = (message) => {
     const timestamp = new Date().toISOString();
