@@ -1,0 +1,79 @@
+diff --git a/node_modules/livekit-client/src/room/RTCEngine.ts b/node_modules/livekit-client/src/room/RTCEngine.ts
+index b49c4f0..363427f 100644
+--- a/node_modules/livekit-client/src/room/RTCEngine.ts
++++ b/node_modules/livekit-client/src/room/RTCEngine.ts
+@@ -72,8 +72,8 @@ import { RpcError } from './rpc';
+ import CriticalTimers from './timers';
+ import type LocalTrack from './track/LocalTrack';
+ import type LocalTrackPublication from './track/LocalTrackPublication';
+-import LocalVideoTrack from './track/LocalVideoTrack';
+ import type { SimulcastTrackInfo } from './track/LocalVideoTrack';
++import LocalVideoTrack from './track/LocalVideoTrack';
+ import type RemoteTrackPublication from './track/RemoteTrackPublication';
+ import type { Track } from './track/Track';
+ import type { TrackPublishOptions, VideoCodec } from './track/options';
+@@ -423,7 +423,11 @@ export default class RTCEngine extends (EventEmitter as new () => TypedEventEmit
+       this.pcManager!.removeTrack(sender);
+       return true;
+     } catch (e: unknown) {
+-      this.log.warn('failed to remove track', { ...this.logContext, error: e });
++      if (e instanceof Error && e.message.includes('Sender does not belong to this peer connection')) {
++        this.log.warn('Ignoring benign sender removal error', { ...this.logContext, trackId: sender.track?.id });
++      } else {
++        this.log.warn('failed to remove track', { ...this.logContext, error: e });
++      }
+     }
+     return false;
+   }
+@@ -1050,8 +1054,7 @@ export default class RTCEngine extends (EventEmitter as new () => TypedEventEmit
+         this.handleDisconnect('reconnect', ReconnectReason.RR_UNKNOWN);
+       } else {
+         this.log.info(
+-          `could not recover connection after ${this.reconnectAttempts} attempts, ${
+-            Date.now() - this.reconnectStart
++          `could not recover connection after ${this.reconnectAttempts} attempts, ${Date.now() - this.reconnectStart
+           }ms. giving up`,
+           this.logContext,
+         );
+@@ -1619,29 +1622,29 @@ export default class RTCEngine extends (EventEmitter as new () => TypedEventEmit
+           this.pcManager.mode === 'publisher-only'
+             ? previousPublisherAnswer
+               ? toProtoSessionDescription({
+-                  sdp: previousPublisherAnswer.sdp,
+-                  type: previousPublisherAnswer.type,
+-                })
++                sdp: previousPublisherAnswer.sdp,
++                type: previousPublisherAnswer.type,
++              })
+               : undefined
+             : previousSubscriberAnswer
+               ? toProtoSessionDescription({
+-                  sdp: previousSubscriberAnswer.sdp,
+-                  type: previousSubscriberAnswer.type,
+-                })
++                sdp: previousSubscriberAnswer.sdp,
++                type: previousSubscriberAnswer.type,
++              })
+               : undefined,
+         offer:
+           this.pcManager.mode === 'publisher-only'
+             ? previousPublisherOffer
+               ? toProtoSessionDescription({
+-                  sdp: previousPublisherOffer.sdp,
+-                  type: previousPublisherOffer.type,
+-                })
++                sdp: previousPublisherOffer.sdp,
++                type: previousPublisherOffer.type,
++              })
+               : undefined
+             : previousSubscriberOffer
+               ? toProtoSessionDescription({
+-                  sdp: previousSubscriberOffer.sdp,
+-                  type: previousSubscriberOffer.type,
+-                })
++                sdp: previousSubscriberOffer.sdp,
++                type: previousSubscriberOffer.type,
++              })
+               : undefined,
+         subscription: new UpdateSubscription({
+           trackSids,
