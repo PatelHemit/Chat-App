@@ -52,7 +52,6 @@ import {
     View
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { io } from 'socket.io-client';
 
 const styles = StyleSheet.create({
     container: {
@@ -61,9 +60,9 @@ const styles = StyleSheet.create({
     headerTitleContainer: {
         flexDirection: 'row',
         alignItems: 'center',
-        paddingVertical: Platform.OS === 'android' ? 12 : 4,
+        paddingVertical: Platform.OS === 'android' ? 8 : 4,
         paddingRight: 15,
-        paddingTop: Platform.OS === 'android' ? 25 : 4,
+        paddingTop: Platform.OS === 'android' ? 5 : 4,
     },
     avatar: {
         width: 36,
@@ -274,7 +273,8 @@ const styles = StyleSheet.create({
         paddingVertical: 2,
         flexDirection: 'row',
         alignItems: 'center',
-        elevation: 2,
+        elevation: 10,
+        zIndex: 100,
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 1 },
         shadowOpacity: 0.2,
@@ -359,13 +359,13 @@ export default function ChatScreen() {
     const [contextMenuVisible, setContextMenuVisible] = useState(false);
     const [selectedMessage, setSelectedMessage] = useState<any>(null);
     const [isLatestMessageMyOwn, setIsLatestMessageMyOwn] = useState(false);
+    const [isTyping, setIsTyping] = useState(false);
     const [recordingDuration, setRecordingDuration] = useState(0);
     const [isRecording, setIsRecording] = useState(false);
     const [recording, setRecording] = useState<Audio.Recording | null>(null);
-    const [socketConnected, setSocketConnected] = useState(false);
+    const { socket } = useCall();
 
     const flatListRef = useRef<FlatList>(null);
-    const socket = useRef<any>(null);
     const recordingDurationRef = useRef(0);
     const recordingInterval = useRef<any>(null);
     const blinkAnim = useRef(new Animated.Value(1)).current;
@@ -524,116 +524,119 @@ export default function ChatScreen() {
 
 
 
-    // Initialize Socket
+    // Initialize Socket Listeners
     useEffect(() => {
-        if (!currentUserId) return;
+        if (!socket || !currentUserId || !id) return;
 
-        // Initialize socket connection
-        try {
-            console.log("Initializing socket for user:", currentUserId);
-            // Force websocket transport
-            socket.current = io(API_BASE_URL, { transports: ['websocket'] });
+        console.log(`[Chat] Using global socket. Joining chat: ${id}`);
+        socket.emit("join chat", id);
+        socket.emit("mark-chat-read", { chatId: id, userId: currentUserId });
 
-            socket.current.emit("setup", { _id: currentUserId });
-            socket.current.on("connected", () => {
-                console.log("Socket Connected");
-                setSocketConnected(true);
-            });
+        const handleUserOnline = (userId: string) => {
+            if (userId === otherUserId) setIsUserOnline(true);
+        };
 
-            console.log("Joining chat room:", id);
-            socket.current.emit("join chat", id);
-            socket.current.emit("mark-chat-read", { chatId: id, userId: currentUserId });
+        const handleUserOffline = (userId: string) => {
+            if (userId === otherUserId) setIsUserOnline(false);
+        };
 
-            // Check if other user is online
-            if (otherUserId) {
-                socket.current.emit("check-online", otherUserId, (isOnline: boolean) => {
-                    setIsUserOnline(isOnline);
+        const handleMessageDeleted = (messageId: string) => {
+            setMessages((prev) => prev.filter((msg) => msg._id !== messageId));
+        };
+
+        const handleMessageDeletedEveryone = (messageId: string) => {
+            setMessages((prev) => prev.filter((msg) => msg._id !== messageId));
+        };
+
+        const handleReactionUpdated = ({ messageId, reactions }: any) => {
+            setMessages((prev) =>
+                prev.map((msg) =>
+                    msg._id === messageId ? { ...msg, reactions } : msg
+                )
+            );
+        };
+
+        const handleMessageReceived = (newMessageRecieved: any) => {
+            console.log("[Chat] Message detected via global socket:", newMessageRecieved);
+            if (!newMessageRecieved || !newMessageRecieved.chat || !newMessageRecieved.sender) return;
+
+            if (id === newMessageRecieved.chat._id && newMessageRecieved.sender._id !== currentUserId) {
+                console.log("[Chat] Appending new message to list");
+                setMessages((prev) => [...prev, newMessageRecieved]);
+
+                socket.emit("mark-as-read", {
+                    messageId: newMessageRecieved._id,
+                    senderId: newMessageRecieved.sender._id
                 });
+
+                if (flatListRef.current) {
+                    setTimeout(() => {
+                        flatListRef.current?.scrollToEnd({ animated: true });
+                    }, 100);
+                }
             }
+        };
 
-            socket.current.on("user-online", (userId: string) => {
-                if (userId === otherUserId) {
-                    setIsUserOnline(true);
-                }
-            });
+        const handleMessageStatusUpdated = ({ messageId, status }: any) => {
+            setMessages((prev) =>
+                prev.map((msg) =>
+                    msg._id === messageId ? { ...msg, status } : msg
+                )
+            );
+        };
 
-            socket.current.on("user-offline", (userId: string) => {
-                if (userId === otherUserId) {
-                    setIsUserOnline(false);
-                }
-            });
-
-            socket.current.on("message-deleted", (messageId: string) => {
-                setMessages((prev) => prev.filter((msg) => msg._id !== messageId));
-            });
-
-            socket.current.on("message-deleted-everyone", (messageId: string) => {
-                setMessages((prev) => prev.filter((msg) => msg._id !== messageId));
-            });
-
-            socket.current.on("reaction-updated", ({ messageId, reactions }: any) => {
+        const handleMessagesRead = ({ chatId, userId }: any) => {
+            if (chatId === id && userId !== currentUserId) {
                 setMessages((prev) =>
-                    prev.map((msg) =>
-                        msg._id === messageId ? { ...msg, reactions } : msg
-                    )
+                    prev.map((msg) => ({ ...msg, status: "read" }))
                 );
+            }
+        };
+
+        const handleTyping = (chatId: string) => {
+            if (chatId === id) setIsTyping(true);
+        };
+
+        const handleStopTyping = (chatId: string) => {
+            if (chatId === id) setIsTyping(false);
+        };
+
+        // Attach listeners
+        socket.on("user-online", handleUserOnline);
+        socket.on("user-offline", handleUserOffline);
+        socket.on("message-deleted", handleMessageDeleted);
+        socket.on("message-deleted-everyone", handleMessageDeletedEveryone);
+        socket.on("reaction-updated", handleReactionUpdated);
+        socket.on("message received", handleMessageReceived);
+        socket.on("message-status-updated", handleMessageStatusUpdated);
+        socket.on("messages-read", handleMessagesRead);
+        socket.on("typing", handleTyping);
+        socket.on("stop typing", handleStopTyping);
+
+        // Check online status initially
+        if (otherUserId) {
+            socket.emit("check-online", otherUserId, (isOnline: boolean) => {
+                setIsUserOnline(isOnline);
             });
-
-            socket.current.on("message received", (newMessageRecieved: any) => {
-                console.log("Message detected via socket:", newMessageRecieved);
-                if (!newMessageRecieved || !newMessageRecieved.chat || !newMessageRecieved.sender) return;
-
-                // Check if the message belongs to this chat AND is NOT from current user
-                if (id === newMessageRecieved.chat._id && newMessageRecieved.sender._id !== currentUserId) {
-                    console.log("Appending new message to list");
-                    setMessages((prev) => [...prev, newMessageRecieved]);
-
-                    // Mark as read immediately since we are in the chat
-                    if (socket.current) {
-                        socket.current.emit("mark-as-read", { messageId: newMessageRecieved._id, senderId: newMessageRecieved.sender._id });
-                    }
-
-                    // Scroll to bottom
-                    if (flatListRef.current) {
-                        setTimeout(() => {
-                            flatListRef.current?.scrollToEnd({ animated: true });
-                        }, 100);
-                    }
-                }
-            });
-
-            socket.current.on("message-status-updated", ({ messageId, status }: any) => {
-                setMessages((prevMessages) =>
-                    prevMessages.map((msg) =>
-                        msg._id === messageId ? { ...msg, status: status } : msg
-                    )
-                );
-            });
-
-            socket.current.on("messages-read", ({ chatId }: any) => {
-                if (chatId === id) {
-                    setMessages((prevMessages) =>
-                        prevMessages.map((msg) =>
-                            msg.status !== 'read' ? { ...msg, status: 'read' } : msg
-                        )
-                    );
-                }
-            });
-        } catch (error) {
-            console.log("Socket initialization error:", error);
         }
 
         return () => {
-            if (socket.current) {
-                console.log("Disconnecting socket");
-                socket.current.off("message received");
-                socket.current.off("message-status-updated");
-                socket.current.off("reaction-updated");
-                socket.current.off("message-deleted-everyone");
-                socket.current.disconnect();
-            }
+            console.log(`[Chat] Leaving room: ${id}`);
+            socket.emit("leave chat", id);
+
+            // Cleanup listeners
+            socket.off("user-online", handleUserOnline);
+            socket.off("user-offline", handleUserOffline);
+            socket.off("message-deleted", handleMessageDeleted);
+            socket.off("message-deleted-everyone", handleMessageDeletedEveryone);
+            socket.off("reaction-updated", handleReactionUpdated);
+            socket.off("message received", handleMessageReceived);
+            socket.off("message-status-updated", handleMessageStatusUpdated);
+            socket.off("messages-read", handleMessagesRead);
+            socket.off("typing", handleTyping);
+            socket.off("stop typing", handleStopTyping);
         };
-    }, [id, currentUserId]);
+    }, [socket, id, currentUserId, otherUserId]);
 
     // Audio Recording Logic
     const startRecording = async () => {
@@ -905,8 +908,8 @@ export default function ChatScreen() {
             const newMessage = await response.json();
             newMessage.status = newMessage.status || 'sent';
 
-            if (socket.current) {
-                socket.current.emit('new message', newMessage);
+            if (socket) {
+                socket.emit('new message', newMessage);
             }
 
             setMessages((prev) => [...prev, newMessage]);
@@ -952,9 +955,9 @@ export default function ChatScreen() {
             // Default status is sent
             newMessage.status = newMessage.status || 'sent';
 
-            // Emit socket message using persistent socket
-            if (socket.current) {
-                socket.current.emit("new message", newMessage);
+            // Emit socket message using global socket
+            if (socket) {
+                socket.emit("new message", newMessage);
             }
 
             setMessages((prev) => [...prev, newMessage]);
@@ -1459,7 +1462,7 @@ export default function ChatScreen() {
     };
 
     return (
-        <SafeAreaView style={[styles.container, { backgroundColor: theme.chatBackground }]} edges={['bottom']}>
+        <SafeAreaView style={[styles.container, { backgroundColor: theme.chatBackground }]} edges={['top', 'left', 'right', 'bottom']}>
             <Stack.Screen
                 options={{
                     headerStyle: {
@@ -1627,236 +1630,243 @@ export default function ChatScreen() {
                 imageStyle={{ opacity: colorScheme === 'dark' ? 0.05 : 0.4 }}
             />
 
-            <FlatList
-                data={messages}
-                keyExtractor={(item) => item._id}
-                renderItem={({ item }) => {
-                    const isMyMessage = (item.sender?._id || item.sender) === currentUserId;
-                    if (!item.sender) {
+            <KeyboardAvoidingView
+                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
+                style={{ flex: 1 }}
+            >
+                <FlatList
+                    style={{ flex: 1 }}
+                    data={messages}
+                    keyExtractor={(item) => item._id}
+                    renderItem={({ item, index }) => {
+                        const isMyMessage = (item.sender?._id || item.sender) === currentUserId;
+                        const hasReactions = item.reactions && item.reactions.length > 0;
+                        if (!item.sender) {
+                            return (
+                                <View style={[styles.messageBubble, styles.myMessage, { backgroundColor: theme.messageSent }]}>
+                                    <Text style={[styles.messageText, { color: theme.text }]}>{item.content}</Text>
+                                    <Text style={styles.messageTime}>Error: Orphaned message</Text>
+                                </View>
+                            );
+                        }
                         return (
-                            <View style={[styles.messageBubble, styles.myMessage, { backgroundColor: theme.messageSent }]}>
-                                <Text style={[styles.messageText, { color: theme.text }]}>{item.content}</Text>
-                                <Text style={styles.messageTime}>Error: Orphaned message</Text>
-                            </View>
-                        );
-                    }
-                    return (
-                        <TouchableOpacity
-                            onLongPress={() => handleLongPress(item)}
-                            activeOpacity={0.8}
-                        >
-                            <View
-                                style={[
-                                    styles.messageBubble,
-                                    isMyMessage
-                                        ? [styles.myMessage, { backgroundColor: theme.messageSent }]
-                                        : [styles.theirMessage, { backgroundColor: theme.messageReceived }],
-                                ]}>
+                            <Pressable
+                                onLongPress={() => handleLongPress(item)}
+                                delayLongPress={300}
+                                style={{ zIndex: messages.length - index }}
+                            >
+                                <View
+                                    style={[
+                                        styles.messageBubble,
+                                        isMyMessage
+                                            ? [styles.myMessage, { backgroundColor: theme.messageSent }]
+                                            : [styles.theirMessage, { backgroundColor: theme.messageReceived }],
+                                        hasReactions && { marginBottom: 18 }
+                                    ]}>
 
 
-                                {item.type === 'audio' ? (
-                                    <VoiceMessageBubble
-                                        uri={item.content}
-                                        isMyMessage={isMyMessage}
-                                        profilePic={item.sender?.profilePic || (isMyMessage ? currentUserProfilePic : profilePic)}
-                                        duration={item.type === 'audio' && item.duration ? item.duration * 1000 : 0}
-                                    />
-                                ) : item.type === 'image' ? (
-                                    <TouchableOpacity onPress={() => {
-                                        setActiveImageUrl(item.content);
-                                        setActiveMediaType('image');
-                                        setFullImageVisible(true);
-                                    }}>
-                                        <RNImage
-                                            source={{ uri: getInternalUri(item.content) }}
-                                            style={{ width: 200, height: 200, borderRadius: 8 }}
-                                            resizeMode="cover"
+                                    {item.type === 'audio' ? (
+                                        <VoiceMessageBubble
+                                            uri={item.content}
+                                            isMyMessage={isMyMessage}
+                                            profilePic={item.sender?.profilePic || (isMyMessage ? currentUserProfilePic : profilePic)}
+                                            duration={item.type === 'audio' && item.duration ? item.duration * 1000 : 0}
                                         />
-                                    </TouchableOpacity>
-                                ) : item.type === 'video' ? (
-                                    <TouchableOpacity onPress={async () => {
-                                        // Pre-warm: forcefully take exclusive audio focus BEFORE modal opens
-                                        try {
-                                            await Audio.setAudioModeAsync({
-                                                allowsRecordingIOS: false,
-                                                playsInSilentModeIOS: true,
-                                                interruptionModeAndroid: InterruptionModeAndroid.DoNotMix,
-                                                interruptionModeIOS: InterruptionModeIOS.DoNotMix,
-                                                shouldDuckAndroid: false,
-                                                staysActiveInBackground: true,
-                                            });
-                                        } catch (e) {
-                                            console.log("[VIDEO] Pre-warm audio mode failed:", e);
-                                        }
-                                        setIsVideoLoaded(false);
-                                        setIsVideoMuted(false);
-                                        setActiveImageUrl(item.content);
-                                        setActiveMediaType('video');
-                                        setFullImageVisible(true);
-                                    }}>
-                                        <View style={{ width: 200, height: 200, backgroundColor: '#000', borderRadius: 8, justifyContent: 'center', alignItems: 'center' }}>
-                                            <IconSymbol name="play.circle.fill" size={48} color="#fff" />
-                                            <Text style={{ color: '#fff', marginTop: 8 }}>Video</Text>
-                                        </View>
-                                    </TouchableOpacity>
-                                ) : item.type === 'document' ? (
-                                    <TouchableOpacity
-                                        style={[
-                                            styles.documentCard,
-                                            { backgroundColor: isMyMessage ? 'rgba(0,0,0,0.05)' : 'rgba(0,0,0,0.03)' }
-                                        ]}
-                                        onPress={() => handleOpenDocument(item)}
-                                    >
-                                        <View style={styles.documentIconContainer}>
-                                            <View style={[
-                                                styles.docTypeFolder,
-                                                { backgroundColor: getDocColor(item.fileMetadata?.fileExtension) }
-                                            ]}>
-                                                <Text style={styles.docTypeText}>
-                                                    {item.fileMetadata?.fileExtension?.charAt(0) || 'D'}
+                                    ) : item.type === 'image' ? (
+                                        <TouchableOpacity onPress={() => {
+                                            setActiveImageUrl(item.content);
+                                            setActiveMediaType('image');
+                                            setFullImageVisible(true);
+                                        }}>
+                                            <RNImage
+                                                source={{ uri: getInternalUri(item.content) }}
+                                                style={{ width: 200, height: 200, borderRadius: 8 }}
+                                                resizeMode="cover"
+                                            />
+                                        </TouchableOpacity>
+                                    ) : item.type === 'video' ? (
+                                        <TouchableOpacity onPress={async () => {
+                                            // Pre-warm: forcefully take exclusive audio focus BEFORE modal opens
+                                            try {
+                                                await Audio.setAudioModeAsync({
+                                                    allowsRecordingIOS: false,
+                                                    playsInSilentModeIOS: true,
+                                                    interruptionModeAndroid: InterruptionModeAndroid.DoNotMix,
+                                                    interruptionModeIOS: InterruptionModeIOS.DoNotMix,
+                                                    shouldDuckAndroid: false,
+                                                    staysActiveInBackground: true,
+                                                });
+                                            } catch (e) {
+                                                console.log("[VIDEO] Pre-warm audio mode failed:", e);
+                                            }
+                                            setIsVideoLoaded(false);
+                                            setIsVideoMuted(false);
+                                            setActiveImageUrl(item.content);
+                                            setActiveMediaType('video');
+                                            setFullImageVisible(true);
+                                        }}>
+                                            <View style={{ width: 200, height: 200, backgroundColor: '#000', borderRadius: 8, justifyContent: 'center', alignItems: 'center' }}>
+                                                <IconSymbol name="play.circle.fill" size={48} color="#fff" />
+                                                <Text style={{ color: '#fff', marginTop: 8 }}>Video</Text>
+                                            </View>
+                                        </TouchableOpacity>
+                                    ) : item.type === 'document' ? (
+                                        <TouchableOpacity
+                                            style={[
+                                                styles.documentCard,
+                                                { backgroundColor: isMyMessage ? 'rgba(0,0,0,0.05)' : 'rgba(0,0,0,0.03)' }
+                                            ]}
+                                            onPress={() => handleOpenDocument(item)}
+                                        >
+                                            <View style={styles.documentIconContainer}>
+                                                <View style={[
+                                                    styles.docTypeFolder,
+                                                    { backgroundColor: getDocColor(item.fileMetadata?.fileExtension) }
+                                                ]}>
+                                                    <Text style={styles.docTypeText}>
+                                                        {item.fileMetadata?.fileExtension?.charAt(0) || 'D'}
+                                                    </Text>
+                                                </View>
+                                            </View>
+                                            <View style={{ flex: 1, marginLeft: 10 }}>
+                                                <Text style={[styles.documentName, { color: theme.text }]} numberOfLines={1}>
+                                                    {item.fileMetadata?.fileName || item.fileName || 'Document'}
+                                                </Text>
+                                                <Text style={styles.documentMeta}>
+                                                    {formatFileSize(item.fileMetadata?.fileSize || item.fileSize)} • {item.fileMetadata?.fileExtension || 'FILE'}
                                                 </Text>
                                             </View>
-                                        </View>
-                                        <View style={{ flex: 1, marginLeft: 10 }}>
-                                            <Text style={[styles.documentName, { color: theme.text }]} numberOfLines={1}>
-                                                {item.fileMetadata?.fileName || item.fileName || 'Document'}
-                                            </Text>
-                                            <Text style={styles.documentMeta}>
-                                                {formatFileSize(item.fileMetadata?.fileSize || item.fileSize)} • {item.fileMetadata?.fileExtension || 'FILE'}
-                                            </Text>
-                                        </View>
-                                        <View style={styles.downloadIcon}>
-                                            <IconSymbol name="arrow.down.to.line" size={18} color="#8696A0" />
-                                        </View>
-                                    </TouchableOpacity>
-                                ) : (
-                                    <Text style={[styles.messageText, { color: theme.text }]}>{item.content}</Text>
-                                )}
-
-
-                                <Text style={styles.messageTime}>
-                                    {new Date(item.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                    {isMyMessage && (
-                                        <IconSymbol
-                                            name={item.status === 'sent' ? 'checkmark' : 'checkmark.double'}
-                                            size={16}
-                                            color={item.status === 'read' ? '#34B7F1' : '#888'}
-                                            style={{ marginLeft: 4 }}
-                                        />
-                                    )}
-                                </Text>
-
-                                {item.reactions && item.reactions.length > 0 && (
-                                    <View style={[
-                                        styles.reactionBubbleContainer,
-                                        isMyMessage ? { left: -10 } : { right: -10 }
-                                    ]}>
-                                        {Array.from(new Set(item.reactions.map((r: any) => r.emoji))).slice(0, 3).map((emoji: any, i) => (
-                                            <Text key={i} style={{ fontSize: 12 }}>{emoji}</Text>
-                                        ))}
-                                        {item.reactions.length > 1 && (
-                                            <Text style={{ fontSize: 10, color: '#888', marginLeft: 2 }}>{item.reactions.length}</Text>
-                                        )}
-                                    </View>
-                                )}
-                            </View>
-                        </TouchableOpacity>
-                    );
-                }}
-                contentContainerStyle={styles.messagesList}
-                /* Scroll to bottom on new message */
-                onContentSizeChange={() => messages.length > 0 && flatListRef.current?.scrollToEnd({ animated: true })}
-                onLayout={() => messages.length > 0 && flatListRef.current?.scrollToEnd({ animated: true })}
-                ref={flatListRef}
-            />
-            {replyingTo && (
-                <View style={{ padding: 10, backgroundColor: 'rgba(0,0,0,0.05)', borderTopWidth: 1, borderTopColor: '#eee', flexDirection: 'row', alignItems: 'center' }}>
-                    <View style={{ flex: 1, paddingLeft: 10, borderLeftWidth: 4, borderLeftColor: '#00A884' }}>
-                        <Text style={{ fontWeight: 'bold', color: '#00A884' }}>
-                            {String(replyingTo.sender?._id || replyingTo.sender) === String(currentUserId) ? "You" : (chatName || "Contact")}
-                        </Text>
-                        <Text numberOfLines={1} style={{ color: '#666' }}>{replyingTo.content}</Text>
-                    </View>
-                    <TouchableOpacity onPress={() => setReplyingTo(null)} style={{ padding: 5 }}>
-                        <IconSymbol name="xmark.circle.fill" size={20} color="#888" />
-                    </TouchableOpacity>
-                </View>
-            )}
-
-            <KeyboardAvoidingView
-                behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-                keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
-                style={styles.inputContainer}>
-
-                {isBlocked || isBlockingMe ? (
-                    <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.05)', padding: 15, borderRadius: 10, alignItems: 'center' }}>
-                        <Text style={{ color: '#666', fontSize: 14, textAlign: 'center' }}>
-                            {isBlocked ? "You blocked this contact. Tap to unblock." : "You are blocked. You cannot send messages."}
-                        </Text>
-                        {isBlocked && (
-                            <TouchableOpacity onPress={handleBlockToggle} style={{ marginTop: 8 }}>
-                                <Text style={{ color: '#00A884', fontWeight: 'bold' }}>UNBLOCK</Text>
-                            </TouchableOpacity>
-                        )}
-                    </View>
-                ) : (
-                    <>
-                        <View style={[styles.inputPill, { backgroundColor: colorScheme === 'dark' ? '#2A3942' : '#fff' }]}>
-                            {isRecording ? (
-                                <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', height: 40 }}>
-                                    <Animated.View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: 'red', marginRight: 10, opacity: blinkAnim }} />
-                                    <Text style={{ color: theme.text, fontSize: 16, minWidth: 45 }}>{formatDuration(recordingDuration)}</Text>
-                                    <Text style={{ color: '#888', marginLeft: 10, flex: 1 }}>Slide to cancel</Text>
-                                    <TouchableOpacity onPress={cancelRecording} style={{ padding: 10 }}>
-                                        <IconSymbol name="trash" size={24} color="red" />
-                                    </TouchableOpacity>
-                                </View>
-                            ) : (
-                                <>
-                                    <TouchableOpacity onPress={() => setIsEmojiOpen(true)} style={styles.leftInPill}>
-                                        <IconSymbol name="face.smiling" size={24} color="#888" />
-                                    </TouchableOpacity>
-
-                                    <TextInput
-                                        style={[styles.textInput, { color: theme.text }]}
-                                        value={message}
-                                        onChangeText={setMessage}
-                                        placeholder="Message"
-                                        placeholderTextColor="#888"
-                                        multiline
-                                    />
-
-                                    <TouchableOpacity style={styles.rightInPill} onPress={() => setAttachmentMenuVisible(true)}>
-                                        <IconSymbol name="paperclip" size={22} color="#888" />
-                                    </TouchableOpacity>
-
-                                    {message.length === 0 && (
-                                        <TouchableOpacity style={styles.rightInPill} onPress={openCamera}>
-                                            <IconSymbol name="camera.fill" size={22} color="#888" />
+                                            <View style={styles.downloadIcon}>
+                                                <IconSymbol name="arrow.down.to.line" size={18} color="#8696A0" />
+                                            </View>
                                         </TouchableOpacity>
+                                    ) : (
+                                        <Text style={[styles.messageText, { color: theme.text }]}>{item.content}</Text>
                                     )}
-                                </>
+
+
+                                    <Text style={styles.messageTime}>
+                                        {new Date(item.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                        {isMyMessage && (
+                                            <IconSymbol
+                                                name={item.status === 'sent' ? 'checkmark' : 'checkmark.double'}
+                                                size={16}
+                                                color={item.status === 'read' ? '#34B7F1' : '#888'}
+                                                style={{ marginLeft: 4 }}
+                                            />
+                                        )}
+                                    </Text>
+
+                                    {item.reactions && item.reactions.length > 0 && (
+                                        <View style={[
+                                            styles.reactionBubbleContainer,
+                                            isMyMessage ? { left: -10 } : { right: -10 }
+                                        ]}>
+                                            {Array.from(new Set(item.reactions.map((r: any) => r.emoji))).slice(0, 3).map((emoji: any, i) => (
+                                                <Text key={i} style={{ fontSize: 12 }}>{emoji}</Text>
+                                            ))}
+                                            {item.reactions.length > 1 && (
+                                                <Text style={{ fontSize: 10, color: '#888', marginLeft: 2 }}>{item.reactions.length}</Text>
+                                            )}
+                                        </View>
+                                    )}
+                                </View>
+                            </Pressable>
+                        );
+                    }}
+                    contentContainerStyle={styles.messagesList}
+                    /* Scroll to bottom on new message */
+                    onContentSizeChange={() => messages.length > 0 && flatListRef.current?.scrollToEnd({ animated: true })}
+                    onLayout={() => messages.length > 0 && flatListRef.current?.scrollToEnd({ animated: true })}
+                    ref={flatListRef}
+                />
+                {replyingTo && (
+                    <View style={{ padding: 10, backgroundColor: 'rgba(0,0,0,0.05)', borderTopWidth: 1, borderTopColor: '#eee', flexDirection: 'row', alignItems: 'center' }}>
+                        <View style={{ flex: 1, paddingLeft: 10, borderLeftWidth: 4, borderLeftColor: '#00A884' }}>
+                            <Text style={{ fontWeight: 'bold', color: '#00A884' }}>
+                                {String(replyingTo.sender?._id || replyingTo.sender) === String(currentUserId) ? "You" : (chatName || "Contact")}
+                            </Text>
+                            <Text numberOfLines={1} style={{ color: '#666' }}>{replyingTo.content}</Text>
+                        </View>
+                        <TouchableOpacity onPress={() => setReplyingTo(null)} style={{ padding: 5 }}>
+                            <IconSymbol name="xmark.circle.fill" size={20} color="#888" />
+                        </TouchableOpacity>
+                    </View>
+                )}
+
+                <View
+                    style={styles.inputContainer}>
+
+                    {isBlocked || isBlockingMe ? (
+                        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.05)', padding: 15, borderRadius: 10, alignItems: 'center' }}>
+                            <Text style={{ color: '#666', fontSize: 14, textAlign: 'center' }}>
+                                {isBlocked ? "You blocked this contact. Tap to unblock." : "You are blocked. You cannot send messages."}
+                            </Text>
+                            {isBlocked && (
+                                <TouchableOpacity onPress={handleBlockToggle} style={{ marginTop: 8 }}>
+                                    <Text style={{ color: '#00A884', fontWeight: 'bold' }}>UNBLOCK</Text>
+                                </TouchableOpacity>
                             )}
                         </View>
+                    ) : (
+                        <>
+                            <View style={[styles.inputPill, { backgroundColor: colorScheme === 'dark' ? '#2A3942' : '#fff' }]}>
+                                {isRecording ? (
+                                    <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', height: 40 }}>
+                                        <Animated.View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: 'red', marginRight: 10, opacity: blinkAnim }} />
+                                        <Text style={{ color: theme.text, fontSize: 16, minWidth: 45 }}>{formatDuration(recordingDuration)}</Text>
+                                        <Text style={{ color: '#888', marginLeft: 10, flex: 1 }}>Slide to cancel</Text>
+                                        <TouchableOpacity onPress={cancelRecording} style={{ padding: 10 }}>
+                                            <IconSymbol name="trash" size={24} color="red" />
+                                        </TouchableOpacity>
+                                    </View>
+                                ) : (
+                                    <>
+                                        <TouchableOpacity onPress={() => setIsEmojiOpen(true)} style={styles.leftInPill}>
+                                            <IconSymbol name="face.smiling" size={24} color="#888" />
+                                        </TouchableOpacity>
 
-                        <TouchableOpacity
-                            style={[styles.circularButton, { backgroundColor: '#00A884' }]}
-                            onPress={message.length > 0 ? sendMessage : (isRecording ? stopRecording : startRecording)}
-                        >
-                            <IconSymbol
-                                name={message.length > 0 ? "paperplane.fill" : (isRecording ? "paperplane.fill" : "mic.fill")}
-                                size={22}
-                                color="#fff"
-                            />
-                        </TouchableOpacity>
-                    </>
-                )}
+                                        <TextInput
+                                            style={[styles.textInput, { color: theme.text }]}
+                                            value={message}
+                                            onChangeText={setMessage}
+                                            placeholder="Message"
+                                            placeholderTextColor="#888"
+                                            multiline
+                                        />
+
+                                        <TouchableOpacity style={styles.rightInPill} onPress={() => setAttachmentMenuVisible(true)}>
+                                            <IconSymbol name="paperclip" size={22} color="#888" />
+                                        </TouchableOpacity>
+
+                                        {message.length === 0 && (
+                                            <TouchableOpacity style={styles.rightInPill} onPress={openCamera}>
+                                                <IconSymbol name="camera.fill" size={22} color="#888" />
+                                            </TouchableOpacity>
+                                        )}
+                                    </>
+                                )}
+                            </View>
+
+                            <TouchableOpacity
+                                style={[styles.circularButton, { backgroundColor: '#00A884' }]}
+                                onPress={message.length > 0 ? sendMessage : (isRecording ? stopRecording : startRecording)}
+                            >
+                                <IconSymbol
+                                    name={message.length > 0 ? "paperplane.fill" : (isRecording ? "paperplane.fill" : "mic.fill")}
+                                    size={22}
+                                    color="#fff"
+                                />
+                            </TouchableOpacity>
+                        </>
+                    )}
+                </View>
             </KeyboardAvoidingView>
             <CustomEmojiPicker
                 open={isEmojiOpen}
                 onClose={() => setIsEmojiOpen(false)}
                 onEmojiSelected={(emoji: any) => {
-                    setMessage(prev => prev + emoji.emoji);
                 }}
             />
 

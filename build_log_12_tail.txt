@@ -1,0 +1,100 @@
+﻿
+> Task :expo-module-gradle-plugin:compileKotlin
+w: file:///D:/chat%20app/node_modules/expo-modules-core/expo-module-gradle-plugin/src/main/kotlin/expo/modules/plugin/android/AndroidLibraryExtension.kt:9:24 'var targetSdk: Int?' is deprecated. Will be removed from library DSL in v9.0. Use testOptions.targetSdk or/and lint.targetSdk instead.
+
+> Task :expo-module-gradle-plugin:compileJava NO-SOURCE
+> Task :expo-module-gradle-plugin:classes
+> Task :expo-module-gradle-plugin:jar
+
+> Configure project :app
+android.packagingOptions.pickFirsts += [**/libc++_shared.so, **/libjingle_peerconnection_so.so] (2)
+ ??  [33mApplying gradle plugin[0m '[32mexpo-dev-launcher-gradle-plugin[0m' (expo-dev-launcher@6.0.20)
+
+> Configure project :expo
+Property 'kspVersion' is not defined. Using default value: '2.0.21-1.0.28'. Please ensure the 'expo-root-project' plugin is applied to your root project.
+
+Using expo modules
+  - [32mexpo-application[0m (7.0.8)
+  - [32mexpo-asset[0m (12.0.12)
+  - [32mexpo-av[0m (16.0.8)
+  - [32mexpo-camera[0m (17.0.10)
+  - [32mexpo-clipboard[0m (8.0.8)
+  - [32mexpo-constants[0m (18.0.13)
+  - [32mexpo-dev-client[0m (6.0.20)
+  - [32mexpo-dev-launcher[0m (6.0.20)
+  - [32mexpo-dev-menu[0m (7.0.18)
+  - [32mexpo-device[0m (8.0.10)
+  - [32mexpo-document-picker[0m (14.0.8)
+  - [32mexpo-file-system[0m (19.0.21)
+  - [32mexpo-font[0m (14.0.11)
+  - [32mexpo-haptics[0m (15.0.8)
+  - [32mexpo-image[0m (3.0.11)
+  - [32mexpo-image-loader[0m (6.0.0)
+  - [32mexpo-image-picker[0m (17.0.10)
+  - [32mexpo-json-utils[0m (0.15.0)
+  - [32mexpo-keep-awake[0m (15.0.8)
+  - [32mexpo-linking[0m (8.0.11)
+  - [32mexpo-manifests[0m (1.0.10)
+  - [32mexpo-modules-core[0m (3.0.29)
+  - [32mexpo-notifications[0m (0.32.16)
+  - [32mexpo-screen-orientation[0m (9.0.8)
+  - [32mexpo-sharing[0m (14.0.8)
+  - [32mexpo-splash-screen[0m (31.0.13)
+  - [32mexpo-system-ui[0m (6.0.9)
+  - [32mexpo-web-browser[0m (15.0.10)
+
+
+[Incubating] Problems report is available at: file:///D:/chat%20app/android/build/reports/problems/problems-report.html
+./gradlew : 
+At line:1 char:1
++ ./gradlew assembleDebug 
+> ../build_log_12.txt 2>&1
++ ~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo        
+      : NotSpecified: (:  
+  String) [], RemoteExc   
+ eption
+    + FullyQualifiedError 
+   Id : NativeCommandErr  
+  or
+ 
+FAILURE: Build failed 
+with an exception.
+
+* Where:
+Build file 'D:\chat app\no
+de_modules\@livekit\react-
+native\android\build.gradl
+e' line: 133
+
+* What went wrong:
+A problem occurred 
+evaluating project 
+':livekit_react-native'.
+> Project with path ':live
+kit_react-native-webrtc' 
+could not be found in 
+project 
+':livekit_react-native'.
+
+* Try:
+> Run with --stacktrace 
+option to get the stack 
+trace.
+> Run with --info or 
+--debug option to get 
+more log output.
+> Run with --scan to get 
+full insights.
+> Get more help at 
+https://help.gradle.org.
+
+Deprecated Gradle features were used in this build, making it incompatible with Gradle 9.0.
+
+You can use '--warning-mode all' to show the individual deprecation warnings and determine if they come from your own scripts or plugins.
+
+For more on this, please refer to https://docs.gradle.org/8.13/userguide/command_line_interface.html#sec:command_line_warnings in the Gradle documentation.
+
+BUILD FAILED in 2m 8s
+18 actionable tasks: 18 executed

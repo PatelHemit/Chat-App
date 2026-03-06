@@ -1,0 +1,46 @@
+﻿node.exe : The following 
+packages should be 
+updated for best 
+compatibility with the 
+installed expo version:
+At line:1 char:1
++ & "C:\Program 
+Files\nodejs/node.exe" 
+"C:\Program 
+Files\nodejs/node_mo ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo        
+      : NotSpecified: (T  
+  he following p...d ex   
+ po version::String) [    
+], RemoteException
+    + FullyQualifiedError 
+   Id : NativeCommandErr  
+  or
+ 
+  react@18.3.1 - expected 
+version: 19.1.0
+  react-dom@18.3.1 - 
+expected version: 19.1.0
+  react-native@0.76.1 - 
+expected version: 0.81.5
+  @types/react@18.3.28 - 
+expected version: ~19.1.10
+  
+babel-preset-expo@12.0.12 
+- expected version: 
+~54.0.10
+  
+eslint-config-expo@8.0.1 
+- expected version: 
+~10.0.0
+  typescript@5.3.3 - 
+expected version: ~5.9.2
+Your project may not work 
+correctly until you 
+install the expected 
+versions of the packages.
+Found outdated 
+dependencies

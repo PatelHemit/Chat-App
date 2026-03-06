@@ -1,0 +1,50 @@
+﻿[2026-03-02T04:06:05.244Z] [Socket] User Online: 6996adb45e25a10f4831078d (Sessions: 2)
+[2026-03-02T04:16:25.641Z] [Socket] User joined personal room: 69774857485a231537194d64
+[2026-03-02T04:16:25.642Z] [Socket] User Online: 69774857485a231537194d64 (Sessions: 3)
+[2026-03-02T04:16:26.241Z] [PushToken] Register request from user 69774857485a231537194d64: ExponentPushToken[MOOPtwINrezUhpSZMSBtjh]
+[2026-03-02T04:16:26.262Z] [PushToken] Token already exists for user Hemit
+[2026-03-02T04:16:26.412Z] [FCMToken] Register request from user 69774857485a231537194d64: fI7ErA7mTbO32GDx92y1...
+[2026-03-02T04:16:26.436Z] [FCMToken] FCM Token already exists for Hemit
+[2026-03-02T04:16:26.781Z] [Socket] User joined personal room: 69774857485a231537194d64
+[2026-03-02T04:16:26.782Z] [Socket] User Online: 69774857485a231537194d64 (Sessions: 4)
+[2026-03-02T04:16:39.061Z] [Socket] User joined personal room: 69774857485a231537194d64
+[2026-03-02T04:16:39.061Z] [Socket] User Online: 69774857485a231537194d64 (Sessions: 5)
+[2026-03-02T04:16:41.126Z] [Socket] Call from Hemit to 6996adb45e25a10f4831078d (isVideo: true)
+[2026-03-02T04:16:41.191Z] [Socket] Sending 'incoming-call' to user 6996adb45e25a10f4831078d (2 active sessions)
+[2026-03-02T04:16:41.210Z] [PushNotif] Processing 6 Expo labels for Shilpa ben
+[2026-03-02T04:16:41.652Z] [PushNotif] Ticket for ExponentPushToken[-9yQIdM...: [{"status":"ok","id":"019cacc3-38d9-71ca-909b-ce3167ad90f5"}]
+[2026-03-02T04:16:42.147Z] [PushNotif] Ticket for ExponentPushToken[V4mvzuC...: [{"status":"error","message":"Unable to retrieve the FCM server key for the recipient's app. Make sure you have provided a server key as directed by the Expo FCM documentation.","details":{"error":"InvalidCredentials","fault":"developer"}}]
+[2026-03-02T04:16:42.566Z] [PushNotif] Ticket for ExponentPushToken[PG53ncO...: [{"status":"error","message":"Unable to retrieve the FCM server key for the recipient's app. Make sure you have provided a server key as directed by the Expo FCM documentation.","details":{"error":"InvalidCredentials","fault":"developer"}}]
+[2026-03-02T04:16:42.908Z] [PushNotif] Ticket for ExponentPushToken[msfsJtO...: [{"status":"error","message":"Unable to retrieve the FCM server key for the recipient's app. Make sure you have provided a server key as directed by the Expo FCM documentation.","details":{"error":"InvalidCredentials","fault":"developer"}}]
+[2026-03-02T04:16:43.276Z] [PushNotif] Ticket for ExponentPushToken[GqhB3JC...: [{"status":"error","message":"Unable to retrieve the FCM server key for the recipient's app. Make sure you have provided a server key as directed by the Expo FCM documentation.","details":{"error":"InvalidCredentials","fault":"developer"}}]
+[2026-03-02T04:16:43.688Z] [PushNotif] Ticket for ExponentPushToken[lpMOblJ...: [{"status":"error","message":"Unable to retrieve the FCM server key for the recipient's app. Make sure you have provided a server key as directed by the Expo FCM documentation.","details":{"error":"InvalidCredentials","fault":"developer"}}]
+[2026-03-02T04:16:43.708Z] [FCM] Sending call data message to Shilpa ben (1 FCM tokens)
+[2026-03-02T04:16:44.162Z] [FCM] Data message sent successfully to token e-890CjYRI...
+[2026-03-02T04:40:19.261Z] [Socket] User joined personal room: 69774857485a231537194d64
+[2026-03-02T04:40:19.264Z] [Socket] User Online: 69774857485a231537194d64 (Sessions: 3)
+[2026-03-02T04:40:24.864Z] [PushToken] Register request from user 69774857485a231537194d64: ExponentPushToken[vdudmjN0zQv9TCg_Fq6iPs]
+[2026-03-02T04:40:24.975Z] [PushToken] Adding new token for Hemit
+[2026-03-02T04:40:25.016Z] [PushToken] Token saved successfully
+[2026-03-02T04:40:25.282Z] [FCMToken] Register request from user 69774857485a231537194d64: fI7ErA7mTbO32GDx92y1...
+[2026-03-02T04:40:25.301Z] [FCMToken] Adding new FCM token for Hemit
+[2026-03-02T04:40:25.326Z] [FCMToken] FCM Token saved successfully
+[2026-03-02T04:40:25.783Z] [Socket] User joined personal room: 69774857485a231537194d64
+[2026-03-02T04:40:25.785Z] [Socket] User Online: 69774857485a231537194d64 (Sessions: 4)
+[2026-03-02T04:42:59.069Z] [Socket] User joined personal room: 6996adb45e25a10f4831078d
+[2026-03-02T04:42:59.070Z] [Socket] User Online: 6996adb45e25a10f4831078d (Sessions: 1)
+[2026-03-02T04:43:08.378Z] [Socket] User joined personal room: 69774857485a231537194d64
+[2026-03-02T04:43:08.379Z] [Socket] User Online: 69774857485a231537194d64 (Sessions: 5)
+[2026-03-02T04:43:11.034Z] [Socket] Call from Hemit to 6996adb45e25a10f4831078d (isVideo: true)
+[2026-03-02T04:43:11.061Z] [Socket] Sending 'incoming-call' to user 6996adb45e25a10f4831078d (1 active sessions)
+[2026-03-02T04:43:11.084Z] [PushNotif] Processing 6 Expo labels for Shilpa ben
+[2026-03-02T04:43:11.550Z] [PushNotif] Ticket for ExponentPushToken[-9yQIdM...: [{"status":"ok","id":"019cacdb-7bec-727a-8d64-0d1e22d66162"}]
+[2026-03-02T04:43:12.273Z] [PushNotif] Ticket for ExponentPushToken[V4mvzuC...: [{"status":"error","message":"Unable to retrieve the FCM server key for the recipient's app. Make sure you have provided a server key as directed by the Expo FCM documentation.","details":{"error":"InvalidCredentials","fault":"developer"}}]
+[2026-03-02T04:43:12.675Z] [PushNotif] Ticket for ExponentPushToken[PG53ncO...: [{"status":"error","message":"Unable to retrieve the FCM server key for the recipient's app. Make sure you have provided a server key as directed by the Expo FCM documentation.","details":{"error":"InvalidCredentials","fault":"developer"}}]
+[2026-03-02T04:43:13.694Z] [PushNotif] Ticket for ExponentPushToken[msfsJtO...: [{"status":"error","message":"Unable to retrieve the FCM server key for the recipient's app. Make sure you have provided a server key as directed by the Expo FCM documentation.","details":{"error":"InvalidCredentials","fault":"developer"}}]
+[2026-03-02T04:43:14.006Z] [PushNotif] Ticket for ExponentPushToken[GqhB3JC...: [{"status":"error","message":"Unable to retrieve the FCM server key for the recipient's app. Make sure you have provided a server key as directed by the Expo FCM documentation.","details":{"error":"InvalidCredentials","fault":"developer"}}]
+[2026-03-02T04:43:14.334Z] [PushNotif] Ticket for ExponentPushToken[lpMOblJ...: [{"status":"error","message":"Unable to retrieve the FCM server key for the recipient's app. Make sure you have provided a server key as directed by the Expo FCM documentation.","details":{"error":"InvalidCredentials","fault":"developer"}}]
+[2026-03-02T04:43:14.400Z] [FCM] Sending call data message to Shilpa ben (1 FCM tokens)
+[2026-03-02T04:43:14.834Z] [FCM] Error sending to token e-890CjYRI...: Requested entity was not found.
+[2026-03-02T04:43:14.859Z] [FCM] Removed invalid token from DB
+[2026-03-02T04:43:50.764Z] [Socket] User joined personal room: 6996adb45e25a10f4831078d
+[2026-03-02T04:43:50.765Z] [Socket] User Online: 6996adb45e25a10f4831078d (Sessions: 2)

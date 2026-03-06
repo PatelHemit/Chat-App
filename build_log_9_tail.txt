@@ -1,0 +1,200 @@
+﻿work action org.gradle.api.internal.artifacts.transform.DefaultTransformUpstreamDependenciesResolver$FinalizeTransformDependenciesFromSelectedArtifacts$CalculateFinalDependencies@36aeb9f9 (Thread[included builds Thread 2,5,main]) started.
+work action Dependencies for co.touchlab:stately-strict-jvm:2.0.6 {artifactType=android-classes-jar, asm-transformed-variant=debug} (Thread[included builds Thread 2,5,main]) started.
+work action org.gradle.api.internal.artifacts.transform.DefaultTransformUpstreamDependenciesResolver$FinalizeTransformDependenciesFromSelectedArtifacts$CalculateFinalDependencies@43192199 (Thread[included builds Thread 2,5,main]) started.
+work action Dependencies for co.touchlab:stately-concurrency-jvm:2.0.6 {artifactType=android-classes-jar, asm-transformed-variant=debug} (Thread[included builds Thread 2,5,main]) started.
+Downloading https://repo.maven.apache.org/maven2/co/touchlab/stately-strict-jvm/2.0.6/stately-strict-jvm-2.0.6.jar to C:\Users\hemit\.gradle\.tmp\gradle_download3612681614037369908bin
+Invalidating in-memory cache of D:\chat app\android\.gradle\8.10.2\checksums\md5-checksums.bin
+Invalidating in-memory cache of D:\chat app\android\.gradle\8.10.2\checksums\sha256-checksums.bin
+Invalidating in-memory cache of D:\chat app\android\.gradle\8.10.2\checksums\sha1-checksums.bin
+Invalidating in-memory cache of D:\chat app\android\.gradle\8.10.2\checksums\sha512-checksums.bin
+Invalidating in-memory cache of C:\Users\hemit\.gradle\caches\journal-1\file-access.bin
+Transforming stately-strict-jvm-2.0.6.jar (co.touchlab:stately-strict-jvm:2.0.6) with IdentityTransform
+Caching disabled for IdentityTransform: C:\Users\hemit\.gradle\caches\modules-2\files-2.1\co.touchlab\stately-strict-jvm\2.0.6\fdbcb1fc1c9219aa5a5f2b1c9084a4ed8b2a8f8b\stately-strict-jvm-2.0.6.jar because:
+  Build cache is disabled
+  Caching not enabled.
+work action org.gradle.api.internal.artifacts.transform.DefaultTransformUpstreamDependenciesResolver$FinalizeTransformDependenciesFromSelectedArtifacts$CalculateFinalDependencies@ef4cff2 (Thread[included builds Thread 2,5,main]) started.
+work action Dependencies for co.touchlab:stately-concurrent-collections-jvm:2.0.6 {artifactType=android-classes-jar, asm-transformed-variant=debug} (Thread[Execution worker Thread 3,5,main]) started.
+Downloading https://repo.maven.apache.org/maven2/co/touchlab/stately-concurrency-jvm/2.0.6/stately-concurrency-jvm-2.0.6.jar to C:\Users\hemit\.gradle\.tmp\gradle_download1371865036048586419bin
+Invalidating in-memory cache of D:\chat app\android\.gradle\8.10.2\checksums\md5-checksums.bin
+Invalidating in-memory cache of D:\chat app\android\.gradle\8.10.2\checksums\sha256-checksums.bin
+Invalidating in-memory cache of D:\chat app\android\.gradle\8.10.2\checksums\sha1-checksums.bin
+Invalidating in-memory cache of D:\chat app\android\.gradle\8.10.2\checksums\sha512-checksums.bin
+Invalidating in-memory cache of C:\Users\hemit\.gradle\caches\journal-1\file-access.bin
+Transforming stately-concurrency-jvm-2.0.6.jar (co.touchlab:stately-concurrency-jvm:2.0.6) with IdentityTransform
+Caching disabled for IdentityTransform: C:\Users\hemit\.gradle\caches\modules-2\files-2.1\co.touchlab\stately-concurrency-jvm\2.0.6\14dcbce3fc3d80a5a07f9df33dd2dc54e437e8d0\stately-concurrency-jvm-2.0.6.jar because:
+  Build cache is disabled
+  Caching not enabled.
+work action org.gradle.api.internal.artifacts.transform.DefaultTransformUpstreamDependenciesResolver$FinalizeTransformDependenciesFromSelectedArtifacts$CalculateFinalDependencies@1d6fa024 (Thread[Execution worker Thread 3,5,main]) started.
+work action Dependencies for io.insert-koin:koin-core-jvm:3.5.6 {artifactType=android-classes-jar, asm-transformed-variant=debug} (Thread[Execution worker Thread 3,5,main]) started.
+Downloading https://repo.maven.apache.org/maven2/co/touchlab/stately-concurrent-collections-jvm/2.0.6/stately-concurrent-collections-jvm-2.0.6.jar to C:\Users\hemit\.gradle\.tmp\gradle_download9601507961817865116bin
+Invalidating in-memory cache of D:\chat app\android\.gradle\8.10.2\checksums\md5-checksums.bin
+Invalidating in-memory cache of D:\chat app\android\.gradle\8.10.2\checksums\sha256-checksums.bin
+Invalidating in-memory cache of D:\chat app\android\.gradle\8.10.2\checksums\sha1-checksums.bin
+Invalidating in-memory cache of D:\chat app\android\.gradle\8.10.2\checksums\sha512-checksums.bin
+Invalidating in-memory cache of C:\Users\hemit\.gradle\caches\journal-1\file-access.bin
+Transforming stately-concurrent-collections-jvm-2.0.6.jar (co.touchlab:stately-concurrent-collections-jvm:2.0.6) with IdentityTransform
+Caching disabled for IdentityTransform: C:\Users\hemit\.gradle\caches\modules-2\files-2.1\co.touchlab\stately-concurrent-collections-jvm\2.0.6\fb80df9c69dd0e154c346ee5510601e2d148e23d\stately-concurrent-collections-jvm-2.0.6.jar because:
+  Build cache is disabled
+  Caching not enabled.
+work action org.gradle.api.internal.artifacts.transform.DefaultTransformUpstreamDependenciesResolver$FinalizeTransformDependenciesFromSelectedArtifacts$CalculateFinalDependencies@2f1f393b (Thread[Execution worker Thread 3,5,main]) started.
+work action Dependencies for com.google.android.libraries.identity.googleid:googleid:1.1.0 {artifactType=android-classes-jar, asm-transformed-variant=debug} (Thread[Execution worker Thread 11,5,main]) started.
+work action org.gradle.api.internal.artifacts.transform.DefaultTransformUpstreamDependenciesResolver$FinalizeTransformDependenciesFromSelectedArtifacts$CalculateFinalDependencies@6fffb2e1 (Thread[Execution worker Thread 3,5,main]) started.
+work action Dependencies for com.facebook.fresco:vito-renderer:3.2.0 {artifactType=android-classes-jar, asm-transformed-variant=debug} (Thread[Execution worker Thread 3,5,main]) started.
+work action org.gradle.api.internal.artifacts.transform.DefaultTransformUpstreamDependenciesResolver$FinalizeTransformDependenciesFromSelectedArtifacts$CalculateFinalDependencies@652e10db (Thread[Execution worker Thread 3,5,main]) started.
+work action Dependencies for com.squareup.okhttp3:okhttp:4.12.0 {artifactType=android-classes-jar, asm-transformed-variant=debug} (Thread[Execution worker Thread 3,5,main]) started.
+work action org.gradle.api.internal.artifacts.transform.DefaultTransformUpstreamDependenciesResolver$FinalizeTransformDependenciesFromSelectedArtifacts$CalculateFinalDependencies@3e985434 (Thread[Execution worker Thread 9,5,main]) started.
+work action Dependencies for com.google.android.exoplayer:extension-okhttp:2.18.1 {artifactType=android-classes-jar, asm-transformed-variant=debug} (Thread[Execution worker Thread 9,5,main]) started.
+work action org.gradle.api.internal.artifacts.transform.DefaultTransformUpstreamDependenciesResolver$FinalizeTransformDependenciesFromSelectedArtifacts$CalculateFinalDependencies@3493eab7 (Thread[Execution worker Thread 9,5,main]) started.
+work action Dependencies for com.squareup.okhttp3:okhttp-urlconnection:4.9.2 {artifactType=android-classes-jar, asm-transformed-variant=debug} (Thread[Execution worker Thread 9,5,main]) started.
+work action org.gradle.api.internal.artifacts.transform.DefaultTransformUpstreamDependenciesResolver$FinalizeTransformDependenciesFromSelectedArtifacts$CalculateFinalDependencies@7916d8e1 (Thread[Execution worker Thread 9,5,main]) started.
+work action Dependencies for io.livekit:noise:2.0.0 {artifactType=android-classes-jar, asm-transformed-variant=debug} (Thread[Execution worker Thread 9,5,main]) started.
+work action org.gradle.api.internal.artifacts.transform.DefaultTransformUpstreamDependenciesResolver$FinalizeTransformDependenciesFromSelectedArtifacts$CalculateFinalDependencies@7efde8be (Thread[Execution worker Thread 9,5,main]) started.
+work action Dependencies for androidx.core:core-ktx:1.16.0 {artifactType=android-classes-jar, asm-transformed-variant=debug} (Thread[Execution worker Thread 9,5,main]) started.
+work action org.gradle.api.internal.artifacts.transform.DefaultTransformUpstreamDependenciesResolver$FinalizeTransformDependenciesFromSelectedArtifacts$CalculateFinalDependencies@2c814865 (Thread[Execution worker Thread 9,5,main]) started.
+work action Dependencies for androidx.customview:customview-poolingcontainer:1.0.0 {artifactType=android-classes-jar, asm-transformed-variant=debug} (Thread[Execution worker Thread 9,5,main]) started.
+work action org.gradle.api.internal.artifacts.transform.DefaultTransformUpstreamDependenciesResolver$FinalizeTransformDependenciesFromSelectedArtifacts$CalculateFinalDependencies@6bd9eb4a (Thread[Execution worker Thread 9,5,main]) started.
+work action Dependencies for androidx.fragment:fragment-ktx:1.6.1 {artifactType=android-classes-jar, asm-transformed-variant=debug} (Thread[Execution worker Thread 9,5,main]) started.
+work action org.gradle.api.internal.artifacts.transform.DefaultTransformUpstreamDependenciesResolver$FinalizeTransformDependenciesFromSelectedArtifacts$CalculateFinalDependencies@541211a0 (Thread[Execution worker Thread 9,5,main]) started.
+work action Dependencies for androidx.fragment:fragment:1.6.1 {artifactType=android-classes-jar, asm-transformed-variant=debug} (Thread[Execution worker Thread 9,5,main]) started.
+work action org.gradle.api.internal.artifacts.transform.DefaultTransformUpstreamDependenciesResolver$FinalizeTransformDependenciesFromSelectedArtifacts$CalculateFinalDependencies@8983732 (Thread[Execution worker Thread 9,5,main]) started.
+work action Dependencies for androidx.fragment:fragment:1.6.1 {artifactType=android-classes-jar, asm-transformed-variant=debug} (Thread[Execution worker Thread 9,5,main]) started.
+work action org.gradle.api.internal.artifacts.transform.DefaultTransformUpstreamDependenciesResolver$FinalizeTransformDependenciesFromSelectedArtifacts$CalculateFinalDependencies@b9d5d76 (Thread[Execution worker Thread 9,5,main]) started.
+work action Dependencies for com.google.android.gms:play-services-basement:18.5.0 {artifactType=android-classes-jar, asm-transformed-variant=debug} (Thread[Execution worker Thread 8,5,main]) started.
+work action org.gradle.api.internal.artifacts.transform.DefaultTransformUpstreamDependenciesResolver$FinalizeTransformDependenciesFromSelectedArtifacts$CalculateFinalDependencies@6644c8c8 (Thread[Execution worker Thread 8,5,main]) started.
+work action Dependencies for com.google.android.gms:play-services-basement:18.5.0 {artifactType=android-classes-jar, asm-transformed-variant=debug} (Thread[Execution worker Thread 8,5,main]) started.
+work action org.gradle.api.internal.artifacts.transform.DefaultTransformUpstreamDependenciesResolver$FinalizeTransformDependenciesFromSelectedArtifacts$CalculateFinalDependencies@6a110926 (Thread[Execution worker Thread 8,5,main]) started.
+work action Dependencies for com.google.firebase:firebase-measurement-connector:19.0.0 {artifactType=android-classes-jar, asm-transformed-variant=debug} (Thread[Execution worker Thread 2,5,main]) started.
+work action org.gradle.api.internal.artifacts.transform.DefaultTransformUpstreamDependenciesResolver$FinalizeTransformDependenciesFromSelectedArtifacts$CalculateFinalDependencies@4e5f9755 (Thread[Execution worker Thread 2,5,main]) started.
+work action Dependencies for com.google.android.gms:play-services-tasks:18.2.0 {artifactType=android-classes-jar, asm-transformed-variant=debug} (Thread[Execution worker Thread 2,5,main]) started.
+work action org.gradle.api.internal.artifacts.transform.DefaultTransformUpstreamDependenciesResolver$FinalizeTransformDependenciesFromSelectedArtifacts$CalculateFinalDependencies@786b811e (Thread[Execution worker Thread 2,5,main]) started.
+work action Dependencies for com.google.android.gms:play-services-tasks:18.2.0 {artifactType=android-classes-jar, asm-transformed-variant=debug} (Thread[Execution worker Thread 2,5,main]) started.
+work action org.gradle.api.internal.artifacts.transform.DefaultTransformUpstreamDependenciesResolver$FinalizeTransformDependenciesFromSelectedArtifacts$CalculateFinalDependencies@298eb56d (Thread[Execution worker Thread 2,5,main]) started.
+work action Dependencies for com.google.firebase:firebase-installations-interop:17.1.1 {artifactType=android-classes-jar, asm-transformed-variant=debug} (Thread[Execution worker Thread 2,5,main]) started.
+work action org.gradle.api.internal.artifacts.transform.DefaultTransformUpstreamDependenciesResolver$FinalizeTransformDependenciesFromSelectedArtifacts$CalculateFinalDependencies@4767af15 (Thread[Execution worker Thread 2,5,main]) started.
+work action Dependencies for com.google.mlkit:vision-interfaces:16.3.0 {artifactType=android-classes-jar, asm-transformed-variant=debug} (Thread[Execution worker Thread 8,5,main]) started.
+work action org.gradle.api.internal.artifacts.transform.DefaultTransformUpstreamDependenciesResolver$FinalizeTransformDependenciesFromSelectedArtifacts$CalculateFinalDependencies@3cd49aa (Thread[Execution worker Thread 8,5,main]) started.
+work action Dependencies for com.google.mlkit:vision-interfaces:16.3.0 {artifactType=android-classes-jar, asm-transformed-variant=debug} (Thread[Execution worker Thread 8,5,main]) started.
+work action org.gradle.api.internal.artifacts.transform.DefaultTransformUpstreamDependenciesResolver$FinalizeTransformDependenciesFromSelectedArtifacts$CalculateFinalDependencies@6e0dee22 (Thread[Execution worker Thread 8,5,main]) started.
+work action Dependencies for com.google.android.gms:play-services-cloud-messaging:17.2.0 {artifactType=android-classes-jar, asm-transformed-variant=debug} (Thread[Execution worker Thread 11,5,main]) started.
+work action org.gradle.api.internal.artifacts.transform.DefaultTransformUpstreamDependenciesResolver$FinalizeTransformDependenciesFromSelectedArtifacts$CalculateFinalDependencies@ed49147 (Thread[Execution worker Thread 11,5,main]) started.
+work action Dependencies for com.google.firebase:firebase-iid-interop:17.1.0 {artifactType=android-classes-jar, asm-transformed-variant=debug} (Thread[Execution worker Thread 11,5,main]) started.
+work action org.gradle.api.internal.artifacts.transform.DefaultTransformUpstreamDependenciesResolver$FinalizeTransformDependenciesFromSelectedArtifacts$CalculateFinalDependencies@2c1147c7 (Thread[Execution worker Thread 11,5,main]) started.
+work action Dependencies for org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.9.0 {artifactType=android-classes-jar, asm-transformed-variant=debug} (Thread[Execution worker,5,main]) started.
+work action org.gradle.api.internal.artifacts.transform.DefaultTransformUpstreamDependenciesResolver$FinalizeTransformDependenciesFromSelectedArtifacts$CalculateFinalDependencies@3ee092c0 (Thread[Execution worker,5,main]) started.
+work action Dependencies for org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm:1.9.0 {artifactType=android-classes-jar, asm-transformed-variant=debug} (Thread[Execution worker,5,main]) started.
+work action org.gradle.api.internal.artifacts.transform.DefaultTransformUpstreamDependenciesResolver$FinalizeTransformDependenciesFromSelectedArtifacts$CalculateFinalDependencies@62c908a9 (Thread[Execution worker,5,main]) started.
+work action Dependencies for androidx.datastore:datastore-preferences-android:1.1.7 {artifactType=android-classes-jar, asm-transformed-variant=debug} (Thread[Execution worker,5,main]) started.
+work action org.gradle.api.internal.artifacts.transform.DefaultTransformUpstreamDependenciesResolver$FinalizeTransformDependenciesFromSelectedArtifacts$CalculateFinalDependencies@6ec8cb12 (Thread[Execution worker,5,main]) started.
+work action Dependencies for androidx.datastore:datastore-android:1.1.7 {artifactType=android-classes-jar, asm-transformed-variant=debug} (Thread[Execution worker,5,main]) started.
+work action org.gradle.api.internal.artifacts.transform.DefaultTransformUpstreamDependenciesResolver$FinalizeTransformDependenciesFromSelectedArtifacts$CalculateFinalDependencies@797c332c (Thread[Execution worker,5,main]) started.
+work action Dependencies for androidx.datastore:datastore-preferences-core-android:1.1.7 {artifactType=android-classes-jar, asm-transformed-variant=debug} (Thread[Execution worker,5,main]) started.
+work action org.gradle.api.internal.artifacts.transform.DefaultTransformUpstreamDependenciesResolver$FinalizeTransformDependenciesFromSelectedArtifacts$CalculateFinalDependencies@249b793b (Thread[Execution worker,5,main]) started.
+work action Dependencies for androidx.datastore:datastore-preferences-proto:1.1.7 {artifactType=android-classes-jar, asm-transformed-variant=debug} (Thread[Execution worker,5,main]) started.
+work action org.gradle.api.internal.artifacts.transform.DefaultTransformUpstreamDependenciesResolver$FinalizeTransformDependenciesFromSelectedArtifacts$CalculateFinalDependencies@20689f03 (Thread[Execution worker,5,main]) started.
+work action Dependencies for androidx.datastore:datastore-core-android:1.1.7 {artifactType=android-classes-jar, asm-transformed-variant=debug} (Thread[Execution worker,5,main]) started.
+work action org.gradle.api.internal.artifacts.transform.DefaultTransformUpstreamDependenciesResolver$FinalizeTransformDependenciesFromSelectedArtifacts$CalculateFinalDependencies@29389596 (Thread[Execution worker,5,main]) started.
+work action Dependencies for androidx.datastore:datastore-core-okio-jvm:1.1.7 {artifactType=android-classes-jar, asm-transformed-variant=debug} (Thread[Execution worker,5,main]) started.
+work action org.gradle.api.internal.artifacts.transform.DefaultTransformUpstreamDependenciesResolver$FinalizeTransformDependenciesFromSelectedArtifacts$CalculateFinalDependencies@32616e7d (Thread[Execution worker,5,main]) started.
+work action Dependencies for androidx.datastore:datastore-preferences-external-protobuf:1.1.7 {artifactType=android-classes-jar, asm-transformed-variant=debug} (Thread[Execution worker,5,main]) started.
+work action org.gradle.api.internal.artifacts.transform.DefaultTransformUpstreamDependenciesResolver$FinalizeTransformDependenciesFromSelectedArtifacts$CalculateFinalDependencies@230e23e5 (Thread[Execution worker,5,main]) started.
+work action Dependencies for com.apollographql.apollo:apollo-runtime-android-debug:4.3.1 {artifactType=android-classes-jar, asm-transformed-variant=debug} (Thread[Execution worker,5,main]) started.
+Downloading https://repo.maven.apache.org/maven2/org/jetbrains/kotlinx/atomicfu-jvm/0.26.0/atomicfu-jvm-0.26.0.jar to C:\Users\hemit\.gradle\.tmp\gradle_download6826424129334957052bin
+Downloading https://repo.maven.apache.org/maven2/com/apollographql/apollo/apollo-mpp-utils-jvm/4.3.1/apollo-mpp-utils-jvm-4.3.1.jar to C:\Users\hemit\.gradle\.tmp\gradle_download10768007674831147628bin
+Invalidating in-memory cache of D:\chat app\android\.gradle\8.10.2\checksums\md5-checksums.bin
+Invalidating in-memory cache of D:\chat app\android\.gradle\8.10.2\checksums\sha256-checksums.bin
+Invalidating in-memory cache of D:\chat app\android\.gradle\8.10.2\checksums\sha1-checksums.bin
+Invalidating in-memory cache of D:\chat app\android\.gradle\8.10.2\checksums\sha512-checksums.bin
+Invalidating in-memory cache of C:\Users\hemit\.gradle\caches\journal-1\file-access.bin
+Transforming atomicfu-jvm-0.26.0.jar (org.jetbrains.kotlinx:atomicfu-jvm:0.26.0) with IdentityTransform
+Transforming apollo-mpp-utils-jvm-4.3.1.jar (com.apollographql.apollo:apollo-mpp-utils-jvm:4.3.1) with IdentityTransform
+Caching disabled for IdentityTransform: C:\Users\hemit\.gradle\caches\modules-2\files-2.1\org.jetbrains.kotlinx\atomicfu-jvm\0.26.0\8886a0c1867542c419c6f8ce149a8af13b7bb09\atomicfu-jvm-0.26.0.jar because:
+  Build cache is disabled
+  Caching not enabled.
+Caching disabled for IdentityTransform: C:\Users\hemit\.gradle\caches\modules-2\files-2.1\com.apollographql.apollo\apollo-mpp-utils-jvm\4.3.1\62a89397620e837b08e6c42ac81fc76e00062215\apollo-mpp-utils-jvm-4.3.1.jar because:
+  Build cache is disabled
+  Caching not enabled.
+Downloading https://repo.maven.apache.org/maven2/com/apollographql/apollo/apollo-api-jvm/4.3.1/apollo-api-jvm-4.3.1.jar to C:\Users\hemit\.gradle\.tmp\gradle_download4347987090053573504bin
+Invalidating in-memory cache of D:\chat app\android\.gradle\8.10.2\checksums\md5-checksums.bin
+Invalidating in-memory cache of D:\chat app\android\.gradle\8.10.2\checksums\sha256-checksums.bin
+Invalidating in-memory cache of D:\chat app\android\.gradle\8.10.2\checksums\sha1-checksums.bin
+Invalidating in-memory cache of D:\chat app\android\.gradle\8.10.2\checksums\sha512-checksums.bin
+Invalidating in-memory cache of C:\Users\hemit\.gradle\caches\journal-1\file-access.bin
+Transforming apollo-api-jvm-4.3.1.jar (com.apollographql.apollo:apollo-api-jvm:4.3.1) with IdentityTransform
+Caching disabled for IdentityTransform: C:\Users\hemit\.gradle\caches\modules-2\files-2.1\com.apollographql.apollo\apollo-api-jvm\4.3.1\8442365b6c30d4b2965fa64b703399257e3d0bf\apollo-api-jvm-4.3.1.jar because:
+  Build cache is disabled
+  Caching not enabled.
+work action org.gradle.api.internal.artifacts.transform.DefaultTransformUpstreamDependenciesResolver$FinalizeTransformDependenciesFromSelectedArtifacts$CalculateFinalDependencies@2003027c (Thread[Execution worker,5,main]) started.
+work action Dependencies for androidx.concurrent:concurrent-futures-ktx:1.1.0 {artifactType=android-classes-jar, asm-transformed-variant=debug} (Thread[Execution worker,5,main]) started.
+work action org.gradle.api.internal.artifacts.transform.DefaultTransformUpstreamDependenciesResolver$FinalizeTransformDependenciesFromSelectedArtifacts$CalculateFinalDependencies@83a62e4 (Thread[Execution worker,5,main]) started.
+work action Dependencies for org.jetbrains.kotlinx:kotlinx-coroutines-android:1.9.0 {artifactType=android-classes-jar, asm-transformed-variant=debug} (Thread[Execution worker,5,main]) started.
+work action org.gradle.api.internal.artifacts.transform.DefaultTransformUpstreamDependenciesResolver$FinalizeTransformDependenciesFromSelectedArtifacts$CalculateFinalDependencies@164c060a (Thread[Execution worker Thread 9,5,main]) started.
+work action Dependencies for androidx.compose.ui:ui-android:1.9.0 {artifactType=android-classes-jar, asm-transformed-variant=debug} (Thread[Execution worker Thread 9,5,main]) started.
+Downloading https://dl.google.com/dl/android/maven2/androidx/graphics/graphics-path/1.0.1/graphics-path-1.0.1.aar to C:\Users\hemit\.gradle\.tmp\gradle_download6271645726506661062bin
+Downloading https://dl.google.com/dl/android/maven2/androidx/compose/runtime/runtime-annotation-android/1.9.0/runtime-annotation-android-1.9.0.aar to C:\Users\hemit\.gradle\.tmp\gradle_download4971516292240708349bin
+Downloading https://dl.google.com/dl/android/maven2/androidx/savedstate/savedstate-compose-android/1.3.0/savedstate-compose-android-1.3.0.aar to C:\Users\hemit\.gradle\.tmp\gradle_download1913583582105433408bin
+Downloading https://dl.google.com/dl/android/maven2/androidx/compose/ui/ui-unit-android/1.9.0/ui-unit-android-1.9.0.aar to C:\Users\hemit\.gradle\.tmp\gradle_download6847511099364746152bin
+Downloading https://dl.google.com/dl/android/maven2/androidx/compose/ui/ui-graphics-android/1.9.0/ui-graphics-android-1.9.0.aar to C:\Users\hemit\.gradle\.tmp\gradle_download10635255503187314775bin
+Downloading https://dl.google.com/dl/android/maven2/androidx/lifecycle/lifecycle-runtime-compose-android/2.9.0/lifecycle-runtime-compose-android-2.9.0.aar to C:\Users\hemit\.gradle\.tmp\gradle_download4714959944133670458bin
+Downloading https://dl.google.com/dl/android/maven2/androidx/compose/runtime/runtime-android/1.9.0/runtime-android-1.9.0.aar to C:\Users\hemit\.gradle\.tmp\gradle_download9630330185254334285bin
+Invalidating in-memory cache of D:\chat app\android\.gradle\8.10.2\checksums\md5-checksums.bin
+Invalidating in-memory cache of D:\chat app\android\.gradle\8.10.2\checksums\sha256-checksums.bin
+Invalidating in-memory cache of D:\chat app\android\.gradle\8.10.2\checksums\sha1-checksums.bin
+Invalidating in-memory cache of D:\chat app\android\.gradle\8.10.2\checksums\sha512-checksums.bin
+Invalidating in-memory cache of C:\Users\hemit\.gradle\caches\journal-1\file-access.bin
+Transforming runtime-annotation.aar (androidx.compose.runtime:runtime-annotation-android:1.9.0) with AarToClassTransform
+Transforming savedstate-compose-release.aar (androidx.savedstate:savedstate-compose-android:1.3.0) with AarToClassTransform
+Transforming graphics-path-1.0.1.aar (androidx.graphics:graphics-path:1.0.1) with AarToClassTransform
+Caching disabled for AarToClassTransform: C:\Users\hemit\.gradle\caches\modules-2\files-2.1\androidx.compose.runtime\runtime-annotation-android\1.9.0\5e40e47a89961866acb3847692ac479f885d70de\runtime-annotation.aar because:
+  Build cache is disabled
+  Caching not enabled.
+Caching disabled for AarToClassTransform: C:\Users\hemit\.gradle\caches\modules-2\files-2.1\androidx.savedstate\savedstate-compose-android\1.3.0\59bae949f3d40d39212dbceb2686041e432a3aeb\savedstate-compose-release.aar because:
+  Build cache is disabled
+  Caching not enabled.
+Caching disabled for AarToClassTransform: C:\Users\hemit\.gradle\caches\modules-2\files-2.1\androidx.graphics\graphics-path\1.0.1\7e243033abd313c7202428422a01d48691378e33\graphics-path-1.0.1.aar because:
+  Build cache is disabled
+  Caching not enabled.
+Downloading https://dl.google.com/dl/android/maven2/androidx/compose/ui/ui-text-android/1.9.0/ui-text-android-1.9.0.aar to C:\Users\hemit\.gradle\.tmp\gradle_download17780857956715682289bin
+Downloading https://dl.google.com/dl/android/maven2/androidx/compose/ui/ui-geometry-android/1.9.0/ui-geometry-android-1.9.0.aar to C:\Users\hemit\.gradle\.tmp\gradle_download3912247552244575512bin
+Downloading https://dl.google.com/dl/android/maven2/androidx/compose/runtime/runtime-saveable-android/1.9.0/runtime-saveable-android-1.9.0.aar to C:\Users\hemit\.gradle\.tmp\gradle_download1006796545671972035bin
+Transforming ui-geometry.aar (androidx.compose.ui:ui-geometry-android:1.9.0) with AarToClassTransform
+Caching disabled for AarToClassTransform: C:\Users\hemit\.gradle\caches\modules-2\files-2.1\androidx.compose.ui\ui-geometry-android\1.9.0\eb664132c1529e863b665124d6ad3d57251737bc\ui-geometry.aar because:
+  Build cache is disabled
+  Caching not enabled.
+Downloading https://dl.google.com/dl/android/maven2/androidx/customview/customview-poolingcontainer/1.0.0/customview-poolingcontainer-1.0.0.aar to C:\Users\hemit\.gradle\.tmp\gradle_download1023547696539102899bin
+Downloading https://dl.google.com/dl/android/maven2/androidx/compose/ui/ui-util-android/1.9.0/ui-util-android-1.9.0.aar to C:\Users\hemit\.gradle\.tmp\gradle_download2425534247444086380bin
+Transforming customview-poolingcontainer-1.0.0.aar (androidx.customview:customview-poolingcontainer:1.0.0) with AarToClassTransform
+Caching disabled for AarToClassTransform: C:\Users\hemit\.gradle\caches\modules-2\files-2.1\androidx.customview\customview-poolingcontainer\1.0.0\579fc832cf0e5be08d8d9571850b50d22d9de3c\customview-poolingcontainer-1.0.0.aar because:
+  Build cache is disabled
+  Caching not enabled.
+Transforming ui-unit.aar (androidx.compose.ui:ui-unit-android:1.9.0) with AarToClassTransform
+Caching disabled for AarToClassTransform: C:\Users\hemit\.gradle\caches\modules-2\files-2.1\androidx.compose.ui\ui-unit-android\1.9.0\656494c2dcf69438616f5b8309958ea17e1f2909\ui-unit.aar because:
+  Build cache is disabled
+  Caching not enabled.
+Transforming lifecycle-runtime-compose-release.aar (androidx.lifecycle:lifecycle-runtime-compose-android:2.9.0) with AarToClassTransform
+Caching disabled for AarToClassTransform: C:\Users\hemit\.gradle\caches\modules-2\files-2.1\androidx.lifecycle\lifecycle-runtime-compose-android\2.9.0\62130b37db2e3c4960a9949e6099f8c50e1af278\lifecycle-runtime-compose-release.aar because:
+  Build cache is disabled
+  Caching not enabled.
+Transforming ui-util.aar (androidx.compose.ui:ui-util-android:1.9.0) with AarToClassTransform
+Caching disabled for AarToClassTransform: C:\Users\hemit\.gradle\caches\modules-2\files-2.1\androidx.compose.ui\ui-util-android\1.9.0\fab55dbaff87438b15d6c7b4186be6657d151e1d\ui-util.aar because:
+  Build cache is disabled
+  Caching not enabled.
+Transforming runtime-saveable.aar (androidx.compose.runtime:runtime-saveable-android:1.9.0) with AarToClassTransform
+Caching disabled for AarToClassTransform: C:\Users\hemit\.gradle\caches\modules-2\files-2.1\androidx.compose.runtime\runtime-saveable-android\1.9.0\8ed28567afa5576af6a4180024cab0e2ce5e37ec\runtime-saveable.aar because:
+  Build cache is disabled
+  Caching not enabled.
+Transforming ui-text.aar (androidx.compose.ui:ui-text-android:1.9.0) with AarToClassTransform
+Caching disabled for AarToClassTransform: C:\Users\hemit\.gradle\caches\modules-2\files-2.1\androidx.compose.ui\ui-text-android\1.9.0\3084a2b8153dd46f39d5e3a904f552a81f6015a1\ui-text.aar because:
+  Build cache is disabled
+  Caching not enabled.
+Transforming ui-graphics-release.aar (androidx.compose.ui:ui-graphics-android:1.9.0) with AarToClassTransform
+Caching disabled for AarToClassTransform: C:\Users\hemit\.gradle\caches\modules-2\files-2.1\androidx.compose.ui\ui-graphics-android\1.9.0\9e73b4de63e74bafebda94dcc7eeeac675384d95\ui-graphics-release.aar because:
+  Build cache is disabled
+  Caching not enabled.
+work action org.gradle.api.internal.artifacts.transform.DefaultTransformUpstreamDependenciesResolver$FinalizeTransformDependenciesFromSelectedArtifacts$CalculateFinalDependencies@dcd62d7 (Thread[Execution worker,5,main]) started.
+work action Dependencies for androidx.lifecycle:lifecycle-viewmodel-compose-android:2.9.0 {artifactType=android-classes-jar, asm-transformed-variant=debug} (Thread[Execution worker,5,main]) started.
+Downloading https://dl.google.com/dl/android/maven2/androidx/compose/ui/ui-android/1.9.0/ui-android-1.9.0.aar to C:\Users\hemit\.gradle\.tmp\gradle_download15761089766913350379bin
+Transforming runtime.aar (androidx.compose.runtime:runtime-android:1.9.0) with AarToClassTransform
+Transforming runtime.aar (androidx.compose.runtime:runtime-android:1.9.0) with AarToClassTransform
+Caching disabled for AarToClassTransform: C:\Users\hemit\.gradle\caches\modules-2\files-2.1\androidx.compose.runtime\runtime-android\1.9.0\d9f6d46758f1f4f4c8cda0567d5f0f3f9d1a234d\runtime.aar because:
+  Build cache is disabled
+  Caching not enabled.

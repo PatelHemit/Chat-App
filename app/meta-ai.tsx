@@ -318,7 +318,7 @@ export default function MetaAIScreen() {
     }, [messages]);
 
     return (
-        <SafeAreaView style={[styles.container, { backgroundColor: Colors[colorScheme].background }]} edges={['top', 'left', 'right']}>
+        <SafeAreaView style={[styles.container, { backgroundColor: Colors[colorScheme].background }]} edges={['top', 'left', 'right', 'bottom']}>
             <Stack.Screen options={{ headerShown: false }} />
 
             {/* Header */}
@@ -334,50 +334,51 @@ export default function MetaAIScreen() {
                 </View>
             </View>
 
-            <ImageBackground
-                source={{ uri: 'https://i.pinimg.com/originals/97/c0/07/97c00759d90d786d9b6096d274ad3e07.png' }}
-                style={styles.backgroundImage}
-                resizeMode="cover"
-            >
-                <FlatList
-                    ref={flatListRef}
-                    data={messages}
-                    keyExtractor={(item) => item.id}
-                    contentContainerStyle={styles.messageList}
-                    renderItem={({ item }) => {
-                        if (!item) return null;
-                        return (
-                            <View
-                                style={[
-                                    styles.messageBubble,
-                                    item.sender === 'user' ? styles.userBubble : styles.aiBubble,
-                                    { backgroundColor: item.sender === 'user' ? (item.type === 'audio' ? 'transparent' : '#E7FFDB') : (colorScheme === 'dark' ? '#1F2C34' : '#FFFFFF') },
-                                    item.type === 'audio' && { padding: 0 }
-                                ]}
-                            >
-                                {item.type === 'audio' ? (
-                                    <VoiceMessageBubble
-                                        uri={item.text}
-                                        duration={item.duration}
-                                        isMyMessage={item.sender === 'user'}
-                                        profilePic={''}
-                                    />
-                                ) : (
-                                    <Text style={[styles.messageText, { color: colorScheme === 'dark' && item.sender === 'ai' ? '#fff' : '#000' }]}>{item.text}</Text>
-                                )}
-                                <Text style={[styles.messageTime, { color: colorScheme === 'dark' && item.sender === 'ai' ? '#ccc' : '#555' }]}>{item.time}</Text>
-                            </View>
-                        );
-                    }}
-                    onLayout={() => flatListRef.current?.scrollToEnd({ animated: true })}
-                />
-            </ImageBackground>
-
-            {/* Input Area */}
             <KeyboardAvoidingView
-                behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
                 keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
+                style={{ flex: 1 }}
             >
+                <ImageBackground
+                    source={{ uri: 'https://i.pinimg.com/originals/97/c0/07/97c00759d90d786d9b6096d274ad3e07.png' }}
+                    style={styles.backgroundImage}
+                    resizeMode="cover"
+                >
+                    <FlatList
+                        ref={flatListRef}
+                        data={messages}
+                        keyExtractor={(item) => item.id}
+                        contentContainerStyle={styles.messageList}
+                        renderItem={({ item }) => {
+                            if (!item) return null;
+                            return (
+                                <View
+                                    style={[
+                                        styles.messageBubble,
+                                        item.sender === 'user' ? styles.userBubble : styles.aiBubble,
+                                        { backgroundColor: item.sender === 'user' ? (item.type === 'audio' ? 'transparent' : '#E7FFDB') : (colorScheme === 'dark' ? '#1F2C34' : '#FFFFFF') },
+                                        item.type === 'audio' && { padding: 0 }
+                                    ]}
+                                >
+                                    {item.type === 'audio' ? (
+                                        <VoiceMessageBubble
+                                            uri={item.text}
+                                            duration={item.duration}
+                                            isMyMessage={item.sender === 'user'}
+                                            profilePic={''}
+                                        />
+                                    ) : (
+                                        <Text style={[styles.messageText, { color: colorScheme === 'dark' && item.sender === 'ai' ? '#fff' : '#000' }]}>{item.text}</Text>
+                                    )}
+                                    <Text style={[styles.messageTime, { color: colorScheme === 'dark' && item.sender === 'ai' ? '#ccc' : '#555' }]}>{item.time}</Text>
+                                </View>
+                            );
+                        }}
+                        onLayout={() => flatListRef.current?.scrollToEnd({ animated: true })}
+                    />
+                </ImageBackground>
+
+                {/* Input Area */}
                 <View style={[styles.inputContainer, { backgroundColor: Colors[colorScheme].background }]}>
                     {isRecording ? (
                         <View style={styles.recordingOverlay}>
@@ -491,7 +492,9 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         padding: 8,
-        paddingBottom: Platform.OS === 'ios' ? 20 : 8,
+        // When edges includes 'bottom', SafeAreaView handles the home indicator/nav bar padding.
+        // We only add extra for iOS if needed, but for Android 8 is usually enough.
+        paddingBottom: Platform.OS === 'ios' ? 10 : 8,
     },
     inputFieldContainer: {
         flex: 1,

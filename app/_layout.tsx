@@ -292,7 +292,6 @@ const GlobalCallHandlers = ({ isReady }: { isReady: boolean }) => {
   useEffect(() => {
     if (!isReady) return;
 
-    let socketInstance: any;
     let appStateListener: any;
 
     const checkPendingCall = async () => {
@@ -301,17 +300,21 @@ const GlobalCallHandlers = ({ isReady }: { isReady: boolean }) => {
         console.log('[Global-Call] 🔍 Found pending call UUID:', pendingUUID);
         const metaStr = await AsyncStorage.getItem(`call_meta_${pendingUUID}`);
         if (metaStr) {
-          const meta = JSON.parse(metaStr);
-          console.log('[Global-Call] 🚀 Resuming pending call from storage:', meta);
-          setIncomingCall(meta);
-          setIsReceivingCall(true);
-          setIsVideoCall(parseCallType(meta.isVideoCall));
-          setActiveRoomName(meta.roomName);
-          setActiveCallId(meta.callId);
-          setOtherUserId(meta.from._id);
+          try {
+            const meta = JSON.parse(metaStr);
+            console.log('[Global-Call] 🚀 Resuming pending call from storage:', meta);
+            setIncomingCall(meta);
+            setIsReceivingCall(true);
+            setIsVideoCall(parseCallType(meta.isVideoCall));
+            setActiveRoomName(meta.roomName);
+            setActiveCallId(meta.callId);
+            setOtherUserId(meta.from._id);
 
-          // Cleanup to avoid showing it again on next restart
-          await AsyncStorage.removeItem('pending_call_uuid');
+            // Cleanup to avoid showing it again on next restart
+            await AsyncStorage.removeItem('pending_call_uuid');
+          } catch (e) {
+            console.error('[Global-Call] Error parsing pending call meta:', e);
+          }
         }
       }
     };
@@ -320,214 +323,143 @@ const GlobalCallHandlers = ({ isReady }: { isReady: boolean }) => {
       const userToken = await AsyncStorage.getItem('userToken');
       const userInfoStr = await AsyncStorage.getItem('userInfo');
 
+      // Use the 'socket' from context to check if we already have a connection
+      if (socket) {
+        // Skip setup only if connected and matching current token
+        // For simplicity, if socket exists, we consider it setup unless it's disconnected
+        if (socket.connected) {
+          console.log("[Global-Call] Socket already connected, skipping setup.");
+          return;
+        }
+      }
+
       await logger.info('[Global-Call] setupSocketAndListeners START', {
         hasToken: !!userToken,
         hasUserInfo: !!userInfoStr
       });
 
       if (!userToken || !userInfoStr) {
-        console.log("[Global-Call] No user info found, skipping socket setup");
-        return;
-      }
-
-      if (socketInstance) {
-        await logger.info('[Global-Call] Socket already exists, skipping...');
+        console.log("[Global-Call] No user credentials found in storage, skipping socket setup.");
+        // If we have a socket but no credentials, it means the user logged out. Disconnect.
+        if (socket) {
+          console.log("[Global-Call] Credentials missing but socket exists. Disconnecting...");
+          socket.disconnect();
+          setSocket(null);
+        }
         return;
       }
 
       const parsedUserInfo = JSON.parse(userInfoStr);
       setUserInfo(parsedUserInfo);
-      userInfoRef.current = parsedUserInfo; // Sync ref immediately to avoid stale closures
-      console.log("[Global-Call] Setting up socket for user:", parsedUserInfo._id);
+      userInfoRef.current = parsedUserInfo;
+      console.log("[Global-Call] Initializing signaling socket for user:", parsedUserInfo._id);
 
       try {
-        await logger.info('[Global-Call] Initializing socket connection...', { url: SOCKET_URL });
-        socketInstance = io(SOCKET_URL, {
+        const socketInstance = io(SOCKET_URL, {
           query: { token: userToken },
-          transports: ['websocket', 'polling'] // Try websocket first
+          transports: ['websocket', 'polling'],
+          forceNew: true // Ensure a fresh connection for the call system
         });
 
-        setSocket(socketInstance);
-      } catch (ioErr: any) {
-        await logger.error('[Global-Call] Socket IO Init Error', { error: ioErr.message });
-        return;
-      }
+        // 1. Initial Socket Events
+        socketInstance.on('connect', async () => {
+          console.log("[Global-Call] Socket connected");
+          await logger.info('[Socket] Connected');
+          socketInstance.emit('setup', parsedUserInfo);
+        });
 
-      // 1. Check for pending calls (Killed state)
-      checkPendingCall();
+        socketInstance.on('connect_error', async (error: any) => {
+          console.warn("[Global-Call] Socket connection error:", error.message || error);
+        });
 
-      // 2. AppState listener for warm starts
-      appStateListener = AppState.addEventListener('change', (nextAppState) => {
-        if (nextAppState === 'active') {
-          console.log('[Global-Call] 📱 App became active, checking for pending calls...');
-          checkPendingCall();
-        }
-      });
+        // 2. Calling Listeners
+        socketInstance.on('incoming-call', async ({ to, from, roomName, isVideoCall, callId }: any) => {
+          console.log("[Global-Call] incoming-call RECEIVED:", { to, from, roomName, isVideoCall, callId });
 
-      // 3. Setup CallKeep (Don't block socket setup)
-      if (Platform.OS !== 'web') {
-        const initCallKeep = async () => {
-          try {
-            await CallKeepService.setup();
+          let callerInfo = from;
+          if (typeof from === 'string') {
+            try { callerInfo = JSON.parse(from); } catch (e) { callerInfo = { name: from, _id: null }; }
+          }
 
-            CallKeepService.addEventListener('answerCall', async ({ callUUID }: any) => {
-              console.log('[CallKeep] User answered via native UI:', callUUID);
-              await logger.info('[CallKeep] User answered via native UI', { callUUID });
-              try {
-                const metaStr = await AsyncStorage.getItem(`call_meta_${callUUID}`);
-                if (metaStr) {
-                  const meta = JSON.parse(metaStr);
-                  setActiveRoomName(meta.roomName);
-                  setActiveCallId(meta.callId);
-                  setOtherUserId(meta.from._id);
-                  setIsVideoCall(parseCallType(meta.isVideoCall));
-                  setCallVisible(true);
-                  setIsReceivingCall(false);
-                  setIncomingCall(null);
-                  await AsyncStorage.removeItem(`call_meta_${callUUID}`);
-                }
-              } catch (err) {
-                console.error('[CallKeep] Error handling answerCall:', err);
-              }
-            });
+          const callerId = extractId(callerInfo);
+          const currentUserId = extractId(userInfoRef.current);
 
-            CallKeepService.addEventListener('endCall', async ({ callUUID }: any) => {
-              console.log('[CallKeep] User ended via native UI:', callUUID);
-              await logger.info('[CallKeep] User ended via native UI', { callUUID });
-              if (activeCallId) {
-                socketInstance?.emit("end-call", { to: otherUserId });
-              }
+          // --- VERIFICATION DEFENSE ---
+          // Check if the current user ID matches the target 'to' ID from the signal.
+          // This prevents devices ringing if they are still connected to an old user's room.
+          if (to && currentUserId && to.toString() !== currentUserId.toString()) {
+            console.warn(`[Global-Call] 🛑 SUPPRESSION: Call intended for ${to} but current user is ${currentUserId}. Ignoring.`);
+            return;
+          }
+
+          if (currentUserId && callerId && currentUserId === callerId) {
+            console.log("[Global-Call] Ignoring self-call signal.");
+            return;
+          }
+
+          setIncomingCall({ from: callerInfo, roomName, isVideoCall: parseCallType(isVideoCall), callId });
+          setIsReceivingCall(true);
+          setIsVideoCall(parseCallType(isVideoCall));
+          setActiveRoomName(roomName);
+          setActiveCallId(callId);
+          setOtherUserId(callerId || null);
+        });
+
+        socketInstance.on('call-initiated', ({ callId }: any) => setActiveCallId(callId));
+
+        socketInstance.on('call-answered', async ({ accepted, roomName, isVideoCall: confirmedIsVideo }: any) => {
+          console.log(`[Global-Call] call-answered RECEIVED: accepted=${accepted}`);
+          if (accepted) {
+            if (confirmedIsVideo !== undefined) setIsVideoCall(parseCallType(confirmedIsVideo));
+            setCallVisible(true);
+            setCallConnected(true);
+            setActiveRoomName(roomName);
+          } else {
+            setTimeout(() => {
               setCallVisible(false);
+              setCallConnected(false);
               setIncomingCall(null);
               setIsReceivingCall(false);
-              await AsyncStorage.removeItem(`call_meta_${callUUID}`);
-            });
-          } catch (ckErr) {
-            console.error('[CallKeep] Setup failed in layout:', ckErr);
+            }, 2500);
           }
-        };
-        initCallKeep(); // Run asynchronously
+        });
+
+        socketInstance.on('call-ended', async () => {
+          setCallVisible(false);
+          setCallConnected(false);
+          setIsReceivingCall(false);
+          setIncomingCall(null);
+        });
+
+        // Update context
+        setSocket(socketInstance);
+
+      } catch (ioErr: any) {
+        await logger.error('[Global-Call] Socket IO Init Error', { error: ioErr.message });
       }
-
-      // 4. Socket Listeners
-      socketInstance.on('connect', async () => {
-        console.log("[Global-Call] Socket connected");
-        await logger.info('[Socket] Connected');
-        if (parsedUserInfo) {
-          console.log("[Global-Call] Emitting setup with parsedUserInfo:", parsedUserInfo._id);
-          socketInstance.emit('setup', parsedUserInfo);
-        } else {
-          console.warn("[Global-Call] Socket connected but parsedUserInfo is NULL. setup emission skipped.");
-        }
-      });
-
-      socketInstance.on('connect_error', async (error: any) => {
-        const msg = error.message || error;
-        if (msg.includes('xhr poll error')) {
-          console.log("[Global-Call] Socket server reachable:", false);
-        } else {
-          console.warn("[Global-Call] Socket connection error:", msg);
-          await logger.warn('[Socket] Connection error', { error: msg });
-        }
-      });
-
-      socketInstance.on('incoming-call', async ({ from, roomName, isVideoCall, callId }: any) => {
-        console.log("[Global-Call] incoming-call EVENT RECEIVED:", { from, roomName, isVideoCall, callId });
-
-        // Robustly handle 'from' as string or object
-        let callerInfo = from;
-        if (typeof from === 'string') {
-          try {
-            callerInfo = JSON.parse(from);
-          } catch (e) {
-            callerInfo = { name: from, _id: null };
-          }
-        }
-
-        const callerId = extractId(callerInfo);
-        const currentUserId = extractId(userInfoRef.current);
-
-        console.log(`[Global-Call] IDs - currentUserId: "${currentUserId}", callerId: "${callerId}"`);
-
-        if (currentUserId && callerId && currentUserId === callerId) {
-          console.log("[Global-Call] Suppression SUCCESS: Self-call from another device ignored.");
-          return;
-        }
-
-        await logger.info('[Socket] Incoming call received', { from: callerInfo?.name || callerInfo, callId });
-
-        setIncomingCall({ from: callerInfo, roomName, isVideoCall: parseCallType(isVideoCall), callId });
-        setIsReceivingCall(true);
-        setIsVideoCall(parseCallType(isVideoCall));
-        setActiveRoomName(roomName);
-        setActiveCallId(callId);
-        setOtherUserId(callerId || null);
-      });
-
-      socketInstance.on('call-initiated', ({ callId }: any) => {
-        setActiveCallId(callId);
-      });
-
-      socketInstance.on('call-answered', async ({ accepted, roomName, isVideoCall: confirmedIsVideo }: any) => {
-        await logger.info('[Socket] Call answered', { accepted });
-        console.log(`[Global-Call] call-answered RECEIVED: accepted=${accepted}, isVideoCall=${confirmedIsVideo}, roomName=${roomName}`);
-        if (accepted) {
-          // Re-confirm isVideoCall from the server's reply — prevents stale context state
-          if (confirmedIsVideo !== undefined) {
-            setIsVideoCall(parseCallType(confirmedIsVideo));
-          }
-          setCallVisible(true);
-          setCallConnected(true); // ← Only NOW connect to LiveKit
-          setActiveRoomName(roomName);
-          callStartTimeRef.current = Date.now();
-        } else {
-          console.log('[Global-Call] Call was rejected/declined. Closing call screen after delay.');
-          // Delay before closing so user sees their screen properly, not an instant snap-shut
-          setTimeout(() => {
-            setCallVisible(false);
-            setCallConnected(false);
-            setIncomingCall(null);
-            setIsReceivingCall(false);
-          }, 2500);
-        }
-      });
-
-      socketInstance.on('call-ended', async () => {
-        console.log("[Global-Call] 'call-ended' event received from server");
-        await logger.info('[Socket] Call ended event received');
-        setCallVisible(false);
-        setCallConnected(false);
-        setIsReceivingCall(false);
-        setIncomingCall(null);
-      });
     };
 
-    const checkInitialNotification = async () => {
+    const setupCallKeep = async () => {
+      if (Platform.OS === 'web') return;
       try {
-        const response = await NotificationService.getInitialNotification();
-        if (response) {
-          const data = response.notification.request.content.data;
-          if (data.type === 'incoming-call') {
-            const callUUID = data.uuid as string;
-            let finalData = data;
-            if (callUUID) {
-              const metaStr = await AsyncStorage.getItem(`call_meta_${callUUID}`);
-              if (metaStr) finalData = { ...data, ...JSON.parse(metaStr) };
-            }
-            setIncomingCall(finalData as any);
-            setIsReceivingCall(true);
-            setIsVideoCall(finalData.isVideoCall === true || finalData.isVideoCall === 'true');
-            setActiveRoomName(finalData.roomName as string);
-            setActiveCallId(finalData.callId as string);
-          }
-        }
-      } catch (err) {
-        console.error('[Global-Call] Error checking initial notification:', err);
+        await CallKeepService.setup();
+        // Answer/End listeners are already registered in CallKeepService usually, 
+        // but here we map them to context state
+      } catch (ckErr) {
+        console.error('[CallKeep] Setup failed:', ckErr);
       }
     };
 
     setupSocketAndListeners();
-    checkInitialNotification();
+    checkPendingCall();
+    setupCallKeep();
+
+    const appStateListenerInst = AppState.addEventListener('change', (nextAppState) => {
+      if (nextAppState === 'active') {
+        checkPendingCall();
+        setupSocketAndListeners(); // Re-verify socket on wake
+      }
+    });
 
     const notificationListener = NotificationService.addNotificationReceivedListener((notification) => {
       const data = notification.request.content.data;
@@ -536,8 +468,7 @@ const GlobalCallHandlers = ({ isReady }: { isReady: boolean }) => {
           const finalData = metaStr ? { ...data, ...JSON.parse(metaStr) } : data;
           setIncomingCall(finalData as any);
           setIsReceivingCall(true);
-          const isVideo = finalData.isVideoCall === true || finalData.isVideoCall === 'true';
-          setIsVideoCall(isVideo);
+          setIsVideoCall(parseCallType(finalData.isVideoCall));
           setActiveRoomName(finalData.roomName as string);
           setActiveCallId(finalData.callId as string);
         });
@@ -551,8 +482,7 @@ const GlobalCallHandlers = ({ isReady }: { isReady: boolean }) => {
           const finalData = metaStr ? { ...data, ...JSON.parse(metaStr) } : data;
           setIncomingCall(finalData as any);
           setIsReceivingCall(true);
-          const isVideo = finalData.isVideoCall === true || finalData.isVideoCall === 'true';
-          setIsVideoCall(isVideo);
+          setIsVideoCall(parseCallType(finalData.isVideoCall));
           setActiveRoomName(finalData.roomName as string);
           setActiveCallId(finalData.callId as string);
         });
@@ -562,12 +492,11 @@ const GlobalCallHandlers = ({ isReady }: { isReady: boolean }) => {
     });
 
     return () => {
-      if (socketInstance) socketInstance.disconnect();
-      if (notificationListener) notificationListener.remove();
-      if (responseListener) responseListener.remove();
-      if (appStateListener) appStateListener.remove();
+      notificationListener.remove();
+      responseListener.remove();
+      appStateListenerInst.remove();
     };
-  }, [isReady]);
+  }, [isReady, pathname, !!socket]);
 
   const handleAcceptCall = async () => {
     if (incomingCall) {

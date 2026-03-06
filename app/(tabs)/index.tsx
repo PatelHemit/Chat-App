@@ -1,6 +1,7 @@
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { API_BASE_URL } from '@/config/api';
 import { Colors } from '@/constants/theme';
+import { useCall } from '@/context/CallContext';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { onUserLogin } from '@/services/CallingService';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -96,53 +97,41 @@ export default function HomeScreen() {
     });
   };
 
-  // Socket setup for home screen real-time updates
+  const { socket } = useCall();
+
+  // Socket setup for home screen real-time updates using global socket
   useEffect(() => {
-    if (!currentUserId) return;
+    if (!socket || !currentUserId) return;
 
-    const { io } = require('socket.io-client');
-    const { SOCKET_URL } = require('@/config/api');
+    console.log('[Home] Using global socket for real-time updates');
 
-    const socket = io(SOCKET_URL);
-
-    socket.on('connect', () => {
-      console.log('[Home] Connected to socket, id:', socket.id);
-      socket.emit('setup', { _id: currentUserId });
-    });
-
-    socket.on('connected', () => {
-      console.log('[Home] Setup SUCCESS (connected event received)');
-    });
-
-    socket.on('message received', (newMessage: any) => {
+    const handleMessageReceived = (newMessage: any) => {
       console.log('[Home] New message received:', newMessage);
       const senderId = newMessage.sender?._id || newMessage.sender;
       const isFromMe = String(senderId) === String(currentUserId);
 
       setChats(prevChats => {
-        const updatedChats = prevChats.map(chat => {
-          if (chat._id === newMessage.chat._id) {
-            return {
-              ...chat,
-              latestMessage: newMessage,
-              unreadCount: isFromMe ? (chat.unreadCount || 0) : (chat.unreadCount || 0) + 1
-            };
-          }
-          return chat;
-        });
-
+        const updatedChats = [...prevChats];
         const chatIndex = updatedChats.findIndex(c => c._id === newMessage.chat._id);
+
         if (chatIndex > -1) {
+          updatedChats[chatIndex] = {
+            ...updatedChats[chatIndex],
+            latestMessage: newMessage,
+            unreadCount: isFromMe ? (updatedChats[chatIndex].unreadCount || 0) : (updatedChats[chatIndex].unreadCount || 0) + 1
+          };
+          // Move to top
           const [chat] = updatedChats.splice(chatIndex, 1);
           updatedChats.unshift(chat);
         } else {
+          // If chat not in list, fetch all to be safe
           fetchChats();
         }
         return updatedChats;
       });
-    });
+    };
 
-    socket.on('message-status-updated', ({ messageId, status }: any) => {
+    const handleStatusUpdated = ({ messageId, status }: any) => {
       setChats(prevChats => {
         return prevChats.map(chat => {
           if (chat.latestMessage && chat.latestMessage._id === messageId) {
@@ -154,12 +143,10 @@ export default function HomeScreen() {
           return chat;
         });
       });
-    });
+    };
 
-    socket.on('messages-read', ({ chatId, userId }: any) => {
+    const handleMessagesRead = ({ chatId, userId }: any) => {
       console.log('[Home] messages-read event:', chatId, userId);
-      // If WE are the ones who read the messages (or someone else in 1-on-1)
-      // Reset the local count to 0 for that chat
       if (String(userId) === String(currentUserId)) {
         setChats(prevChats => {
           return prevChats.map(chat => {
@@ -170,17 +157,24 @@ export default function HomeScreen() {
           });
         });
       }
-    });
+    };
 
-    socket.on('user-online', (userId: string) => {
+    const handleUserOnline = (userId: string) => {
       console.log('[Home] User online:', userId);
-      // Optional: update online status in UI
-    });
+    };
+
+    socket.on('message received', handleMessageReceived);
+    socket.on('message-status-updated', handleStatusUpdated);
+    socket.on('messages-read', handleMessagesRead);
+    socket.on('user-online', handleUserOnline);
 
     return () => {
-      socket.disconnect();
+      socket.off('message received', handleMessageReceived);
+      socket.off('message-status-updated', handleStatusUpdated);
+      socket.off('messages-read', handleMessagesRead);
+      socket.off('user-online', handleUserOnline);
     };
-  }, [currentUserId]);
+  }, [socket, currentUserId]);
 
   const handleSearch = (query: string) => {
     setSearchQuery(query);
@@ -272,13 +266,15 @@ export default function HomeScreen() {
         )}
       </View>
 
-      {loading ? (
+      {loading && chats.length === 0 ? (
         <ActivityIndicator size="large" color="#008069" style={{ marginTop: 50 }} />
       ) : (
         <FlatList
           data={filteredChats}
           keyExtractor={(item: any) => item._id}
           extraData={currentUserId}
+          refreshing={loading}
+          onRefresh={fetchChats}
           renderItem={({ item }) => {
             const chatName = getChatName(item);
             const isLatestMessageMyOwn = item.latestMessage && (

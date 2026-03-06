@@ -1,0 +1,9 @@
+﻿[dotenv@17.2.3] injecting env (12) from .env -- tip: Γ£à audit secrets and track compliance: https://dotenvx.com/ops
+Connected to DB
+Shilpa ID: 6996adb45e25a10f4831078d, Priya ID: 697a0403862d2253f71c1d12
+Found 0 chats between them.
+
+Shilpa (+918238157261) has 3 total chats. Listing recipients:
+ - Chat with: Hemit (+918320301352)
+ - Chat with: priya (7698586046)
+ - Chat with: Priya (+917074607411)

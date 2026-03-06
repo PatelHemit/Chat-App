@@ -1,0 +1,300 @@
+﻿  Caching not enabled.
+Caching disabled for AarTransform: C:\Users\hemit\.gradle\caches\8.13\transforms\3e67196c8af7557a30763abe5ce94ed0\transformed\print-1.0.0 because:
+  Build cache is disabled
+  Caching not enabled.
+Caching disabled for AarTransform: C:\Users\hemit\.gradle\caches\8.13\transforms\154e47f21415c062b9ad6d7fe451ade8\transformed\library-release because:
+  Build cache is disabled
+  Caching not enabled.
+Caching disabled for AarTransform: C:\Users\hemit\.gradle\caches\8.13\transforms\a2c76167d8847c59904b04b41f69f570\transformed\annotation-experimental-1.4.1 because:
+  Build cache is disabled
+  Caching not enabled.
+Caching disabled for AarTransform: C:\Users\hemit\.gradle\caches\8.13\transforms\eee291ed3ac212c80fa0bc32cb57374c\transformed\animated-gif-3.6.0 because:
+  Build cache is disabled
+  Caching not enabled.
+Caching disabled for AarTransform: C:\Users\hemit\.gradle\caches\8.13\transforms\59790993b44914a3d01cccf2f32afada\transformed\webpsupport-3.6.0 because:
+  Build cache is disabled
+  Caching not enabled.
+Caching disabled for AarTransform: C:\Users\hemit\.gradle\caches\8.13\transforms\13b5aee08a20ddd41874db535ca8a699\transformed\core-viewtree-1.0.0 because:
+  Build cache is disabled
+  Caching not enabled.
+Caching disabled for AarTransform: C:\Users\hemit\.gradle\caches\8.13\transforms\f02b91d5019d1eeb6a17c4f0db4d0c3b\transformed\exifinterface-1.4.1 because:
+  Build cache is disabled
+  Caching not enabled.
+Caching disabled for AarTransform: C:\Users\hemit\.gradle\caches\8.13\transforms\f990de3610655ca6c5d5d7441b9fe941\transformed\exoplayer-core-2.18.1 because:
+  Build cache is disabled
+  Caching not enabled.
+Caching disabled for AarTransform: C:\Users\hemit\.gradle\caches\8.13\transforms\8fc5a9855533d61e1d0c1eecc4311a71\transformed\exoplayer-common-2.18.1 because:
+  Build cache is disabled
+  Caching not enabled.
+Caching disabled for AarTransform: C:\Users\hemit\.gradle\caches\8.13\transforms\88f26d8c5e4f6c6d3a1f29ad225cc3e0\transformed\documentfile-1.1.0 because:
+  Build cache is disabled
+  Caching not enabled.
+Caching disabled for AarTransform: C:\Users\hemit\.gradle\caches\8.13\transforms\c722953c2eff536f741273772ad37441\transformed\tracing-1.2.0 because:
+  Build cache is disabled
+  Caching not enabled.
+Caching disabled for AarTransform: C:\Users\hemit\.gradle\caches\8.13\transforms\44cfca82878e745d0fba94242aef4fdb\transformed\startup-runtime-1.1.1 because:
+  Build cache is disabled
+  Caching not enabled.
+Caching disabled for AarTransform: C:\Users\hemit\.gradle\caches\8.13\transforms\b325c51ba5e937e080a81191a53a108e\transformed\android-137.7151.04 because:
+  Build cache is disabled
+  Caching not enabled.
+Caching disabled for AarTransform: C:\Users\hemit\.gradle\caches\8.13\transforms\c7aff834bc35cce0f59add0df4b1a6e0\transformed\exoplayer-database-2.18.1 because:
+  Build cache is disabled
+  Caching not enabled.
+Caching disabled for AarTransform: C:\Users\hemit\.gradle\caches\8.13\transforms\f879bfb000b14d97ec2b547b430c39cd\transformed\exoplayer-datasource-2.18.1 because:
+  Build cache is disabled
+  Caching not enabled.
+Caching disabled for AarTransform: C:\Users\hemit\.gradle\caches\8.13\transforms\b925ede7b6f49052315e55f8012d88f5\transformed\exoplayer-decoder-2.18.1 because:
+  Build cache is disabled
+  Caching not enabled.
+Caching disabled for AarTransform: C:\Users\hemit\.gradle\caches\8.13\transforms\e7db97b0730fa3d188a072291faeeb69\transformed\exoplayer-extractor-2.18.1 because:
+  Build cache is disabled
+  Caching not enabled.
+Caching disabled for AarTransform: C:\Users\hemit\.gradle\caches\8.13\transforms\10c23a1620d752e7fe24346c5574bc73\transformed\exoplayer-dash-2.18.1 because:
+  Build cache is disabled
+  Caching not enabled.
+Caching disabled for AarTransform: C:\Users\hemit\.gradle\caches\8.13\transforms\f90393427017b4270b3dbe996fb00511\transformed\exoplayer-hls-2.18.1 because:
+  Build cache is disabled
+  Caching not enabled.
+Caching disabled for AarTransform: C:\Users\hemit\.gradle\caches\8.13\transforms\2ecf8afd865b248b5217c0635334cc03\transformed\exoplayer-smoothstreaming-2.18.1 because:
+  Build cache is disabled
+  Caching not enabled.
+Caching disabled for AarTransform: C:\Users\hemit\.gradle\caches\8.13\transforms\b4695fae986126a7ad4aa0e3b03dba9f\transformed\exoplayer-rtsp-2.18.1 because:
+  Build cache is disabled
+  Caching not enabled.
+Caching disabled for AarTransform: C:\Users\hemit\.gradle\caches\8.13\transforms\895a1babfe43c4cd012e40f4091005e9\transformed\androidsvg-aar-1.4 because:
+  Build cache is disabled
+  Caching not enabled.
+C/C++: D:\chat app\node_modules\react-native\ReactAndroid\cmake-utils\default-app-setup\CMakeLists.txt debug|arm64-v8a : Start JSON generation. Platform version: 24 min SDK version: arm64-v8a
+C/C++: D:\chat app\node_modules\react-native\ReactAndroid\cmake-utils\default-app-setup\CMakeLists.txt debug|arm64-v8a : rebuilding JSON D:\chat app\android\app\.cxx\Debug\3a6f20s4\arm64-v8a\android_gradle_build.json due to:
+C/C++: D:\chat app\node_modules\react-native\ReactAndroid\cmake-utils\default-app-setup\CMakeLists.txt debug|arm64-v8a : - no fingerprint file, will remove stale configuration folder
+C/C++: D:\chat app\node_modules\react-native\ReactAndroid\cmake-utils\default-app-setup\CMakeLists.txt debug|arm64-v8a : @echo off
+"C:\\Program Files\\Microsoft\\jdk-17.0.18.8-hotspot\\bin\\java" ^
+  --class-path ^
+  "C:\\Users\\hemit\\.gradle\\caches\\modules-2\\files-2.1\\com.google.prefab\\cli\\2.1.0\\aa32fec809c44fa531f01dcfb739b5b3304d3050\\cli-2.1.0-all.jar" ^
+  com.google.prefab.cli.AppKt ^
+  --build-system ^
+  cmake ^
+  --platform ^
+  android ^
+  --abi ^
+  arm64-v8a ^
+  --os-version ^
+  24 ^
+  --stl ^
+  c++_shared ^
+  --ndk-version ^
+  26 ^
+  --output ^
+  "C:\\Users\\hemit\\AppData\\Local\\Temp\\agp-prefab-staging8961447525599290421\\staged-cli-output" ^
+  "C:\\Users\\hemit\\.gradle\\caches\\8.13\\transforms\\fe5ccad75f640ed4448f47c0e50f181e\\transformed\\react-android-0.81.5-debug\\prefab" ^
+  "D:\\chat app\\android\\app\\build\\intermediates\\cxx\\refs\\react-native-reanimated\\p3r6918w" ^
+  "D:\\chat app\\android\\app\\build\\intermediates\\cxx\\refs\\react-native-worklets\\6p184a5u" ^
+  "D:\\chat app\\android\\app\\build\\intermediates\\cxx\\refs\\react-native-worklets-core\\p2t3s5i3" ^
+  "C:\\Users\\hemit\\.gradle\\caches\\8.13\\transforms\\da85b22db379580537cadbb51caf4037\\transformed\\hermes-android-0.81.5-debug\\prefab" ^
+  "C:\\Users\\hemit\\.gradle\\caches\\8.13\\transforms\\4485c5a2187e75264f2a46839b3eef96\\transformed\\fbjni-0.7.0\\prefab"
+
+Starting process 'command '"D:\chat app\android\app\build\intermediates\cxx\Debug\3a6f20s4\logs\arm64-v8a\prefab_command.bat"''. Working directory: D:\chat app\android\app Command: "D:\chat app\android\app\build\intermediates\cxx\Debug\3a6f20s4\logs\arm64-v8a\prefab_command.bat" 
+Successfully started process 'command '"D:\chat app\android\app\build\intermediates\cxx\Debug\3a6f20s4\logs\arm64-v8a\prefab_command.bat"''
+C/C++: D:\chat app\node_modules\react-native\ReactAndroid\cmake-utils\default-app-setup\CMakeLists.txt debug|arm64-v8a : Received process result: 0
+C/C++: D:\chat app\node_modules\react-native\ReactAndroid\cmake-utils\default-app-setup\CMakeLists.txt debug|arm64-v8a : removing stale contents from 'D:\chat app\android\app\.cxx\Debug\3a6f20s4\arm64-v8a'
+C/C++: D:\chat app\node_modules\react-native\ReactAndroid\cmake-utils\default-app-setup\CMakeLists.txt debug|arm64-v8a : created folder 'D:\chat app\android\app\.cxx\Debug\3a6f20s4\arm64-v8a'
+C/C++: D:\chat app\node_modules\react-native\ReactAndroid\cmake-utils\default-app-setup\CMakeLists.txt debug|arm64-v8a : executing cmake @echo off
+"C:\\Users\\hemit\\AppData\\Local\\Android\\Sdk\\cmake\\3.22.1\\bin\\cmake.exe" ^
+  "-HD:\\chat app\\node_modules\\react-native\\ReactAndroid\\cmake-utils\\default-app-setup" ^
+  "-DCMAKE_SYSTEM_NAME=Android" ^
+  "-DCMAKE_EXPORT_COMPILE_COMMANDS=ON" ^
+  "-DCMAKE_SYSTEM_VERSION=24" ^
+  "-DANDROID_PLATFORM=android-24" ^
+  "-DANDROID_ABI=arm64-v8a" ^
+  "-DCMAKE_ANDROID_ARCH_ABI=arm64-v8a" ^
+  "-DANDROID_NDK=C:\\Users\\hemit\\AppData\\Local\\Android\\Sdk\\ndk\\26.1.10909125" ^
+  "-DCMAKE_ANDROID_NDK=C:\\Users\\hemit\\AppData\\Local\\Android\\Sdk\\ndk\\26.1.10909125" ^
+  "-DCMAKE_TOOLCHAIN_FILE=C:\\Users\\hemit\\AppData\\Local\\Android\\Sdk\\ndk\\26.1.10909125\\build\\cmake\\android.toolchain.cmake" ^
+  "-DCMAKE_MAKE_PROGRAM=C:\\Users\\hemit\\AppData\\Local\\Android\\Sdk\\cmake\\3.22.1\\bin\\ninja.exe" ^
+  "-DCMAKE_LIBRARY_OUTPUT_DIRECTORY=D:\\chat app\\android\\app\\build\\intermediates\\cxx\\Debug\\3a6f20s4\\obj\\arm64-v8a" ^
+  "-DCMAKE_RUNTIME_OUTPUT_DIRECTORY=D:\\chat app\\android\\app\\build\\intermediates\\cxx\\Debug\\3a6f20s4\\obj\\arm64-v8a" ^
+  "-DCMAKE_BUILD_TYPE=Debug" ^
+  "-DCMAKE_FIND_ROOT_PATH=D:\\chat app\\android\\app\\.cxx\\Debug\\3a6f20s4\\prefab\\arm64-v8a\\prefab" ^
+  "-BD:\\chat app\\android\\app\\.cxx\\Debug\\3a6f20s4\\arm64-v8a" ^
+  -GNinja ^
+  "-DPROJECT_BUILD_DIR=D:\\chat app\\android\\app\\build" ^
+  "-DPROJECT_ROOT_DIR=D:\\chat app\\android" ^
+  "-DREACT_ANDROID_DIR=D:\\chat app\\node_modules\\react-native\\ReactAndroid" ^
+  "-DANDROID_STL=c++_shared" ^
+  "-DANDROID_SUPPORT_FLEXIBLE_PAGE_SIZES=ON"
+
+C/C++: D:\chat app\node_modules\react-native\ReactAndroid\cmake-utils\default-app-setup\CMakeLists.txt debug|arm64-v8a : @echo off
+"C:\\Users\\hemit\\AppData\\Local\\Android\\Sdk\\cmake\\3.22.1\\bin\\cmake.exe" ^
+  "-HD:\\chat app\\node_modules\\react-native\\ReactAndroid\\cmake-utils\\default-app-setup" ^
+  "-DCMAKE_SYSTEM_NAME=Android" ^
+  "-DCMAKE_EXPORT_COMPILE_COMMANDS=ON" ^
+  "-DCMAKE_SYSTEM_VERSION=24" ^
+  "-DANDROID_PLATFORM=android-24" ^
+  "-DANDROID_ABI=arm64-v8a" ^
+  "-DCMAKE_ANDROID_ARCH_ABI=arm64-v8a" ^
+  "-DANDROID_NDK=C:\\Users\\hemit\\AppData\\Local\\Android\\Sdk\\ndk\\26.1.10909125" ^
+  "-DCMAKE_ANDROID_NDK=C:\\Users\\hemit\\AppData\\Local\\Android\\Sdk\\ndk\\26.1.10909125" ^
+  "-DCMAKE_TOOLCHAIN_FILE=C:\\Users\\hemit\\AppData\\Local\\Android\\Sdk\\ndk\\26.1.10909125\\build\\cmake\\android.toolchain.cmake" ^
+  "-DCMAKE_MAKE_PROGRAM=C:\\Users\\hemit\\AppData\\Local\\Android\\Sdk\\cmake\\3.22.1\\bin\\ninja.exe" ^
+  "-DCMAKE_LIBRARY_OUTPUT_DIRECTORY=D:\\chat app\\android\\app\\build\\intermediates\\cxx\\Debug\\3a6f20s4\\obj\\arm64-v8a" ^
+  "-DCMAKE_RUNTIME_OUTPUT_DIRECTORY=D:\\chat app\\android\\app\\build\\intermediates\\cxx\\Debug\\3a6f20s4\\obj\\arm64-v8a" ^
+  "-DCMAKE_BUILD_TYPE=Debug" ^
+  "-DCMAKE_FIND_ROOT_PATH=D:\\chat app\\android\\app\\.cxx\\Debug\\3a6f20s4\\prefab\\arm64-v8a\\prefab" ^
+  "-BD:\\chat app\\android\\app\\.cxx\\Debug\\3a6f20s4\\arm64-v8a" ^
+  -GNinja ^
+  "-DPROJECT_BUILD_DIR=D:\\chat app\\android\\app\\build" ^
+  "-DPROJECT_ROOT_DIR=D:\\chat app\\android" ^
+  "-DREACT_ANDROID_DIR=D:\\chat app\\node_modules\\react-native\\ReactAndroid" ^
+  "-DANDROID_STL=c++_shared" ^
+  "-DANDROID_SUPPORT_FLEXIBLE_PAGE_SIZES=ON"
+
+Starting process 'command 'C:\Users\hemit\AppData\Local\Android\Sdk\cmake\3.22.1\bin\cmake.exe''. Working directory: D:\chat app\android\app Command: C:\Users\hemit\AppData\Local\Android\Sdk\cmake\3.22.1\bin\cmake.exe -HD:\chat app\node_modules\react-native\ReactAndroid\cmake-utils\default-app-setup -DCMAKE_SYSTEM_NAME=Android -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DCMAKE_SYSTEM_VERSION=24 -DANDROID_PLATFORM=android-24 -DANDROID_ABI=arm64-v8a -DCMAKE_ANDROID_ARCH_ABI=arm64-v8a -DANDROID_NDK=C:\Users\hemit\AppData\Local\Android\Sdk\ndk\26.1.10909125 -DCMAKE_ANDROID_NDK=C:\Users\hemit\AppData\Local\Android\Sdk\ndk\26.1.10909125 -DCMAKE_TOOLCHAIN_FILE=C:\Users\hemit\AppData\Local\Android\Sdk\ndk\26.1.10909125\build\cmake\android.toolchain.cmake -DCMAKE_MAKE_PROGRAM=C:\Users\hemit\AppData\Local\Android\Sdk\cmake\3.22.1\bin\ninja.exe -DCMAKE_LIBRARY_OUTPUT_DIRECTORY=D:\chat app\android\app\build\intermediates\cxx\Debug\3a6f20s4\obj\arm64-v8a -DCMAKE_RUNTIME_OUTPUT_DIRECTORY=D:\chat app\android\app\build\intermediates\cxx\Debug\3a6f20s4\obj\arm64-v8a -DCMAKE_BUILD_TYPE=Debug -DCMAKE_FIND_ROOT_PATH=D:\chat app\android\app\.cxx\Debug\3a6f20s4\prefab\arm64-v8a\prefab -BD:\chat app\android\app\.cxx\Debug\3a6f20s4\arm64-v8a -GNinja -DPROJECT_BUILD_DIR=D:\chat app\android\app\build -DPROJECT_ROOT_DIR=D:\chat app\android -DREACT_ANDROID_DIR=D:\chat app\node_modules\react-native\ReactAndroid -DANDROID_STL=c++_shared -DANDROID_SUPPORT_FLEXIBLE_PAGE_SIZES=ON
+Successfully started process 'command 'C:\Users\hemit\AppData\Local\Android\Sdk\cmake\3.22.1\bin\cmake.exe''
+C/C++: CMake Warning:
+C/C++:   Manually-specified variables were not used by the project:
+C/C++:     ANDROID_SUPPORT_FLEXIBLE_PAGE_SIZES
+C/C++: D:\chat app\node_modules\react-native\ReactAndroid\cmake-utils\default-app-setup\CMakeLists.txt debug|arm64-v8a : Received process result: 0
+C/C++: D:\chat app\node_modules\react-native\ReactAndroid\cmake-utils\default-app-setup\CMakeLists.txt debug|arm64-v8a : Exiting generation of D:\chat app\android\app\.cxx\Debug\3a6f20s4\arm64-v8a\compile_commands.json.bin normally
+C/C++: D:\chat app\node_modules\react-native\ReactAndroid\cmake-utils\default-app-setup\CMakeLists.txt debug|arm64-v8a : done executing cmake
+C/C++: D:\chat app\node_modules\react-native\ReactAndroid\cmake-utils\default-app-setup\CMakeLists.txt debug|arm64-v8a : hard linked D:\chat app\android\app\.cxx\Debug\3a6f20s4\arm64-v8a\compile_commands.json to D:\chat app\android\app\.cxx\tools\debug\arm64-v8a\compile_commands.json
+C/C++: D:\chat app\node_modules\react-native\ReactAndroid\cmake-utils\default-app-setup\CMakeLists.txt debug|arm64-v8a : JSON generation completed without problems
+C/C++: D:\chat app\node_modules\react-native\ReactAndroid\cmake-utils\default-app-setup\CMakeLists.txt debug|arm64-v8a : Writing build model to D:\chat app\android\app\build\intermediates\cxx\Debug\3a6f20s4\logs\arm64-v8a\build_model.json
+Resolve mutations for :react-native-worklets:prefabDebugPackage (Thread[Execution worker Thread 11,5,main]) started.
+:react-native-worklets:prefabDebugPackage (Thread[Execution worker Thread 11,5,main]) started.
+
+> Task :react-native-worklets:prefabDebugPackage
+Caching disabled for task ':react-native-worklets:prefabDebugPackage' because:
+  Build cache is disabled
+  Caching has been disabled for the task
+Task ':react-native-worklets:prefabDebugPackage' is not up-to-date because:
+  No history is available.
+C/C++: Installing header D:\chat app\node_modules\react-native-worklets\android\build\prefab-headers\worklets to D:\chat app\node_modules\react-native-worklets\android\build\intermediates\prefab_package\debug\prefab\modules\worklets\include
+C/C++: Installing D:\chat app\node_modules\react-native-worklets\android\build\intermediates\cxx\Debug\4y1j4s35\obj\armeabi-v7a\libworklets.so to D:\chat app\node_modules\react-native-worklets\android\build\intermediates\prefab_package\debug\prefab\modules\worklets\libs\android.armeabi-v7a\libworklets.so
+C/C++: hard linked D:\chat app\node_modules\react-native-worklets\android\build\intermediates\cxx\Debug\4y1j4s35\obj\armeabi-v7a\libworklets.so to D:\chat app\node_modules\react-native-worklets\android\build\intermediates\prefab_package\debug\prefab\modules\worklets\libs\android.armeabi-v7a\libworklets.so
+C/C++: Installing D:\chat app\node_modules\react-native-worklets\android\build\intermediates\cxx\Debug\4y1j4s35\obj\arm64-v8a\libworklets.so to D:\chat app\node_modules\react-native-worklets\android\build\intermediates\prefab_package\debug\prefab\modules\worklets\libs\android.arm64-v8a\libworklets.so
+C/C++: hard linked D:\chat app\node_modules\react-native-worklets\android\build\intermediates\cxx\Debug\4y1j4s35\obj\arm64-v8a\libworklets.so to D:\chat app\node_modules\react-native-worklets\android\build\intermediates\prefab_package\debug\prefab\modules\worklets\libs\android.arm64-v8a\libworklets.so
+C/C++: Installing D:\chat app\node_modules\react-native-worklets\android\build\intermediates\cxx\Debug\4y1j4s35\obj\x86\libworklets.so to D:\chat app\node_modules\react-native-worklets\android\build\intermediates\prefab_package\debug\prefab\modules\worklets\libs\android.x86\libworklets.so
+C/C++: hard linked D:\chat app\node_modules\react-native-worklets\android\build\intermediates\cxx\Debug\4y1j4s35\obj\x86\libworklets.so to D:\chat app\node_modules\react-native-worklets\android\build\intermediates\prefab_package\debug\prefab\modules\worklets\libs\android.x86\libworklets.so
+C/C++: Installing D:\chat app\node_modules\react-native-worklets\android\build\intermediates\cxx\Debug\4y1j4s35\obj\x86_64\libworklets.so to D:\chat app\node_modules\react-native-worklets\android\build\intermediates\prefab_package\debug\prefab\modules\worklets\libs\android.x86_64\libworklets.so
+C/C++: hard linked D:\chat app\node_modules\react-native-worklets\android\build\intermediates\cxx\Debug\4y1j4s35\obj\x86_64\libworklets.so to D:\chat app\node_modules\react-native-worklets\android\build\intermediates\prefab_package\debug\prefab\modules\worklets\libs\android.x86_64\libworklets.so
+work action resolve prefab (project :react-native-worklets) (Thread[Execution worker Thread 11,5,main]) started.
+Resolve mutations for :react-native-reanimated:buildCMakeDebug[arm64-v8a][reanimated] (Thread[Execution worker Thread 6,5,main]) started.
+:react-native-reanimated:buildCMakeDebug[arm64-v8a][reanimated] (Thread[Execution worker Thread 6,5,main]) started.
+
+> Task :react-native-reanimated:buildCMakeDebug[arm64-v8a][reanimated]
+Deleting stale output file: D:\chat app\node_modules\react-native-reanimated\android\build\intermediates\cxx\Debug\34395226\obj\arm64-v8a
+Caching disabled for task ':react-native-reanimated:buildCMakeDebug[arm64-v8a][reanimated]' because:
+  Build cache is disabled
+  Caching has been disabled for the task
+Task ':react-native-reanimated:buildCMakeDebug[arm64-v8a][reanimated]' is not up-to-date because:
+  Task.upToDateWhen is false.
+C/C++: starting build
+C/C++: reading expected JSONs
+C/C++: done reading expected JSONs
+C/C++: executing build commands for targets: 'reanimated'
+C/C++: evaluate miniconfig
+C/C++: evaluate library reanimated (arm64-v8a)
+C/C++: about to build targets reanimated
+C/C++: Build reanimated
+C/C++: @echo off
+"C:\\Users\\hemit\\AppData\\Local\\Android\\Sdk\\cmake\\3.22.1\\bin\\ninja.exe" ^
+  -C ^
+  "D:\\chat app\\node_modules\\react-native-reanimated\\android\\.cxx\\Debug\\34395226\\arm64-v8a" ^
+  reanimated
+
+Starting process 'command 'C:\Users\hemit\AppData\Local\Android\Sdk\cmake\3.22.1\bin\ninja.exe''. Working directory: D:\chat app\node_modules\react-native-reanimated\android Command: C:\Users\hemit\AppData\Local\Android\Sdk\cmake\3.22.1\bin\ninja.exe -C D:\chat app\node_modules\react-native-reanimated\android\.cxx\Debug\34395226\arm64-v8a reanimated
+Successfully started process 'command 'C:\Users\hemit\AppData\Local\Android\Sdk\cmake\3.22.1\bin\ninja.exe''
+C/C++: Received process result: 0
+C/C++: check expected build outputs
+C/C++: Hard link from 'C:\Users\hemit\.gradle\caches\8.13\transforms\fe5ccad75f640ed4448f47c0e50f181e\transformed\react-android-0.81.5-debug\prefab\modules\reactnative\libs\android.arm64-v8a\libreactnative.so' to 'D:\chat app\node_modules\react-native-reanimated\android\build\intermediates\cxx\Debug\34395226\obj\arm64-v8a\libreactnative.so' failed. Doing a slower copy instead.
+C/C++: Hard link from 'C:\Users\hemit\.gradle\caches\8.13\transforms\fe5ccad75f640ed4448f47c0e50f181e\transformed\react-android-0.81.5-debug\prefab\modules\reactnative\libs\android.arm64-v8a\libreactnative.so' to 'D:\chat app\node_modules\react-native-reanimated\android\build\intermediates\cxx\Debug\34395226\obj\arm64-v8a\libreactnative.so' failed. Doing a slower copy instead.
+C/C++: build complete
+Resolve mutations for :react-native-reanimated:buildCMakeDebug[armeabi-v7a][reanimated] (Thread[Execution worker Thread 6,5,main]) started.
+:react-native-reanimated:buildCMakeDebug[armeabi-v7a][reanimated] (Thread[Execution worker Thread 6,5,main]) started.
+
+> Task :react-native-reanimated:buildCMakeDebug[armeabi-v7a][reanimated]
+Deleting stale output file: D:\chat app\node_modules\react-native-reanimated\android\build\intermediates\cxx\Debug\34395226\obj\armeabi-v7a
+Caching disabled for task ':react-native-reanimated:buildCMakeDebug[armeabi-v7a][reanimated]' because:
+  Build cache is disabled
+  Caching has been disabled for the task
+Task ':react-native-reanimated:buildCMakeDebug[armeabi-v7a][reanimated]' is not up-to-date because:
+  Task.upToDateWhen is false.
+C/C++: starting build
+C/C++: reading expected JSONs
+C/C++: done reading expected JSONs
+C/C++: executing build commands for targets: 'reanimated'
+C/C++: evaluate miniconfig
+C/C++: evaluate library reanimated (armeabi-v7a)
+C/C++: about to build targets reanimated
+C/C++: Build reanimated
+C/C++: @echo off
+"C:\\Users\\hemit\\AppData\\Local\\Android\\Sdk\\cmake\\3.22.1\\bin\\ninja.exe" ^
+  -C ^
+  "D:\\chat app\\node_modules\\react-native-reanimated\\android\\.cxx\\Debug\\34395226\\armeabi-v7a" ^
+  reanimated
+
+Starting process 'command 'C:\Users\hemit\AppData\Local\Android\Sdk\cmake\3.22.1\bin\ninja.exe''. Working directory: D:\chat app\node_modules\react-native-reanimated\android Command: C:\Users\hemit\AppData\Local\Android\Sdk\cmake\3.22.1\bin\ninja.exe -C D:\chat app\node_modules\react-native-reanimated\android\.cxx\Debug\34395226\armeabi-v7a reanimated
+Successfully started process 'command 'C:\Users\hemit\AppData\Local\Android\Sdk\cmake\3.22.1\bin\ninja.exe''
+C/C++: Received process result: 0
+C/C++: check expected build outputs
+C/C++: Hard link from 'C:\Users\hemit\.gradle\caches\8.13\transforms\fe5ccad75f640ed4448f47c0e50f181e\transformed\react-android-0.81.5-debug\prefab\modules\reactnative\libs\android.armeabi-v7a\libreactnative.so' to 'D:\chat app\node_modules\react-native-reanimated\android\build\intermediates\cxx\Debug\34395226\obj\armeabi-v7a\libreactnative.so' failed. Doing a slower copy instead.
+C/C++: Hard link from 'C:\Users\hemit\.gradle\caches\8.13\transforms\fe5ccad75f640ed4448f47c0e50f181e\transformed\react-android-0.81.5-debug\prefab\modules\reactnative\libs\android.armeabi-v7a\libreactnative.so' to 'D:\chat app\node_modules\react-native-reanimated\android\build\intermediates\cxx\Debug\34395226\obj\armeabi-v7a\libreactnative.so' failed. Doing a slower copy instead.
+C/C++: build complete
+Resolve mutations for :react-native-reanimated:buildCMakeDebug[x86][reanimated] (Thread[Execution worker Thread 6,5,main]) started.
+:react-native-reanimated:buildCMakeDebug[x86][reanimated] (Thread[Execution worker Thread 6,5,main]) started.
+
+> Task :react-native-reanimated:buildCMakeDebug[x86][reanimated]
+Deleting stale output file: D:\chat app\node_modules\react-native-reanimated\android\build\intermediates\cxx\Debug\34395226\obj\x86
+Caching disabled for task ':react-native-reanimated:buildCMakeDebug[x86][reanimated]' because:
+  Build cache is disabled
+  Caching has been disabled for the task
+Task ':react-native-reanimated:buildCMakeDebug[x86][reanimated]' is not up-to-date because:
+  Task.upToDateWhen is false.
+C/C++: starting build
+C/C++: reading expected JSONs
+C/C++: done reading expected JSONs
+C/C++: executing build commands for targets: 'reanimated'
+C/C++: evaluate miniconfig
+C/C++: evaluate library reanimated (x86)
+C/C++: about to build targets reanimated
+C/C++: Build reanimated
+C/C++: @echo off
+"C:\\Users\\hemit\\AppData\\Local\\Android\\Sdk\\cmake\\3.22.1\\bin\\ninja.exe" ^
+  -C ^
+  "D:\\chat app\\node_modules\\react-native-reanimated\\android\\.cxx\\Debug\\34395226\\x86" ^
+  reanimated
+
+Starting process 'command 'C:\Users\hemit\AppData\Local\Android\Sdk\cmake\3.22.1\bin\ninja.exe''. Working directory: D:\chat app\node_modules\react-native-reanimated\android Command: C:\Users\hemit\AppData\Local\Android\Sdk\cmake\3.22.1\bin\ninja.exe -C D:\chat app\node_modules\react-native-reanimated\android\.cxx\Debug\34395226\x86 reanimated
+Successfully started process 'command 'C:\Users\hemit\AppData\Local\Android\Sdk\cmake\3.22.1\bin\ninja.exe''
+C/C++: Received process result: 0
+C/C++: check expected build outputs
+C/C++: Hard link from 'C:\Users\hemit\.gradle\caches\8.13\transforms\fe5ccad75f640ed4448f47c0e50f181e\transformed\react-android-0.81.5-debug\prefab\modules\reactnative\libs\android.x86\libreactnative.so' to 'D:\chat app\node_modules\react-native-reanimated\android\build\intermediates\cxx\Debug\34395226\obj\x86\libreactnative.so' failed. Doing a slower copy instead.
+C/C++: Hard link from 'C:\Users\hemit\.gradle\caches\8.13\transforms\fe5ccad75f640ed4448f47c0e50f181e\transformed\react-android-0.81.5-debug\prefab\modules\reactnative\libs\android.x86\libreactnative.so' to 'D:\chat app\node_modules\react-native-reanimated\android\build\intermediates\cxx\Debug\34395226\obj\x86\libreactnative.so' failed. Doing a slower copy instead.
+C/C++: build complete
+Resolve mutations for :react-native-reanimated:buildCMakeDebug[x86_64][reanimated] (Thread[Execution worker Thread 6,5,main]) started.
+:react-native-reanimated:buildCMakeDebug[x86_64][reanimated] (Thread[Execution worker Thread 6,5,main]) started.
+
+> Task :react-native-reanimated:buildCMakeDebug[x86_64][reanimated]
+Deleting stale output file: D:\chat app\node_modules\react-native-reanimated\android\build\intermediates\cxx\Debug\34395226\obj\x86_64
+Caching disabled for task ':react-native-reanimated:buildCMakeDebug[x86_64][reanimated]' because:
+  Build cache is disabled
+  Caching has been disabled for the task
+Task ':react-native-reanimated:buildCMakeDebug[x86_64][reanimated]' is not up-to-date because:
+  Task.upToDateWhen is false.
+C/C++: starting build
+C/C++: reading expected JSONs
+C/C++: done reading expected JSONs
+C/C++: executing build commands for targets: 'reanimated'
+C/C++: evaluate miniconfig
+C/C++: evaluate library reanimated (x86_64)
+C/C++: about to build targets reanimated
+C/C++: Build reanimated
+C/C++: @echo off
+"C:\\Users\\hemit\\AppData\\Local\\Android\\Sdk\\cmake\\3.22.1\\bin\\ninja.exe" ^
+  -C ^
+  "D:\\chat app\\node_modules\\react-native-reanimated\\android\\.cxx\\Debug\\34395226\\x86_64" ^
+  reanimated
+
+Starting process 'command 'C:\Users\hemit\AppData\Local\Android\Sdk\cmake\3.22.1\bin\ninja.exe''. Working directory: D:\chat app\node_modules\react-native-reanimated\android Command: C:\Users\hemit\AppData\Local\Android\Sdk\cmake\3.22.1\bin\ninja.exe -C D:\chat app\node_modules\react-native-reanimated\android\.cxx\Debug\34395226\x86_64 reanimated
+Successfully started process 'command 'C:\Users\hemit\AppData\Local\Android\Sdk\cmake\3.22.1\bin\ninja.exe''

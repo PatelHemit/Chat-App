@@ -1,0 +1,400 @@
+﻿aches/8.13/transforms/fe5c
+cad75f640ed4448f47c0e50f18
+1e/transformed/react-andro
+id-0.81.5-debug/prefab/mod
+ules/reactnative/include/r
+eact/renderer/core/graphic
+sConversions.h:80:14: 
+error: no member named 
+'format' in namespace 
+'std'; did you mean 
+'folly::format'?
+        return 
+std::format("{}%", 
+dimension.value);
+               ^~~~~
+  C:/Users/hemit/.gradle/c
+aches/8.13/transforms/fe5c
+cad75f640ed4448f47c0e50f18
+1e/transformed/react-andro
+id-0.81.5-debug/prefab/mod
+ules/reactnative/include/f
+olly/Format.h:291:1: 
+note: 'folly::format' 
+declared here
+  format(StringPiece fmt, 
+Args&&... args) {
+  ^
+  In file included from 
+D:/chat app/node_modules/r
+eact-native-gesture-handle
+r/android/build/generated/
+source/codegen/jni/react/r
+enderer/components/rngestu
+rehandler_codegen/Props.cp
+p:13:
+  In file included from C:
+/Users/hemit/.gradle/cache
+s/8.13/transforms/fe5ccad7
+5f640ed4448f47c0e50f181e/t
+ransformed/react-android-0
+.81.5-debug/prefab/modules
+/reactnative/include/react
+/renderer/core/propsConver
+sions.h:15:
+  C:/Users/hemit/.gradle/c
+aches/8.13/transforms/fe5c
+cad75f640ed4448f47c0e50f18
+1e/transformed/react-andro
+id-0.81.5-debug/prefab/mod
+ules/reactnative/include/r
+eact/renderer/core/graphic
+sConversions.h:80:14: 
+error: no viable 
+conversion from returned 
+value of type 
+'Formatter<false, const 
+float &>' to function 
+return type 
+'folly::dynamic'
+        return 
+std::format("{}%", 
+dimension.value);
+               ^~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~
+  C:/Users/hemit/.gradle/c
+aches/8.13/transforms/fe5c
+cad75f640ed4448f47c0e50f18
+1e/transformed/react-andro
+id-0.81.5-debug/prefab/mod
+ules/reactnative/include/f
+olly/json/dynamic.h:238:18
+: note: candidate 
+constructor not viable: 
+no known conversion from 
+'Formatter<false, const 
+float &>' to 'const 
+ObjectMaker &' for 1st 
+argument
+    /* implicit */ 
+dynamic(ObjectMaker 
+const&) = delete;
+                   ^
+  C:/Users/hemit/.gradle/c
+aches/8.13/transforms/fe5c
+cad75f640ed4448f47c0e50f18
+1e/transformed/react-andro
+id-0.81.5-debug/prefab/mod
+ules/reactnative/include/f
+olly/json/dynamic.h:289:3:
+ note: candidate 
+constructor not viable: 
+no known conversion from 
+'Formatter<false, const 
+float &>' to 'const 
+dynamic &' for 1st 
+argument
+    dynamic(dynamic 
+const&);
+    ^
+  C:/Users/hemit/.gradle/c
+aches/8.13/transforms/fe5c
+cad75f640ed4448f47c0e50f18
+1e/transformed/react-andro
+id-0.81.5-debug/prefab/mod
+ules/reactnative/include/f
+olly/json/dynamic.h:290:3:
+ note: candidate 
+constructor not viable: 
+no known conversion from 
+'Formatter<false, const 
+float &>' to 'dynamic &&' 
+for 1st argument
+    dynamic(dynamic&&) 
+noexcept;
+    ^
+  C:/Users/hemit/.gradle/c
+aches/8.13/transforms/fe5c
+cad75f640ed4448f47c0e50f18
+1e/transformed/react-andro
+id-0.81.5-debug/prefab/mod
+ules/reactnative/include/f
+olly/json/dynamic-inl.h:32
+1:17: note: candidate 
+constructor not viable: 
+no known conversion from 
+'Formatter<false, const 
+float &>' to 
+'std::nullptr_t' for 1st 
+argument
+  inline dynamic::dynamic(
+std::nullptr_t) : 
+type_(NULLT) {}
+                  ^
+  C:/Users/hemit/.gradle/c
+aches/8.13/transforms/fe5c
+cad75f640ed4448f47c0e50f18
+1e/transformed/react-andro
+id-0.81.5-debug/prefab/mod
+ules/reactnative/include/f
+olly/json/dynamic-inl.h:32
+3:17: note: candidate 
+constructor not viable: 
+no known conversion from 
+'Formatter<false, const 
+float &>' to 'void 
+(*)(EmptyArrayTag)' for 
+1st argument
+  inline 
+dynamic::dynamic(void 
+(*)(EmptyArrayTag)) : 
+type_(ARRAY) {
+                  ^
+  C:/Users/hemit/.gradle/c
+aches/8.13/transforms/fe5c
+cad75f640ed4448f47c0e50f18
+1e/transformed/react-andro
+id-0.81.5-debug/prefab/mod
+ules/reactnative/include/f
+olly/json/dynamic-inl.h:32
+7:17: note: candidate 
+constructor not viable: 
+no known conversion from 
+'Formatter<false, const 
+float &>' to 'ObjectMaker 
+(*)()' for 1st argument
+  inline dynamic::dynamic(
+ObjectMaker (*)()) : 
+type_(OBJECT) {
+                  ^
+  C:/Users/hemit/.gradle/c
+aches/8.13/transforms/fe5c
+cad75f640ed4448f47c0e50f18
+1e/transformed/react-andro
+id-0.81.5-debug/prefab/mod
+ules/reactnative/include/f
+olly/json/dynamic-inl.h:33
+1:17: note: candidate 
+constructor not viable: 
+no known conversion from 
+'Formatter<false, const 
+float &>' to 'const char 
+*' for 1st argument
+  inline 
+dynamic::dynamic(char 
+const* s) : type_(STRING) 
+{
+                  ^
+  C:/Users/hemit/.gradle/c
+aches/8.13/transforms/fe5c
+cad75f640ed4448f47c0e50f18
+1e/transformed/react-andro
+id-0.81.5-debug/prefab/mod
+ules/reactnative/include/f
+olly/json/dynamic-inl.h:33
+5:17: note: candidate 
+constructor not viable: 
+no known conversion from 
+'Formatter<false, const 
+float &>' to 
+'std::string' (aka 
+'basic_string<char>') for 
+1st argument
+  inline dynamic::dynamic(
+std::string s) : 
+type_(STRING) {
+                  ^
+  C:/Users/hemit/.gradle/c
+aches/8.13/transforms/fe5c
+cad75f640ed4448f47c0e50f18
+1e/transformed/react-andro
+id-0.81.5-debug/prefab/mod
+ules/reactnative/include/f
+olly/json/dynamic-inl.h:34
+4:17: note: candidate 
+constructor not viable: 
+no known conversion from 
+'Formatter<false, const 
+float &>' to 'ObjectMaker 
+&&' for 1st argument
+  inline dynamic::dynamic(
+ObjectMaker&& maker) : 
+type_(OBJECT) {
+                  ^
+  C:/Users/hemit/.gradle/c
+aches/8.13/transforms/fe5c
+cad75f640ed4448f47c0e50f18
+1e/transformed/react-andro
+id-0.81.5-debug/prefab/mod
+ules/reactnative/include/f
+olly/json/dynamic-inl.h:37
+6:17: note: candidate 
+constructor not viable: 
+no known conversion from 
+'Formatter<false, const 
+float &>' to 'std::vector<
+bool>::reference' (aka '__
+bit_reference<vector<bool,
+ allocator<bool>>>') for 
+1st argument
+  inline dynamic::dynamic(
+std::vector<bool>::referen
+ce b)
+                  ^
+  C:/Users/hemit/.gradle/c
+aches/8.13/transforms/fe5c
+cad75f640ed4448f47c0e50f18
+1e/transformed/react-andro
+id-0.81.5-debug/prefab/mod
+ules/reactnative/include/f
+olly/json/dynamic-inl.h:37
+8:17: note: candidate 
+constructor not viable: 
+no known conversion from 
+'Formatter<false, const 
+float &>' to 'VectorBoolCo
+nstRefCtorType' (aka 'std:
+:__bit_const_reference<std
+::vector<bool>>') for 1st 
+argument
+  inline dynamic::dynamic(
+VectorBoolConstRefCtorType
+ b)
+                  ^
+  C:/Users/hemit/.gradle/c
+aches/8.13/transforms/fe5c
+cad75f640ed4448f47c0e50f18
+1e/transformed/react-andro
+id-0.81.5-debug/prefab/mod
+ules/reactnative/include/f
+olly/json/dynamic-inl.h:34
+0:17: note: candidate 
+template ignored: 
+requirement 'is_detected_v
+<folly::dynamic_detail::de
+tect_construct_string, 
+folly::Formatter<false, 
+const float &>>' was not 
+satisfied [with Stringish 
+= Formatter<false, const 
+float &>]
+  inline dynamic::dynamic(
+Stringish&& s) : 
+type_(STRING) {
+                  ^
+  C:/Users/hemit/.gradle/c
+aches/8.13/transforms/fe5c
+cad75f640ed4448f47c0e50f18
+1e/transformed/react-andro
+id-0.81.5-debug/prefab/mod
+ules/reactnative/include/f
+olly/json/dynamic-inl.h:38
+4:10: note: candidate 
+template ignored: 
+substitution failure 
+[with T = 
+Formatter<false, const 
+float &>]: implicit 
+instantiation of 
+undefined template 'folly:
+:dynamic::NumericTypeHelpe
+r<folly::Formatter<false, 
+const float &>>'
+  dynamic::dynamic(T t) {
+           ^
+  C:/Users/hemit/.gradle/c
+aches/8.13/transforms/fe5c
+cad75f640ed4448f47c0e50f18
+1e/transformed/react-andro
+id-0.81.5-debug/prefab/mod
+ules/reactnative/include/f
+olly/json/dynamic.h:1115:1
+2: note: explicit 
+constructor is not a 
+candidate
+    explicit 
+dynamic(Array&& r);
+             ^
+  2 errors generated.
+  [15/86] Building CXX 
+object rngesturehandler_co
+degen_autolinked_build/CMa
+keFiles/react_codegen_rnge
+sturehandler_codegen.dir/r
+eact/renderer/components/r
+ngesturehandler_codegen/Sh
+adowNodes.cpp.o
+  [16/86] Building CXX 
+object rnasyncstorage_auto
+linked_build/CMakeFiles/re
+act_codegen_rnasyncstorage
+.dir/react/renderer/compon
+ents/rnasyncstorage/Compon
+entDescriptors.cpp.o
+  [17/86] Building CXX 
+object rnreanimated_autoli
+nked_build/CMakeFiles/reac
+t_codegen_rnreanimated.dir
+/react/renderer/components
+/rnreanimated/ShadowNodes.
+cpp.o
+  [18/86] Building CXX 
+object rnreanimated_autoli
+nked_build/CMakeFiles/reac
+t_codegen_rnreanimated.dir
+/react/renderer/components
+/rnreanimated/ComponentDes
+criptors.cpp.o
+  [19/86] Building CXX 
+object rngesturehandler_co
+degen_autolinked_build/CMa
+keFiles/react_codegen_rnge
+sturehandler_codegen.dir/r
+eact/renderer/components/r
+ngesturehandler_codegen/Co
+mponentDescriptors.cpp.o
+  ninja: build stopped: 
+subcommand failed.
+  
+  C++ build system 
+[build] failed while 
+executing:
+      @echo off
+      "C:\\Users\\hemit\\A
+ppData\\Local\\Android\\Sd
+k\\cmake\\3.22.1\\bin\\nin
+ja.exe" ^
+        -C ^
+        "D:\\chat app\\and
+roid\\app\\.cxx\\Debug\\3a
+6f20s4\\arm64-v8a" ^
+        appmodules ^
+        
+react_codegen_rnscreens ^
+        
+react_codegen_rnsvg ^
+        react_codegen_safe
+areacontext
+    from D:\chat 
+app\android\app
+
+* Try:
+> Run with --stacktrace 
+option to get the stack 
+trace.
+> Run with --debug option 
+to get more log output.
+> Run with --scan to get 
+full insights.
+> Get more help at 
+https://help.gradle.org.
+
+
+Deprecated Gradle features were used in this build, making it incompatible with Gradle 9.0.
+
+BUILD FAILED in 20m 24s
+You can use '--warning-mode all' to show the individual deprecation warnings and determine if they come from your own scripts or plugins.
+
+For more on this, please refer to https://docs.gradle.org/8.13/userguide/command_line_interface.html#sec:command_line_warnings in the Gradle documentation.
+949 actionable tasks: 729 executed, 220 up-to-date
+Watched directory hierarchies: [D:\chat app\node_modules\expo-modules-core\expo-module-gradle-plugin, D:\chat app\node_modules\expo-dev-launcher\expo-dev-launcher-gradle-plugin, D:\chat app\node_modules\@react-native\gradle-plugin, D:\chat app\android]

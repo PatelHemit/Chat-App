@@ -27,8 +27,10 @@ const allMessages = asyncHandler(async (req, res) => {
 const sendMessage = asyncHandler(async (req, res) => {
     const { content, chatId, type, replyTo, fileUrl, duration, fileMetadata } = req.body;
 
+    console.log(`[API] sendMessage request: from=${req.user._id} chat=${chatId} content=${content?.substring(0, 20)}...`);
+
     if (!content || !chatId) {
-        console.log("Invalid data passed into request");
+        console.log("[API] Invalid data passed into request: Missing content or chatId");
         return res.sendStatus(400);
     }
 

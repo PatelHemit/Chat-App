@@ -1,0 +1,200 @@
+﻿Resolved plugin [id: 'com.android.library']
+Resolved plugin [id: 'expo-module-gradle-plugin']
+Using default execution profile
+Using Kotlin Gradle Plugin gradle85 variant
+
+> Configure project :expo-font
+Evaluating project ':expo-font' using build file 'D:\chat app\node_modules\expo-font\android\build.gradle'.
+Resolved plugin [id: 'com.android.library']
+Resolved plugin [id: 'expo-module-gradle-plugin']
+Using default execution profile
+Using Kotlin Gradle Plugin gradle85 variant
+
+> Configure project :expo-haptics
+Evaluating project ':expo-haptics' using build file 'D:\chat app\node_modules\expo-haptics\android\build.gradle'.
+Resolved plugin [id: 'com.android.library']
+Resolved plugin [id: 'expo-module-gradle-plugin']
+Using default execution profile
+Using Kotlin Gradle Plugin gradle85 variant
+
+> Configure project :expo-image
+Evaluating project ':expo-image' using build file 'D:\chat app\node_modules\expo-image\android\build.gradle'.
+Resolved plugin [id: 'com.android.library']
+Resolved plugin [id: 'kotlin-kapt']
+Resolved plugin [id: 'expo-module-gradle-plugin']
+Using default execution profile
+Using Kotlin Gradle Plugin gradle85 variant
+
+> Configure project :expo-image-loader
+Evaluating project ':expo-image-loader' using build file 'D:\chat app\node_modules\expo-image-loader\android\build.gradle'.
+Resolved plugin [id: 'com.android.library']
+Resolved plugin [id: 'expo-module-gradle-plugin']
+Using default execution profile
+Using Kotlin Gradle Plugin gradle85 variant
+
+> Configure project :expo-image-picker
+Evaluating project ':expo-image-picker' using build file 'D:\chat app\node_modules\expo-image-picker\android\build.gradle'.
+Resolved plugin [id: 'com.android.library']
+Resolved plugin [id: 'expo-module-gradle-plugin']
+Using default execution profile
+Using Kotlin Gradle Plugin gradle85 variant
+
+> Configure project :expo-json-utils
+Evaluating project ':expo-json-utils' using build file 'D:\chat app\node_modules\expo-json-utils\android\build.gradle'.
+Resolved plugin [id: 'com.android.library']
+Resolved plugin [id: 'expo-module-gradle-plugin']
+Using default execution profile
+Using Kotlin Gradle Plugin gradle85 variant
+
+> Configure project :expo-keep-awake
+Evaluating project ':expo-keep-awake' using build file 'D:\chat app\node_modules\expo-keep-awake\android\build.gradle'.
+Resolved plugin [id: 'com.android.library']
+Resolved plugin [id: 'expo-module-gradle-plugin']
+Using default execution profile
+Using Kotlin Gradle Plugin gradle85 variant
+
+> Configure project :expo-linking
+Evaluating project ':expo-linking' using build file 'D:\chat app\node_modules\expo-linking\android\build.gradle'.
+Resolved plugin [id: 'com.android.library']
+Resolved plugin [id: 'expo-module-gradle-plugin']
+Using default execution profile
+Using Kotlin Gradle Plugin gradle85 variant
+
+> Configure project :expo-manifests
+Evaluating project ':expo-manifests' using build file 'D:\chat app\node_modules\expo-manifests\android\build.gradle'.
+Resolved plugin [id: 'com.android.library']
+Resolved plugin [id: 'expo-module-gradle-plugin']
+Using default execution profile
+Using Kotlin Gradle Plugin gradle85 variant
+
+> Configure project :expo-modules-core
+Evaluating project ':expo-modules-core' using build file 'D:\chat app\node_modules\expo-modules-core\android\build.gradle'.
+Using default execution profile
+Using Kotlin Gradle Plugin gradle85 variant
+C/C++: android.ndkVersion from module build.gradle is [26.1.10909125]
+C/C++: android.ndkPath from module build.gradle is not set
+C/C++: ndk.dir in local.properties is not set
+C/C++: Not considering ANDROID_NDK_HOME because support was removed after deprecation period.
+C/C++: sdkFolder is C:\Users\hemit\AppData\Local\Android\Sdk
+C/C++: android.ndkVersion from module build.gradle is [26.1.10909125]
+C/C++: android.ndkPath from module build.gradle is not set
+C/C++: ndk.dir in local.properties is not set
+C/C++: Not considering ANDROID_NDK_HOME because support was removed after deprecation period.
+C/C++: sdkFolder is C:\Users\hemit\AppData\Local\Android\Sdk
+C/C++: android.ndkVersion from module build.gradle is [26.1.10909125]
+C/C++: android.ndkPath from module build.gradle is not set
+C/C++: ndk.dir in local.properties is not set
+C/C++: Not considering ANDROID_NDK_HOME because support was removed after deprecation period.
+C/C++: sdkFolder is C:\Users\hemit\AppData\Local\Android\Sdk
+C/C++: android.ndkVersion from module build.gradle is [26.1.10909125]
+C/C++: android.ndkPath from module build.gradle is not set
+C/C++: ndk.dir in local.properties is not set
+C/C++: Not considering ANDROID_NDK_HOME because support was removed after deprecation period.
+C/C++: sdkFolder is C:\Users\hemit\AppData\Local\Android\Sdk
+C/C++: android.ndkVersion from module build.gradle is [26.1.10909125]
+C/C++: android.ndkPath from module build.gradle is not set
+C/C++: ndk.dir in local.properties is not set
+C/C++: Not considering ANDROID_NDK_HOME because support was removed after deprecation period.
+C/C++: sdkFolder is C:\Users\hemit\AppData\Local\Android\Sdk
+C/C++: android.ndkVersion from module build.gradle is [26.1.10909125]
+C/C++: android.ndkPath from module build.gradle is not set
+C/C++: ndk.dir in local.properties is not set
+C/C++: Not considering ANDROID_NDK_HOME because support was removed after deprecation period.
+C/C++: sdkFolder is C:\Users\hemit\AppData\Local\Android\Sdk
+C/C++: android.ndkVersion from module build.gradle is [26.1.10909125]
+C/C++: android.ndkPath from module build.gradle is not set
+C/C++: ndk.dir in local.properties is not set
+C/C++: Not considering ANDROID_NDK_HOME because support was removed after deprecation period.
+C/C++: sdkFolder is C:\Users\hemit\AppData\Local\Android\Sdk
+C/C++: android.ndkVersion from module build.gradle is [26.1.10909125]
+C/C++: android.ndkPath from module build.gradle is not set
+C/C++: ndk.dir in local.properties is not set
+C/C++: Not considering ANDROID_NDK_HOME because support was removed after deprecation period.
+C/C++: sdkFolder is C:\Users\hemit\AppData\Local\Android\Sdk
+C/C++: android.ndkVersion from module build.gradle is [26.1.10909125]
+C/C++: android.ndkPath from module build.gradle is not set
+C/C++: ndk.dir in local.properties is not set
+C/C++: Not considering ANDROID_NDK_HOME because support was removed after deprecation period.
+C/C++: sdkFolder is C:\Users\hemit\AppData\Local\Android\Sdk
+C/C++: android.ndkVersion from module build.gradle is [26.1.10909125]
+C/C++: android.ndkPath from module build.gradle is not set
+C/C++: ndk.dir in local.properties is not set
+C/C++: Not considering ANDROID_NDK_HOME because support was removed after deprecation period.
+C/C++: sdkFolder is C:\Users\hemit\AppData\Local\Android\Sdk
+C/C++: android.ndkVersion from module build.gradle is [26.1.10909125]
+C/C++: android.ndkPath from module build.gradle is not set
+C/C++: ndk.dir in local.properties is not set
+C/C++: Not considering ANDROID_NDK_HOME because support was removed after deprecation period.
+C/C++: sdkFolder is C:\Users\hemit\AppData\Local\Android\Sdk
+
+> Configure project :expo-notifications
+Evaluating project ':expo-notifications' using build file 'D:\chat app\node_modules\expo-notifications\android\build.gradle'.
+Invalidating in-memory cache of C:\Users\hemit\.gradle\caches\journal-1\file-access.bin
+Invalidating in-memory cache of C:\Users\hemit\.gradle\caches\8.13\fileHashes\fileHashes.bin
+Invalidating in-memory cache of C:\Users\hemit\.gradle\caches\8.13\fileHashes\resourceHashesCache.bin
+Resolved plugin [id: 'com.android.library']
+Resolved plugin [id: 'kotlin-parcelize']
+Resolved plugin [id: 'expo-module-gradle-plugin']
+Using default execution profile
+Using Kotlin Gradle Plugin gradle85 variant
+
+> Configure project :expo-screen-orientation
+Evaluating project ':expo-screen-orientation' using build file 'D:\chat app\node_modules\expo-screen-orientation\android\build.gradle'.
+Resolved plugin [id: 'com.android.library']
+Resolved plugin [id: 'expo-module-gradle-plugin']
+Using default execution profile
+Using Kotlin Gradle Plugin gradle85 variant
+
+> Configure project :expo-sharing
+Evaluating project ':expo-sharing' using build file 'D:\chat app\node_modules\expo-sharing\android\build.gradle'.
+Resolved plugin [id: 'com.android.library']
+Resolved plugin [id: 'expo-module-gradle-plugin']
+Using default execution profile
+Using Kotlin Gradle Plugin gradle85 variant
+
+> Configure project :expo-splash-screen
+Evaluating project ':expo-splash-screen' using build file 'D:\chat app\node_modules\expo-splash-screen\android\build.gradle'.
+Resolved plugin [id: 'com.android.library']
+Resolved plugin [id: 'expo-module-gradle-plugin']
+Using default execution profile
+Using Kotlin Gradle Plugin gradle85 variant
+
+> Configure project :expo-system-ui
+Evaluating project ':expo-system-ui' using build file 'D:\chat app\node_modules\expo-system-ui\android\build.gradle'.
+Resolved plugin [id: 'com.android.library']
+Resolved plugin [id: 'expo-module-gradle-plugin']
+Using default execution profile
+Using Kotlin Gradle Plugin gradle85 variant
+
+> Configure project :expo-updates-interface
+Evaluating project ':expo-updates-interface' using build file 'D:\chat app\node_modules\expo-updates-interface\android\build.gradle'.
+Resolved plugin [id: 'com.android.library']
+Resolved plugin [id: 'expo-module-gradle-plugin']
+Using default execution profile
+Using Kotlin Gradle Plugin gradle85 variant
+
+> Configure project :expo-web-browser
+Evaluating project ':expo-web-browser' using build file 'D:\chat app\node_modules\expo-web-browser\android\build.gradle'.
+Resolved plugin [id: 'com.android.library']
+Resolved plugin [id: 'expo-module-gradle-plugin']
+Using default execution profile
+Using Kotlin Gradle Plugin gradle85 variant
+
+> Configure project :expo
+
+Using expo modules
+  - [32mexpo-application[0m (7.0.8)
+  - [32mexpo-asset[0m (12.0.12)
+  - [32mexpo-av[0m (16.0.8)
+  - [32mexpo-camera[0m (17.0.10)
+  - [32mexpo-clipboard[0m (8.0.8)
+  - [32mexpo-constants[0m (18.0.13)
+  - [32mexpo-dev-client[0m (6.0.20)
+  - [32mexpo-dev-launcher[0m (6.0.20)
+  - [32mexpo-dev-menu[0m (7.0.18)
+  - [32mexpo-device[0m (8.0.10)
+  - [32mexpo-document-picker[0m (14.0.8)
+  - [32mexpo-file-system[0m (19.0.21)
+  - [32mexpo-font[0m (14.0.11)
+  - [32mexpo-haptics[0m (15.0.8)
+  - [32mexpo-image[0m (3.0.11)

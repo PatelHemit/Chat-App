@@ -1,0 +1,40 @@
+﻿node.exe : CommandError: 
+No Android connected 
+device found, and no 
+emulators could be 
+started automatically.
+At line:1 char:1
++ & "C:\Program 
+Files\nodejs/node.exe" 
+"C:\Program 
+Files\nodejs/node_mo ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo        
+      : NotSpe    cified: 
+(Command    Error: N... 
+auto    matically.:Strin  
+  g) [], RemoteExc    
+eption
+    + FullyQualified    
+ErrorId : Native    
+CommandError
+ 
+Connect a device or 
+create an emulator (https:
+//docs.expo.dev/workflow/a
+ndroid-studio-emulator).
+Then follow the 
+instructions here to 
+enable USB debugging:
+https://developer.android.
+com/studio/run/device.html
+#developer-device-options.
+ If you are using 
+Genymotion go to Settings 
+-> ADB, select "Use 
+custom Android SDK 
+tools", and point it at 
+your Android SDK 
+directory.

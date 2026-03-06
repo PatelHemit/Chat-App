@@ -115,6 +115,17 @@ io.on("connection", (socket) => {
             return;
         }
 
+        // --- ROOM ISOLATION FIX ---
+        // Before joining the new user's room, leave all other personal rooms
+        // to prevent receiving calls meant for a previous user of this device/socket.
+        const currentRooms = Array.from(socket.rooms);
+        currentRooms.forEach(room => {
+            if (room !== socket.id && room !== userId) {
+                socket.leave(room);
+                console.log(`[Socket] Device left old room: ${room}`);
+            }
+        });
+
         socket.join(userId);
         logNotif("[Socket] User joined personal room: " + userId);
 
@@ -144,7 +155,12 @@ io.on("connection", (socket) => {
 
     socket.on("new message", async (newMessageReceived) => {
         let chat = newMessageReceived.chat;
-        if (!chat || !chat._id) return;
+        if (!chat || !chat._id) {
+            console.warn("[Socket] 'new message' received but chat or chat._id is missing:", newMessageReceived);
+            return;
+        }
+
+        console.log(`[Socket] New message from ${newMessageReceived.sender?._id} in chat ${chat._id}`);
 
         try {
             const Chat = require('./models/Chat');
@@ -154,13 +170,17 @@ io.on("connection", (socket) => {
             if (latestChat) {
                 chat = latestChat;
                 newMessageReceived.chat = latestChat;
+            } else {
+                console.warn("[Socket] Chat not found in DB for 'new message':", chat._id);
             }
         } catch (err) {
-            console.error("[Socket] Error fetching latest chat:", err);
+            console.error("[Socket] Error fetching latest chat for messaging:", err);
         }
 
         const chatIdStr = chat._id.toString();
-        const senderIdStr = newMessageReceived.sender._id.toString();
+        const senderIdStr = newMessageReceived.sender._id ? newMessageReceived.sender._id.toString() : newMessageReceived.sender.toString();
+
+        console.log(`[Socket] Processing ${chat.users?.length || 0} recipients for message ${newMessageReceived._id}`);
 
         const notificationPromises = chat.users.map(async (user) => {
             const userIdStr = user._id ? user._id.toString() : user.toString();
@@ -168,6 +188,8 @@ io.on("connection", (socket) => {
 
             const userSocketIds = onlineUsers.get(userIdStr);
             const isUserOnline = userSocketIds && userSocketIds.size > 0;
+
+            console.log(`[Socket] Recipient ${userIdStr} online status: ${!!isUserOnline} (Sockets: ${userSocketIds?.size || 0})`);
 
             // A user is "in chat" if AT LEAST ONE of their active sockets is in the chat room
             const socketsInRoom = io.sockets.adapter.rooms.get(chatIdStr);
@@ -181,6 +203,7 @@ io.on("connection", (socket) => {
             const personalRoomSize = personalRoom ? personalRoom.size : 0;
 
             if (isUserInChat) {
+                console.log(`[Socket] Recipient ${userIdStr} is IN CHAT ${chatIdStr}. Marking as read.`);
                 try {
                     const updateObj = {};
                     if (chat.isGroupChat) {
@@ -196,16 +219,17 @@ io.on("connection", (socket) => {
 
                     const senderSocketId = onlineUsers.get(senderIdStr);
                     if (senderSocketId) {
-                        io.to(senderSocketId).emit("message-status-updated", {
+                        io.to(senderIdStr).emit("message-status-updated", {
                             messageId: newMessageReceived._id.toString(),
                             status: "read",
                             userId: userIdStr
                         });
                     }
                 } catch (error) {
-                    console.error("[Socket] Error updating status:", error);
+                    console.error("[Socket] Error updating status to read:", error);
                 }
             } else {
+                console.log(`[Socket] Recipient ${userIdStr} NOT in chat room. Checking delivery/push.`);
                 // Not in chat room, check if push should be sent
                 logNotif(`[Notif-Logic] -- Proceeding to Push logic...`);
                 if (isUserOnline) {
@@ -220,7 +244,7 @@ io.on("connection", (socket) => {
 
                         const senderSocketId = onlineUsers.get(senderIdStr);
                         if (senderSocketId) {
-                            io.to(senderSocketId).emit("message-status-updated", {
+                            io.to(senderIdStr).emit("message-status-updated", {
                                 messageId: newMessageReceived._id.toString(),
                                 status: "delivered",
                                 userId: userIdStr
@@ -245,7 +269,8 @@ io.on("connection", (socket) => {
                         const User = require('./models/User');
                         const { sendPushNotification } = require('./controllers/notificationControllers');
                         const recipient = await User.findById(userIdStr);
-                        if (recipient && recipient.notificationsMuted) {
+                        if (recipient && !recipient.notificationsMuted && recipient.pushTokens?.length > 0) {
+                            console.log(`[Socket] Sending push to ${userIdStr}`);
                             logNotif(`[Push] Skipping notification for ${userIdStr} - Global Mute is ON`);
                             return;
                         }
@@ -270,12 +295,13 @@ io.on("connection", (socket) => {
                             );
                         }
                     } catch (error) {
-                        console.error("[Push] Error:", error);
+                        console.error("[Socket] Push notification failed:", error);
                     }
                 }
             }
 
             if (isUserOnline) {
+                console.log(`[Socket] Emitting 'message received' to user room: ${userIdStr}`);
                 io.to(userIdStr).emit("message received", newMessageReceived);
                 logNotif(`[Notif-Logic] -- Emitted 'message received' to user room: ${userIdStr}`);
             }
@@ -374,6 +400,7 @@ io.on("connection", (socket) => {
         const onlineSessions = recipientRooms ? recipientRooms.size : 0;
         logNotif(`[Socket] Sending 'incoming-call' to user ${to} (${onlineSessions} active sessions)`);
         io.to(to).emit("incoming-call", {
+            to, // Include recipient ID for client-side verification
             from,
             roomName,
             isVideoCall,

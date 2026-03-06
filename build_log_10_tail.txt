@@ -1,0 +1,100 @@
+﻿> Task :expo-image-picker:writeDebugAarMetadata
+> Task :expo-keep-awake:preBuild UP-TO-DATE
+> Task :expo-keep-awake:preDebugBuild UP-TO-DATE
+> Task :expo-json-utils:writeDebugAarMetadata
+> Task :expo-linking:preBuild UP-TO-DATE
+> Task :expo-keep-awake:writeDebugAarMetadata
+> Task :expo-linking:preDebugBuild UP-TO-DATE
+> Task :expo-manifests:preBuild UP-TO-DATE
+> Task :expo-manifests:preDebugBuild UP-TO-DATE
+> Task :expo-linking:writeDebugAarMetadata
+> Task :expo-modules-core:preBuild UP-TO-DATE
+> Task :expo-modules-core:preDebugBuild UP-TO-DATE
+> Task :expo-manifests:writeDebugAarMetadata
+> Task :expo-notifications:preBuild UP-TO-DATE
+> Task :expo-notifications:preDebugBuild UP-TO-DATE
+> Task :expo-modules-core:writeDebugAarMetadata
+> Task :expo-screen-orientation:preBuild UP-TO-DATE
+> Task :expo-screen-orientation:preDebugBuild UP-TO-DATE
+> Task :expo-notifications:writeDebugAarMetadata
+> Task :expo-screen-orientation:writeDebugAarMetadata
+> Task :expo-sharing:preBuild UP-TO-DATE
+> Task :expo-sharing:preDebugBuild UP-TO-DATE
+> Task :expo-splash-screen:preBuild UP-TO-DATE
+> Task :expo-splash-screen:preDebugBuild UP-TO-DATE
+> Task :expo-sharing:writeDebugAarMetadata
+> Task :expo-system-ui:preBuild UP-TO-DATE
+> Task :expo-system-ui:preDebugBuild UP-TO-DATE
+> Task :expo-splash-screen:writeDebugAarMetadata
+> Task :expo-updates-interface:preBuild UP-TO-DATE
+> Task :expo-system-ui:writeDebugAarMetadata
+> Task :expo-updates-interface:preDebugBuild UP-TO-DATE
+> Task :expo-web-browser:preBuild UP-TO-DATE
+> Task :expo-updates-interface:writeDebugAarMetadata
+> Task :expo-web-browser:preDebugBuild UP-TO-DATE
+> Task :livekit_react-native:preBuild UP-TO-DATE
+> Task :livekit_react-native:preDebugBuild UP-TO-DATE
+> Task :expo-web-browser:writeDebugAarMetadata
+> Task :livekit_react-native-webrtc:preBuild UP-TO-DATE
+> Task :livekit_react-native-webrtc:preDebugBuild UP-TO-DATE
+> Task :react-native-async-storage_async-storage:preBuild UP-TO-DATE
+> Task :react-native-async-storage_async-storage:preDebugBuild UP-TO-DATE
+> Task :livekit_react-native-webrtc:writeDebugAarMetadata
+> Task :livekit_react-native:writeDebugAarMetadata
+> Task :react-native-encrypted-storage:preBuild UP-TO-DATE
+> Task :react-native-encrypted-storage:preDebugBuild UP-TO-DATE
+> Task :react-native-async-storage_async-storage:writeDebugAarMetadata
+> Task :react-native-encrypted-storage:writeDebugAarMetadata
+> Task :react-native-firebase_app:preBuild UP-TO-DATE
+> Task :react-native-firebase_app:preDebugBuild UP-TO-DATE
+> Task :react-native-firebase_auth:preBuild UP-TO-DATE
+> Task :react-native-firebase_app:writeDebugAarMetadata
+> Task :react-native-firebase_auth:preDebugBuild UP-TO-DATE
+> Task :react-native-gesture-handler:preBuild UP-TO-DATE
+> Task :react-native-gesture-handler:preDebugBuild UP-TO-DATE
+> Task :react-native-firebase_auth:writeDebugAarMetadata
+> Task :react-native-keep-awake:preBuild UP-TO-DATE
+> Task :react-native-gesture-handler:writeDebugAarMetadata
+> Task :react-native-keep-awake:preDebugBuild UP-TO-DATE
+> Task :react-native-keep-awake:writeDebugAarMetadata
+> Task :react-native-reanimated:assertMinimalReactNativeVersionTask FAILED
+
+FAILURE: Build failed 
+with an exception.
+
+* Where:
+Build file 'D:\chat app\no
+de_modules\react-native-re
+animated\android\build.gra
+dle' line: 288
+
+* What went wrong:
+Execution failed for task 
+':react-native-reanimated:
+assertMinimalReactNativeVe
+rsionTask'.
+> [Reanimated] React 
+Native 0.76.1 version is 
+not compatible with 
+Reanimated 4.1.6
+
+* Try:
+> Run with --stacktrace 
+option to get the stack 
+trace.
+> Run with --info or 
+--debug option to get 
+more log output.
+> Run with --scan to get 
+full insights.
+> Get more help at 
+https://help.gradle.org.
+
+Deprecated Gradle features were used in this build, making it incompatible with Gradle 9.0.
+
+You can use '--warning-mode all' to show the individual deprecation warnings and determine if they come from your own scripts or plugins.
+
+For more on this, please refer to https://docs.gradle.org/8.10.2/userguide/command_line_interface.html#sec:command_line_warnings in the Gradle documentation.
+
+BUILD FAILED in 52s
+65 actionable tasks: 56 executed, 9 up-to-date

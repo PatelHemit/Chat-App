@@ -1,0 +1,50 @@
+﻿[2026-02-27T12:27:57.854Z] [Socket] User joined personal room: 6996adb45e25a10f4831078d
+[2026-02-27T12:27:57.855Z] [Socket] User Online: 6996adb45e25a10f4831078d (Sessions: 1)
+[2026-02-27T12:27:58.123Z] [PushToken] Register request from user 6996adb45e25a10f4831078d: ExponentPushToken[lpMOblJXhbeNRidrocjBwH]
+[2026-02-27T12:27:58.154Z] [PushToken] Token already exists for user Shilpa ben
+[2026-02-27T12:27:58.436Z] [FCMToken] Register request from user 6996adb45e25a10f4831078d: e-890CjYRICVWMODeEjy...
+[2026-02-27T12:27:58.462Z] [FCMToken] FCM Token already exists for Shilpa ben
+[2026-02-27T12:27:58.992Z] [Socket] User joined personal room: 6996adb45e25a10f4831078d
+[2026-02-27T12:27:58.992Z] [Socket] User Online: 6996adb45e25a10f4831078d (Sessions: 2)
+[2026-02-27T12:28:50.987Z] [Socket] User joined personal room: 69774857485a231537194d64
+[2026-02-27T12:28:50.989Z] [Socket] User Online: 69774857485a231537194d64 (Sessions: 3)
+[2026-02-27T12:28:51.692Z] [PushToken] Register request from user 69774857485a231537194d64: ExponentPushToken[MOOPtwINrezUhpSZMSBtjh]
+[2026-02-27T12:28:51.739Z] [PushToken] Token already exists for user Hemit
+[2026-02-27T12:28:51.888Z] [FCMToken] Register request from user 69774857485a231537194d64: fI7ErA7mTbO32GDx92y1...
+[2026-02-27T12:28:51.922Z] [FCMToken] FCM Token already exists for Hemit
+[2026-02-27T12:28:52.271Z] [Socket] User joined personal room: 69774857485a231537194d64
+[2026-02-27T12:28:52.273Z] [Socket] User Online: 69774857485a231537194d64 (Sessions: 4)
+[2026-02-27T12:29:26.509Z] [Socket] User joined personal room: 6996adb45e25a10f4831078d
+[2026-02-27T12:29:26.510Z] [Socket] User Online: 6996adb45e25a10f4831078d (Sessions: 3)
+[2026-02-27T12:29:35.028Z] [Socket] User joined personal room: 69774857485a231537194d64
+[2026-02-27T12:29:35.029Z] [Socket] User Online: 69774857485a231537194d64 (Sessions: 5)
+[2026-02-27T12:29:37.100Z] [Socket] Call from Hemit to 6996adb45e25a10f4831078d (isVideo: false)
+[2026-02-27T12:29:37.125Z] [Socket] Sending 'incoming-call' to user 6996adb45e25a10f4831078d (3 active sessions)
+[2026-02-27T12:29:37.143Z] [PushNotif] Processing 6 Expo labels for Shilpa ben
+[2026-02-27T12:29:37.538Z] [PushNotif] Ticket for ExponentPushToken[-9yQIdM...: [{"status":"ok","id":"019c9f13-723d-753e-a3ab-c2f039530c52"}]
+[2026-02-27T12:29:37.839Z] [PushNotif] Ticket for ExponentPushToken[V4mvzuC...: [{"status":"error","message":"Unable to retrieve the FCM server key for the recipient's app. Make sure you have provided a server key as directed by the Expo FCM documentation.","details":{"error":"InvalidCredentials","fault":"developer"}}]
+[2026-02-27T12:29:38.149Z] [PushNotif] Ticket for ExponentPushToken[PG53ncO...: [{"status":"error","message":"Unable to retrieve the FCM server key for the recipient's app. Make sure you have provided a server key as directed by the Expo FCM documentation.","details":{"error":"InvalidCredentials","fault":"developer"}}]
+[2026-02-27T12:29:38.448Z] [PushNotif] Ticket for ExponentPushToken[msfsJtO...: [{"status":"error","message":"Unable to retrieve the FCM server key for the recipient's app. Make sure you have provided a server key as directed by the Expo FCM documentation.","details":{"error":"InvalidCredentials","fault":"developer"}}]
+[2026-02-27T12:29:38.804Z] [PushNotif] Ticket for ExponentPushToken[GqhB3JC...: [{"status":"error","message":"Unable to retrieve the FCM server key for the recipient's app. Make sure you have provided a server key as directed by the Expo FCM documentation.","details":{"error":"InvalidCredentials","fault":"developer"}}]
+[2026-02-27T12:29:39.109Z] [PushNotif] Ticket for ExponentPushToken[lpMOblJ...: [{"status":"error","message":"Unable to retrieve the FCM server key for the recipient's app. Make sure you have provided a server key as directed by the Expo FCM documentation.","details":{"error":"InvalidCredentials","fault":"developer"}}]
+[2026-02-27T12:29:39.126Z] [FCM] Sending call data message to Shilpa ben (4 FCM tokens)
+[2026-02-27T12:29:39.329Z] [FCM] Error sending to token dHXo-sJYQ6...: Invalid data payload key: from
+[2026-02-27T12:29:39.874Z] [FCM] Error sending to token emjEBlafTA...: Invalid data payload key: from
+[2026-02-27T12:29:40.122Z] [FCM] Error sending to token folskbo3SV...: Invalid data payload key: from
+[2026-02-27T12:29:40.262Z] [FCM] Error sending to token e-890CjYRI...: Invalid data payload key: from
+[2026-02-27T12:31:48.883Z] [Socket] User joined personal room: 69774857485a231537194d64
+[2026-02-27T12:31:48.884Z] [Socket] User Online: 69774857485a231537194d64 (Sessions: 5)
+[2026-02-27T12:31:50.407Z] [Socket] Call from Hemit to 6996adb45e25a10f4831078d (isVideo: true)
+[2026-02-27T12:31:50.430Z] [Socket] Sending 'incoming-call' to user 6996adb45e25a10f4831078d (2 active sessions)
+[2026-02-27T12:31:50.453Z] [PushNotif] Processing 6 Expo labels for Shilpa ben
+[2026-02-27T12:31:50.824Z] [PushNotif] Ticket for ExponentPushToken[-9yQIdM...: [{"status":"ok","id":"019c9f15-7af8-738c-991f-bc40b0fd6ca6"}]
+[2026-02-27T12:31:51.116Z] [PushNotif] Ticket for ExponentPushToken[V4mvzuC...: [{"status":"error","message":"Unable to retrieve the FCM server key for the recipient's app. Make sure you have provided a server key as directed by the Expo FCM documentation.","details":{"error":"InvalidCredentials","fault":"developer"}}]
+[2026-02-27T12:31:51.452Z] [PushNotif] Ticket for ExponentPushToken[PG53ncO...: [{"status":"error","message":"Unable to retrieve the FCM server key for the recipient's app. Make sure you have provided a server key as directed by the Expo FCM documentation.","details":{"error":"InvalidCredentials","fault":"developer"}}]
+[2026-02-27T12:31:51.780Z] [PushNotif] Ticket for ExponentPushToken[msfsJtO...: [{"status":"error","message":"Unable to retrieve the FCM server key for the recipient's app. Make sure you have provided a server key as directed by the Expo FCM documentation.","details":{"error":"InvalidCredentials","fault":"developer"}}]
+[2026-02-27T12:31:52.088Z] [PushNotif] Ticket for ExponentPushToken[GqhB3JC...: [{"status":"error","message":"Unable to retrieve the FCM server key for the recipient's app. Make sure you have provided a server key as directed by the Expo FCM documentation.","details":{"error":"InvalidCredentials","fault":"developer"}}]
+[2026-02-27T12:31:52.389Z] [PushNotif] Ticket for ExponentPushToken[lpMOblJ...: [{"status":"error","message":"Unable to retrieve the FCM server key for the recipient's app. Make sure you have provided a server key as directed by the Expo FCM documentation.","details":{"error":"InvalidCredentials","fault":"developer"}}]
+[2026-02-27T12:31:52.422Z] [FCM] Sending call data message to Shilpa ben (4 FCM tokens)
+[2026-02-27T12:31:52.649Z] [FCM] Error sending to token dHXo-sJYQ6...: Invalid data payload key: from
+[2026-02-27T12:31:52.777Z] [FCM] Error sending to token emjEBlafTA...: Invalid data payload key: from
+[2026-02-27T12:31:52.884Z] [FCM] Error sending to token folskbo3SV...: Invalid data payload key: from
+[2026-02-27T12:31:53.144Z] [FCM] Error sending to token e-890CjYRI...: Invalid data payload key: from

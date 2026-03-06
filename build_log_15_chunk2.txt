@@ -1,0 +1,200 @@
+﻿> Task :expo-dev-launcher-gradle-plugin:checkKotlinGradlePluginConfigurationErrors SKIPPED
+Skipping task ':expo-dev-launcher-gradle-plugin:checkKotlinGradlePluginConfigurationErrors' as task onlyIf 'errorDiagnostics are present' is false.
+Resolve mutations for :expo-dev-launcher-gradle-plugin:pluginDescriptors (Thread[Execution worker Thread 8,5,main]) started.
+:expo-dev-launcher-gradle-plugin:pluginDescriptors (Thread[Execution worker Thread 8,5,main]) started.
+:gradle-plugin:react-native-gradle-plugin:compileKotlin (Thread[Execution worker Thread 4,5,main]) started.
+
+> Task :expo-module-gradle-plugin:checkKotlinGradlePluginConfigurationErrors SKIPPED
+Skipping task ':expo-module-gradle-plugin:checkKotlinGradlePluginConfigurationErrors' as task onlyIf 'errorDiagnostics are present' is false.
+
+> Task :expo-dev-launcher-gradle-plugin:pluginDescriptors UP-TO-DATE
+Caching disabled for task ':expo-dev-launcher-gradle-plugin:pluginDescriptors' because:
+  Build cache is disabled
+  Not worth caching
+Skipping task ':expo-dev-launcher-gradle-plugin:pluginDescriptors' as it is up-to-date.
+Resolve mutations for :expo-dev-launcher-gradle-plugin:processResources (Thread[Execution worker Thread 8,5,main]) started.
+:expo-dev-launcher-gradle-plugin:processResources (Thread[Execution worker Thread 8,5,main]) started.
+
+> Task :expo-module-gradle-plugin:pluginDescriptors UP-TO-DATE
+Caching disabled for task ':expo-module-gradle-plugin:pluginDescriptors' because:
+  Build cache is disabled
+  Not worth caching
+Skipping task ':expo-module-gradle-plugin:pluginDescriptors' as it is up-to-date.
+
+> Task :expo-dev-launcher-gradle-plugin:processResources UP-TO-DATE
+Caching disabled for task ':expo-dev-launcher-gradle-plugin:processResources' because:
+  Build cache is disabled
+  Not worth caching
+Skipping task ':expo-dev-launcher-gradle-plugin:processResources' as it is up-to-date.
+
+> Task :expo-module-gradle-plugin:processResources UP-TO-DATE
+Caching disabled for task ':expo-module-gradle-plugin:processResources' because:
+  Build cache is disabled
+  Not worth caching
+Skipping task ':expo-module-gradle-plugin:processResources' as it is up-to-date.
+
+> Task :gradle-plugin:react-native-gradle-plugin:compileKotlin UP-TO-DATE
+Caching disabled for task ':gradle-plugin:react-native-gradle-plugin:compileKotlin' because:
+  Build cache is disabled
+Skipping task ':gradle-plugin:react-native-gradle-plugin:compileKotlin' as it is up-to-date.
+Resolve mutations for :gradle-plugin:react-native-gradle-plugin:compileJava (Thread[Execution worker Thread 4,5,main]) started.
+other build task :gradle-plugin:react-native-gradle-plugin:compileKotlin (Thread[Execution worker Thread 2,5,main]) started.
+other build task :gradle-plugin:react-native-gradle-plugin:compileKotlin (Thread[Execution worker Thread 2,5,main]) started.
+:gradle-plugin:react-native-gradle-plugin:compileJava (Thread[Execution worker Thread 4,5,main]) started.
+
+> Task :gradle-plugin:react-native-gradle-plugin:compileJava NO-SOURCE
+Skipping task ':gradle-plugin:react-native-gradle-plugin:compileJava' as it has no source files and no previous output files.
+Resolve mutations for :gradle-plugin:react-native-gradle-plugin:pluginDescriptors (Thread[Execution worker Thread 4,5,main]) started.
+other build task :gradle-plugin:react-native-gradle-plugin:compileJava (Thread[Execution worker Thread 6,5,main]) started.
+other build task :gradle-plugin:react-native-gradle-plugin:compileJava (Thread[Execution worker Thread 2,5,main]) started.
+:gradle-plugin:react-native-gradle-plugin:pluginDescriptors (Thread[Execution worker Thread 4,5,main]) started.
+
+> Task :gradle-plugin:react-native-gradle-plugin:pluginDescriptors UP-TO-DATE
+Caching disabled for task ':gradle-plugin:react-native-gradle-plugin:pluginDescriptors' because:
+  Build cache is disabled
+  Not worth caching
+Skipping task ':gradle-plugin:react-native-gradle-plugin:pluginDescriptors' as it is up-to-date.
+Resolve mutations for :gradle-plugin:react-native-gradle-plugin:processResources (Thread[Execution worker Thread 4,5,main]) started.
+:gradle-plugin:react-native-gradle-plugin:processResources (Thread[Execution worker Thread 4,5,main]) started.
+
+> Task :gradle-plugin:react-native-gradle-plugin:processResources UP-TO-DATE
+Caching disabled for task ':gradle-plugin:react-native-gradle-plugin:processResources' because:
+  Build cache is disabled
+  Not worth caching
+Skipping task ':gradle-plugin:react-native-gradle-plugin:processResources' as it is up-to-date.
+Resolve mutations for :gradle-plugin:react-native-gradle-plugin:classes (Thread[Execution worker Thread 4,5,main]) started.
+:gradle-plugin:react-native-gradle-plugin:classes (Thread[Execution worker Thread 4,5,main]) started.
+
+> Task :gradle-plugin:react-native-gradle-plugin:classes UP-TO-DATE
+Skipping task ':gradle-plugin:react-native-gradle-plugin:classes' as it has no actions.
+Resolve mutations for :gradle-plugin:react-native-gradle-plugin:jar (Thread[Execution worker Thread 4,5,main]) started.
+:gradle-plugin:react-native-gradle-plugin:jar (Thread[Execution worker Thread 4,5,main]) started.
+
+> Task :gradle-plugin:react-native-gradle-plugin:jar UP-TO-DATE
+Caching disabled for task ':gradle-plugin:react-native-gradle-plugin:jar' because:
+  Build cache is disabled
+  Not worth caching
+Skipping task ':gradle-plugin:react-native-gradle-plugin:jar' as it is up-to-date.
+work action resolve main (project :gradle-plugin:react-native-gradle-plugin) (Thread[Execution worker Thread 4,5,main]) started.
+work action resolve main (project :gradle-plugin:react-native-gradle-plugin) (Thread[Execution worker Thread 4,5,main]) started.
+Resolve mutations for :expo-module-gradle-plugin:compileKotlin (Thread[Execution worker Thread 4,5,main]) started.
+work action resolve main (project :gradle-plugin:react-native-gradle-plugin) (Thread[Execution worker Thread 8,5,main]) started.
+work action resolve main (project :gradle-plugin:react-native-gradle-plugin) (Thread[Execution worker Thread 8,5,main]) started.
+Resolve mutations for :expo-dev-launcher-gradle-plugin:compileKotlin (Thread[Execution worker Thread 8,5,main]) started.
+:expo-dev-launcher-gradle-plugin:compileKotlin (Thread[Execution worker Thread 8,5,main]) started.
+:expo-module-gradle-plugin:compileKotlin (Thread[Execution worker Thread 4,5,main]) started.
+
+> Task :expo-dev-launcher-gradle-plugin:compileKotlin UP-TO-DATE
+Caching disabled for task ':expo-dev-launcher-gradle-plugin:compileKotlin' because:
+  Build cache is disabled
+Skipping task ':expo-dev-launcher-gradle-plugin:compileKotlin' as it is up-to-date.
+Resolve mutations for :expo-dev-launcher-gradle-plugin:compileJava (Thread[Execution worker Thread 8,5,main]) started.
+:expo-dev-launcher-gradle-plugin:compileJava (Thread[Execution worker Thread 8,5,main]) started.
+
+> Task :expo-dev-launcher-gradle-plugin:compileJava NO-SOURCE
+Skipping task ':expo-dev-launcher-gradle-plugin:compileJava' as it has no source files and no previous output files.
+Resolve mutations for :expo-dev-launcher-gradle-plugin:classes (Thread[Execution worker Thread 8,5,main]) started.
+:expo-dev-launcher-gradle-plugin:classes (Thread[Execution worker Thread 8,5,main]) started.
+
+> Task :expo-dev-launcher-gradle-plugin:classes UP-TO-DATE
+Skipping task ':expo-dev-launcher-gradle-plugin:classes' as it has no actions.
+Resolve mutations for :expo-dev-launcher-gradle-plugin:jar (Thread[Execution worker Thread 8,5,main]) started.
+:expo-dev-launcher-gradle-plugin:jar (Thread[Execution worker Thread 8,5,main]) started.
+
+> Task :expo-module-gradle-plugin:compileKotlin UP-TO-DATE
+Caching disabled for task ':expo-module-gradle-plugin:compileKotlin' because:
+  Build cache is disabled
+Skipping task ':expo-module-gradle-plugin:compileKotlin' as it is up-to-date.
+Resolve mutations for :expo-module-gradle-plugin:compileJava (Thread[Execution worker Thread 4,5,main]) started.
+:expo-module-gradle-plugin:compileJava (Thread[Execution worker Thread 4,5,main]) started.
+
+> Task :expo-module-gradle-plugin:compileJava NO-SOURCE
+Skipping task ':expo-module-gradle-plugin:compileJava' as it has no source files and no previous output files.
+Resolve mutations for :expo-module-gradle-plugin:classes (Thread[Execution worker Thread 4,5,main]) started.
+:expo-module-gradle-plugin:classes (Thread[Execution worker Thread 4,5,main]) started.
+
+> Task :expo-module-gradle-plugin:classes UP-TO-DATE
+Skipping task ':expo-module-gradle-plugin:classes' as it has no actions.
+Resolve mutations for :expo-module-gradle-plugin:jar (Thread[Execution worker Thread 4,5,main]) started.
+:expo-module-gradle-plugin:jar (Thread[Execution worker Thread 9,5,main]) started.
+
+> Task :expo-module-gradle-plugin:jar UP-TO-DATE
+Caching disabled for task ':expo-module-gradle-plugin:jar' because:
+  Build cache is disabled
+  Not worth caching
+Skipping task ':expo-module-gradle-plugin:jar' as it is up-to-date.
+
+> Task :expo-dev-launcher-gradle-plugin:jar UP-TO-DATE
+Caching disabled for task ':expo-dev-launcher-gradle-plugin:jar' because:
+  Build cache is disabled
+  Not worth caching
+Skipping task ':expo-dev-launcher-gradle-plugin:jar' as it is up-to-date.
+
+> Configure project :
+Evaluating root project 'chat-app' using build file 'D:\chat app\android\build.gradle'.
+Found project 'project :expo-dev-launcher-gradle-plugin' as substitute for module 'expo.modules:expo-dev-launcher-gradle-plugin'.
+Found project 'project :expo-module-gradle-plugin' as substitute for module 'expo.modules:expo-module-gradle-plugin'.
+Found project 'project :gradle-plugin:react-native-gradle-plugin' as substitute for module 'com.facebook.react:react-native-gradle-plugin'.
+Found project 'project :gradle-plugin:react-native-gradle-plugin' as substitute for module 'com.facebook.react:react-native-gradle-plugin'.
+Found project 'project :gradle-plugin:react-native-gradle-plugin' as substitute for module 'com.facebook.react:react-native-gradle-plugin'.
+Ignoring listeners of task graph ready event, as this build (:gradle-plugin) has already executed work.
+:expo-module-gradle-plugin:checkKotlinGradlePluginConfigurationErrors (Thread[included builds Thread 2,5,main]) started.
+Resolve mutations for :expo-module-gradle-plugin:pluginDescriptors (Thread[included builds Thread 2,5,main]) started.
+:expo-module-gradle-plugin:pluginDescriptors (Thread[included builds Thread 2,5,main]) started.
+Resolve mutations for :expo-module-gradle-plugin:processResources (Thread[included builds Thread 2,5,main]) started.
+:expo-module-gradle-plugin:processResources (Thread[included builds Thread 2,5,main]) started.
+
+> Configure project :app
+Evaluating project ':app' using build file 'D:\chat app\android\app\build.gradle'.
+Using default execution profile
+Build c3dfa05d-897f-415e-a451-e20cc06b735d is started
+Using Kotlin Gradle Plugin gradle85 variant
+android.packagingOptions.pickFirsts += [**/libc++_shared.so, **/libjingle_peerconnection_so.so] (2)
+ ??  [33mApplying gradle plugin[0m '[32mexpo-dev-launcher-gradle-plugin[0m' (expo-dev-launcher@6.0.20)
+C/C++: android.ndkVersion from module build.gradle is [26.1.10909125]
+C/C++: android.ndkPath from module build.gradle is not set
+C/C++: ndk.dir in local.properties is not set
+C/C++: Not considering ANDROID_NDK_HOME because support was removed after deprecation period.
+C/C++: sdkFolder is C:\Users\hemit\AppData\Local\Android\Sdk
+C/C++: android.ndkVersion from module build.gradle is [26.1.10909125]
+C/C++: android.ndkPath from module build.gradle is not set
+C/C++: ndk.dir in local.properties is not set
+C/C++: Not considering ANDROID_NDK_HOME because support was removed after deprecation period.
+C/C++: sdkFolder is C:\Users\hemit\AppData\Local\Android\Sdk
+C/C++: android.ndkVersion from module build.gradle is [26.1.10909125]
+C/C++: android.ndkPath from module build.gradle is not set
+C/C++: ndk.dir in local.properties is not set
+C/C++: Not considering ANDROID_NDK_HOME because support was removed after deprecation period.
+C/C++: sdkFolder is C:\Users\hemit\AppData\Local\Android\Sdk
+C/C++: android.ndkVersion from module build.gradle is [26.1.10909125]
+C/C++: android.ndkPath from module build.gradle is not set
+C/C++: ndk.dir in local.properties is not set
+C/C++: Not considering ANDROID_NDK_HOME because support was removed after deprecation period.
+C/C++: sdkFolder is C:\Users\hemit\AppData\Local\Android\Sdk
+C/C++: android.ndkVersion from module build.gradle is [26.1.10909125]
+C/C++: android.ndkPath from module build.gradle is not set
+C/C++: ndk.dir in local.properties is not set
+C/C++: Not considering ANDROID_NDK_HOME because support was removed after deprecation period.
+C/C++: sdkFolder is C:\Users\hemit\AppData\Local\Android\Sdk
+C/C++: android.ndkVersion from module build.gradle is [26.1.10909125]
+C/C++: android.ndkPath from module build.gradle is not set
+C/C++: ndk.dir in local.properties is not set
+C/C++: Not considering ANDROID_NDK_HOME because support was removed after deprecation period.
+C/C++: sdkFolder is C:\Users\hemit\AppData\Local\Android\Sdk
+C/C++: android.ndkVersion from module build.gradle is [26.1.10909125]
+C/C++: android.ndkPath from module build.gradle is not set
+C/C++: ndk.dir in local.properties is not set
+C/C++: Not considering ANDROID_NDK_HOME because support was removed after deprecation period.
+C/C++: sdkFolder is C:\Users\hemit\AppData\Local\Android\Sdk
+C/C++: android.ndkVersion from module build.gradle is [26.1.10909125]
+C/C++: android.ndkPath from module build.gradle is not set
+C/C++: ndk.dir in local.properties is not set
+C/C++: Not considering ANDROID_NDK_HOME because support was removed after deprecation period.
+C/C++: sdkFolder is C:\Users\hemit\AppData\Local\Android\Sdk
+C/C++: android.ndkVersion from module build.gradle is [26.1.10909125]
+C/C++: android.ndkPath from module build.gradle is not set
+C/C++: ndk.dir in local.properties is not set
+C/C++: Not considering ANDROID_NDK_HOME because support was removed after deprecation period.
+C/C++: sdkFolder is C:\Users\hemit\AppData\Local\Android\Sdk
+C/C++: android.ndkVersion from module build.gradle is [26.1.10909125]
+C/C++: android.ndkPath from module build.gradle is not set

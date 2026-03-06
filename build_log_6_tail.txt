@@ -1,0 +1,50 @@
+﻿  - [32mexpo-dev-client[0m (6.0.20)
+  - [32mexpo-dev-launcher[0m (6.0.20)
+  - [32mexpo-dev-menu[0m (7.0.18)
+  - [32mexpo-device[0m (8.0.10)
+  - [32mexpo-document-picker[0m (14.0.8)
+  - [32mexpo-file-system[0m (19.0.21)
+  - [32mexpo-font[0m (14.0.11)
+  - [32mexpo-haptics[0m (15.0.8)
+  - [32mexpo-image[0m (3.0.11)
+  - [32mexpo-image-loader[0m (6.0.0)
+  - [32mexpo-image-picker[0m (17.0.10)
+  - [32mexpo-json-utils[0m (0.15.0)
+  - [32mexpo-keep-awake[0m (15.0.8)
+  - [32mexpo-linking[0m (8.0.11)
+  - [32mexpo-manifests[0m (1.0.10)
+  - [32mexpo-modules-core[0m (3.0.29)
+  - [32mexpo-notifications[0m (0.32.16)
+  - [32mexpo-screen-orientation[0m (9.0.8)
+  - [32mexpo-sharing[0m (14.0.8)
+  - [32mexpo-splash-screen[0m (31.0.13)
+  - [32mexpo-system-ui[0m (6.0.9)
+  - [32mexpo-web-browser[0m (15.0.10)
+
+
+> Configure project :react-native-firebase_app
+:react-native-firebase_app package.json found at D:\chat app\node_modules\@react-native-firebase\app\package.json
+:react-native-firebase_app:firebase.bom using default value: 34.8.0
+:react-native-firebase_app:play.play-services-auth using default value: 21.4.0
+:react-native-firebase_app package.json found at D:\chat app\node_modules\@react-native-firebase\app\package.json
+:react-native-firebase_app:version set from package.json: 23.8.6 (23,8,6 - 23008006)
+:react-native-firebase_app:android.compileSdk using custom value: 35
+:react-native-firebase_app:android.targetSdk using custom value: 34
+:react-native-firebase_app:android.minSdk using custom value: 24
+:react-native-firebase_app:reactNativeAndroidDir D:\chat app\node_modules\react-native\android
+
+> Configure project :react-native-firebase_auth
+:react-native-firebase_auth package.json found at D:\chat app\node_modules\@react-native-firebase\auth\package.json
+:react-native-firebase_app package.json found at D:\chat app\node_modules\@react-native-firebase\app\package.json
+:react-native-firebase_auth:firebase.bom using default value: 34.8.0
+:react-native-firebase_auth package.json found at D:\chat app\node_modules\@react-native-firebase\auth\package.json
+:react-native-firebase_auth:version set from package.json: 23.8.6 (23,8,6 - 23008006)
+:react-native-firebase_auth:android.compileSdk using custom value: 35
+:react-native-firebase_auth:android.targetSdk using custom value: 34
+:react-native-firebase_auth:android.minSdk using custom value: 24
+:react-native-firebase_auth:reactNativeAndroidDir D:\chat app\node_modules\react-native\android
+
+> Configure project :react-native-worklets-core
+Checking the license for package NDK (Side by side) 27.0.12077973 in C:\Users\hemit\AppData\Local\Android\Sdk\licenses
+License for package NDK (Side by side) 27.0.12077973 accepted.
+Preparing "Install NDK (Side by side) 27.0.12077973 v.27.0.12077973".
