@@ -1,5 +1,5 @@
 import { IconSymbol } from '@/components/ui/icon-symbol';
-import { API_BASE_URL } from '@/config/api';
+import { API_BASE_URL, getInternalUri } from '@/config/api';
 import { Colors } from '@/constants/theme';
 import { useCall } from '@/context/CallContext';
 import { useColorScheme } from '@/hooks/use-color-scheme';
@@ -297,10 +297,12 @@ export default function HomeScreen() {
                         return <IconSymbol name="person.2.fill" size={30} color="#fff" />;
                       }
                       const otherUser = item.users.find((u: any) => u._id !== currentUserId);
-                      return otherUser?.profilePic ? (
+                      const picUri = otherUser?.profilePic ? getInternalUri(otherUser.profilePic) : null;
+                      return picUri ? (
                         <RNImage
-                          source={{ uri: otherUser.profilePic }}
+                          source={{ uri: picUri }}
                           style={{ width: 50, height: 50, borderRadius: 25 }}
+                          resizeMode="cover"
                         />
                       ) : (
                         <IconSymbol name="person.fill" size={30} color="#fff" />
@@ -421,6 +423,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 16,
+    overflow: 'hidden',
   },
   chatInfo: {
     flex: 1,

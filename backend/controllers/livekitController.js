@@ -16,9 +16,11 @@ const generateLiveKitToken = asyncHandler(async (req, res) => {
     const apiSecret = process.env.LIVEKIT_API_SECRET;
     const wsUrl = process.env.LIVEKIT_URL;
 
+    console.log(`[LiveKit-Backend] Credentials Check: URL=${wsUrl ? 'SET' : 'MISSING'}, API_KEY=${apiKey ? 'SET' : 'MISSING'}, API_SECRET=${apiSecret ? 'SET' : 'MISSING'}`);
+
     if (!apiKey || !apiSecret || !wsUrl) {
         res.status(500);
-        throw new Error("Server misconfigured: LiveKit credentials missing");
+        throw new Error("Server misconfigured: LiveKit credentials missing. Please check Render Environment Variables.");
     }
 
     // Use unique identity if provided, otherwise fallback to name

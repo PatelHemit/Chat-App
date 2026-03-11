@@ -65,14 +65,15 @@ const styles = StyleSheet.create({
         paddingTop: Platform.OS === 'android' ? 5 : 4,
     },
     avatar: {
-        width: 36,
-        height: 36,
-        borderRadius: 18,
+        width: 40,
+        height: 40,
+        borderRadius: 20,
         backgroundColor: '#ccc',
         justifyContent: 'center',
         alignItems: 'center',
-        marginRight: 8,
-        marginLeft: -10,
+        marginRight: 10,
+        marginLeft: 0,
+        overflow: 'hidden',
     },
     headerName: {
         fontSize: 16,
@@ -486,6 +487,19 @@ export default function ChatScreen() {
                 if (currentChat.isGroupChat) {
                     setChatPic(currentChat.groupPic);
                     setChatName(currentChat.chatName);
+                } else {
+                    // For 1-on-1 chats, get the fresh profile pic of the other user
+                    const userInfoStr = await AsyncStorage.getItem("userInfo");
+                    if (userInfoStr) {
+                        const myInfo = JSON.parse(userInfoStr);
+                        const otherUser = currentChat.users?.find((u: any) => u._id !== myInfo._id);
+                        if (otherUser?.profilePic) {
+                            setChatPic(otherUser.profilePic);
+                        }
+                        if (otherUser?.name) {
+                            setChatName(otherUser.name);
+                        }
+                    }
                 }
 
                 // Mute status check
@@ -1503,7 +1517,7 @@ export default function ChatScreen() {
                                     _id: currentUserId,
                                     name: currentUserName || "User",
                                     profilePic: currentUserProfilePic
-                                }, true);
+                                }, true, chatName, chatPic);
                             }}>
                                 <IconSymbol name="video.fill" size={22} color={theme.headerTintColor} />
                             </TouchableOpacity>
@@ -1517,7 +1531,7 @@ export default function ChatScreen() {
                                     _id: currentUserId,
                                     name: currentUserName || "User",
                                     profilePic: currentUserProfilePic
-                                }, false);
+                                }, false, chatName, chatPic);
                             }}>
                                 <IconSymbol name="phone.fill" size={22} color={theme.headerTintColor} />
                             </TouchableOpacity>

@@ -398,7 +398,14 @@ io.on("connection", (socket) => {
         // 1. Emit socket event for real-time foreground handling
         const recipientRooms = io.sockets.adapter.rooms.get(to);
         const onlineSessions = recipientRooms ? recipientRooms.size : 0;
-        logNotif(`[Socket] Sending 'incoming-call' to user ${to} (${onlineSessions} active sessions)`);
+        const onlineSet = onlineUsers.get(to);
+        logNotif(`[Call-Diag] Sending 'incoming-call' to user ${to}`);
+        logNotif(`[Call-Diag] -- Recipient's socket room '${to}' has ${onlineSessions} sockets`);
+        logNotif(`[Call-Diag] -- onlineUsers map shows ${onlineSet?.size || 0} sessions for ${to}`);
+        logNotif(`[Call-Diag] -- Caller socket id: ${socket.id}`);
+        if (onlineSessions === 0) {
+            logNotif(`[Call-Diag] ⚠️ WARNING: Recipient ${to} is NOT in any socket room! Mobile may need to reconnect.`);
+        }
         io.to(to).emit("incoming-call", {
             to, // Include recipient ID for client-side verification
             from,

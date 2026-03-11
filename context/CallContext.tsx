@@ -10,6 +10,8 @@ interface CallContextType {
     activeRoomName: string | null;
     activeCallId: string | null;
     otherUserId: string | null;
+    otherUserName: string | null;
+    otherUserPic: string | null;
     userInfo: any;
     socket: any;
     setUserInfo: (info: any) => void;
@@ -21,8 +23,10 @@ interface CallContextType {
     setActiveRoomName: (name: string | null) => void;
     setActiveCallId: (id: string | null) => void;
     setOtherUserId: (id: string | null) => void;
+    setOtherUserName: (name: string | null) => void;
+    setOtherUserPic: (pic: string | null) => void;
     setSocket: (socket: any) => void;
-    initiateCall: (to: string, from: any, isVideo: boolean) => void;
+    initiateCall: (to: string, from: any, isVideo: boolean, toName?: string, toPic?: string) => void;
 }
 
 const CallContext = createContext<CallContextType | undefined>(undefined);
@@ -36,10 +40,12 @@ export const CallProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const [activeRoomName, setActiveRoomName] = useState<string | null>(null);
     const [activeCallId, setActiveCallId] = useState<string | null>(null);
     const [otherUserId, setOtherUserId] = useState<string | null>(null);
+    const [otherUserName, setOtherUserName] = useState<string | null>(null);
+    const [otherUserPic, setOtherUserPic] = useState<string | null>(null);
     const [userInfo, setUserInfo] = useState<any>(null);
     const [socket, setSocket] = useState<any>(null);
 
-    const initiateCall = (to: string, from: any, isVideo: boolean) => {
+    const initiateCall = (to: string, from: any, isVideo: boolean, toName?: string, toPic?: string) => {
         const roomName = `room-${to}-${Date.now()}`;
         console.log(`[CallContext] initiateCall START - to: ${to}, isVideo: ${isVideo}, room: ${roomName}`);
         console.log(`[CallContext] initiator info (from):`, JSON.stringify(from));
@@ -60,6 +66,8 @@ export const CallProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setIsVideoCall(isVideo);
         setActiveRoomName(roomName);
         setOtherUserId(to);
+        setOtherUserName(toName || null);
+        setOtherUserPic(toPic || null);
         setCallConnected(false); // Always reset — don't carry over state from a previous call
         setCallVisible(true); // Show "Calling..." UI immediately
 
@@ -90,6 +98,8 @@ export const CallProvider: React.FC<{ children: React.ReactNode }> = ({ children
             activeRoomName,
             activeCallId,
             otherUserId,
+            otherUserName,
+            otherUserPic,
             userInfo,
             socket,
             setUserInfo,
@@ -101,6 +111,8 @@ export const CallProvider: React.FC<{ children: React.ReactNode }> = ({ children
             setActiveRoomName,
             setActiveCallId,
             setOtherUserId,
+            setOtherUserName,
+            setOtherUserPic,
             setSocket,
             initiateCall
         }}>

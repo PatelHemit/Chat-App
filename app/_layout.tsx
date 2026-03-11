@@ -241,6 +241,7 @@ const GlobalCallHandlers = ({ isReady }: { isReady: boolean }) => {
     activeRoomName, setActiveRoomName,
     activeCallId, setActiveCallId,
     otherUserId, setOtherUserId,
+    setOtherUserName, setOtherUserPic,
     userInfo, setUserInfo,
     socket, setSocket
   } = useCall();
@@ -325,10 +326,15 @@ const GlobalCallHandlers = ({ isReady }: { isReady: boolean }) => {
 
       // Use the 'socket' from context to check if we already have a connection
       if (socket) {
-        // Skip setup only if connected and matching current token
-        // For simplicity, if socket exists, we consider it setup unless it's disconnected
         if (socket.connected) {
-          console.log("[Global-Call] Socket already connected, skipping setup.");
+          // Already connected - just re-emit setup to ensure we're in the right room
+          // (backend may have restarted and cleared our room membership)
+          const userInfoStr2 = await AsyncStorage.getItem('userInfo');
+          if (userInfoStr2) {
+            const parsedInfo = JSON.parse(userInfoStr2);
+            console.log("[Global-Call] Socket already connected, re-emitting setup for:", parsedInfo._id);
+            socket.emit('setup', parsedInfo);
+          }
           return;
         }
       }
@@ -368,6 +374,12 @@ const GlobalCallHandlers = ({ isReady }: { isReady: boolean }) => {
           socketInstance.emit('setup', parsedUserInfo);
         });
 
+        // Re-emit setup after EVERY reconnection (e.g. backend restart clears rooms)
+        socketInstance.on('reconnect', (attemptNumber: number) => {
+          console.log(`[Global-Call] Socket reconnected (attempt ${attemptNumber}), re-emitting setup`);
+          socketInstance.emit('setup', parsedUserInfo);
+        });
+
         socketInstance.on('connect_error', async (error: any) => {
           console.warn("[Global-Call] Socket connection error:", error.message || error);
         });
@@ -403,6 +415,8 @@ const GlobalCallHandlers = ({ isReady }: { isReady: boolean }) => {
           setActiveRoomName(roomName);
           setActiveCallId(callId);
           setOtherUserId(callerId || null);
+          setOtherUserName(callerInfo?.name || null);
+          setOtherUserPic(callerInfo?.profilePic || null);
         });
 
         socketInstance.on('call-initiated', ({ callId }: any) => setActiveCallId(callId));

@@ -35,6 +35,7 @@ export const LiveKitCallScreen = ({
     const [fetching, setFetching] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [readyToConnect, setReadyToConnect] = useState(false);
+    const [duration, setDuration] = useState(0);
     const { socket, otherUserId } = useCall();
     const fetchedForRoom = useRef<string | null>(null);
 
@@ -62,6 +63,27 @@ export const LiveKitCallScreen = ({
             setReadyToConnect(false);
         }
     }, [token, callConnected, visible]);
+
+    // Call Timer Logic
+    useEffect(() => {
+        let interval: any;
+        if (callConnected && readyToConnect) {
+            interval = setInterval(() => {
+                setDuration(prev => prev + 1);
+            }, 1000);
+        } else {
+            setDuration(0);
+        }
+        return () => {
+            if (interval) clearInterval(interval);
+        };
+    }, [callConnected, readyToConnect]);
+
+    const formatDuration = (seconds: number) => {
+        const mins = Math.floor(seconds / 60);
+        const secs = seconds % 60;
+        return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    };
 
     useEffect(() => {
         // Only fetch token and connect when the call is actually accepted
@@ -179,7 +201,7 @@ export const LiveKitCallScreen = ({
                                 data-lk-theme="default"
                                 style={{ height: '100%' }}
                             >
-                                <RoomStatusGuard isVideoCall={isVideoCall} onLeave={onClose} />
+                                <RoomStatusGuard isVideoCall={isVideoCall} onLeave={onClose} durationText={formatDuration(duration)} />
                             </LiveKitRoom>
                         </ErrorBoundary>
                     </div>
@@ -341,7 +363,7 @@ const OverlayError = ({ onClose }: { onClose: () => void }) => (
     </View>
 );
 
-const RoomStatusGuard = ({ isVideoCall, onLeave }: { isVideoCall: boolean; onLeave: () => void }) => {
+const RoomStatusGuard = ({ isVideoCall, onLeave, durationText }: { isVideoCall: boolean; onLeave: () => void; durationText: string }) => {
     const connectionState = useConnectionState();
 
     useEffect(() => {
@@ -378,10 +400,10 @@ const RoomStatusGuard = ({ isVideoCall, onLeave }: { isVideoCall: boolean; onLea
         );
     }
 
-    return <WebCallContent isVideoCall={isVideoCall} onLeave={onLeave} />;
+    return <WebCallContent isVideoCall={isVideoCall} onLeave={onLeave} durationText={durationText} />;
 };
 
-const WebCallContent = ({ isVideoCall, onLeave }: { isVideoCall: boolean; onLeave: () => void }) => {
+const WebCallContent = ({ isVideoCall, onLeave, durationText }: { isVideoCall: boolean; onLeave: () => void; durationText: string }) => {
     const tracks = useTracks([
         { source: Track.Source.Camera, withPlaceholder: true },
         { source: Track.Source.ScreenShare, withPlaceholder: false },
@@ -394,7 +416,7 @@ const WebCallContent = ({ isVideoCall, onLeave }: { isVideoCall: boolean; onLeav
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                     <div style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: '#4ade80', animation: 'opacity-pulse 1s infinite alternate' }}></div>
                     <span style={{ color: '#fff', fontSize: 14, fontWeight: 'bold', letterSpacing: '1px' }}>
-                        CALL ACTIVE • {isVideoCall ? "VIDEO" : "VOICE"}
+                        CALL ACTIVE • {isVideoCall ? "VIDEO" : "VOICE"} • {durationText}
                     </span>
                     <style>{` @keyframes opacity-pulse { from { opacity: 0.3; } to { opacity: 1; } } `}</style>
                 </div>
@@ -411,7 +433,7 @@ const WebCallContent = ({ isVideoCall, onLeave }: { isVideoCall: boolean; onLeav
                     <div className="pulsing-avatar">
                         <IconSymbol name="person.fill" size={80} color="#fff" />
                     </div>
-                    <span style={{ color: '#fff', fontSize: 24, fontWeight: '500', marginBottom: 10 }}>Voice Calling...</span>
+                    <span style={{ color: '#fff', fontSize: 24, fontWeight: '500', marginBottom: 10 }}>{durationText}</span>
                     <span style={{ color: '#075E54', fontSize: 16 }}>Secure Connection Active</span>
                 </div>
             )}

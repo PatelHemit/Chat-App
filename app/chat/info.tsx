@@ -562,7 +562,11 @@ export default function ChatInfoScreen() {
                 <View style={[styles.headerSection, { borderBottomColor: '#ccc' }]}>
                     <View style={styles.avatarLarge}>
                         {displayPic && displayPic !== "https://icon-library.com/images/anonymous-avatar-icon/anonymous-avatar-icon-25.jpg" ? (
-                            <Image source={{ uri: displayPic }} style={{ width: 100, height: 100, borderRadius: 50 }} />
+                            <Image
+                                source={{ uri: getInternalUri(displayPic) }}
+                                style={{ width: 100, height: 100, borderRadius: 50 }}
+                                resizeMode="cover"
+                            />
                         ) : (
                             <IconSymbol name={isGroup ? "person.3.fill" : "person.fill"} size={50} color="#fff" />
                         )}

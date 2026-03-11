@@ -1,5 +1,5 @@
 import { IconSymbol } from '@/components/ui/icon-symbol';
-import { API_BASE_URL } from '@/config/api';
+import { API_BASE_URL, getInternalUri } from '@/config/api';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -220,8 +220,9 @@ export default function SettingsScreen() {
                             <ActivityIndicator size="small" color="#008069" />
                         ) : user?.profilePic ? (
                             <Image
-                                source={{ uri: user.profilePic }}
+                                source={{ uri: getInternalUri(user.profilePic) }}
                                 style={{ width: 60, height: 60, borderRadius: 30 }}
+                                resizeMode="cover"
                             />
                         ) : (
                             <IconSymbol name="person.fill" size={40} color="#fff" />
