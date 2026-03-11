@@ -1,10 +1,10 @@
 {
   "expo": {
-    "name": "chat-app",
+    "name": "Chatzy",
     "slug": "chat-app",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
+    "icon": "./assets/images/chatzy-icon.png",
     "scheme": "chatapp",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
@@ -17,10 +17,8 @@
       "package": "com.patelhemit.chatapp",
       "softwareKeyboardLayoutMode": "resize",
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
-        "foregroundImage": "./assets/images/android-icon-foreground.png",
-        "backgroundImage": "./assets/images/android-icon-background.png",
-        "monochromeImage": "./assets/images/android-icon-monochrome.png"
+        "foregroundImage": "./assets/images/chatzy-icon.png",
+        "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
@@ -48,7 +46,7 @@
     },
     "web": {
       "output": "static",
-      "favicon": "./assets/images/favicon.png"
+      "favicon": "./assets/images/chatzy-icon.png"
     },
     "plugins": [
       "./plugins/withCallKeep",
@@ -68,12 +66,12 @@
       [
         "expo-splash-screen",
         {
-          "image": "./assets/images/splash-icon.png",
+          "image": "./assets/images/chatzy-icon.png",
           "imageWidth": 200,
           "resizeMode": "contain",
           "backgroundColor": "#ffffff",
           "dark": {
-            "backgroundColor": "#000000"
+            "backgroundColor": "#111111"
           }
         }
       ],
@@ -88,7 +86,7 @@
       [
         "expo-notifications",
         {
-          "icon": "./assets/images/icon.png"
+          "icon": "./assets/images/chatzy-icon.png"
         }
       ],
       [
