@@ -242,7 +242,7 @@ export default function HomeScreen() {
         ) : (
           <>
             <Text style={StyleSheet.flatten([styles.headerTitle, { color: Colors[colorScheme].headerTintColor }])}>
-              WhatsApp
+              Chatzy
             </Text>
             <View style={styles.headerIcons}>
               <Link href={"/qrcode" as any} asChild>

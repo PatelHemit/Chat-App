@@ -2,6 +2,7 @@ require('dotenv').config();
 const express = require('express');
 const http = require('http');
 const path = require('path');
+const fs = require('fs');
 const { Server } = require("socket.io");
 const cors = require('cors');
 const ImageKit = require("imagekit");
@@ -92,6 +93,13 @@ const onlineUsers = new Map();
 // QR Session Map: <sessionId, socketId>
 const qrSessions = new Map();
 
+const debugLog = (msg) => {
+    const time = new Date().toISOString();
+    const line = `[${time}] ${msg}\n`;
+    fs.appendFileSync(path.join(__dirname, 'debug_sockets.log'), line);
+    console.log(msg);
+};
+
 io.on("connection", (socket) => {
     console.log("Connected to socket.io");
 
@@ -103,31 +111,10 @@ io.on("connection", (socket) => {
     });
 
     socket.on("setup", (userData) => {
-        if (!userData) {
-            console.warn("[Socket] setup event received with NULL userData. Skipping.");
-            return;
-        }
-
-        const userId = userData._id?.toString() || (typeof userData === 'string' ? userData : null);
-
-        if (!userId) {
-            console.warn("[Socket] setup event: Could not extract userId from payload.", userData);
-            return;
-        }
-
-        // --- ROOM ISOLATION FIX ---
-        // Before joining the new user's room, leave all other personal rooms
-        // to prevent receiving calls meant for a previous user of this device/socket.
-        const currentRooms = Array.from(socket.rooms);
-        currentRooms.forEach(room => {
-            if (room !== socket.id && room !== userId) {
-                socket.leave(room);
-                console.log(`[Socket] Device left old room: ${room}`);
-            }
-        });
-
+        if (!userData) return;
+        const userId = userData._id ? userData._id.toString() : userData.toString();
         socket.join(userId);
-        logNotif("[Socket] User joined personal room: " + userId);
+        debugLog(`[Socket-SETUP] User ${userId} joined personal room. Socket: ${socket.id}`);
 
         // Track online user (support multiple devices/tabs)
         if (!onlineUsers.has(userId)) {
@@ -180,7 +167,7 @@ io.on("connection", (socket) => {
         const chatIdStr = chat._id.toString();
         const senderIdStr = newMessageReceived.sender._id ? newMessageReceived.sender._id.toString() : newMessageReceived.sender.toString();
 
-        console.log(`[Socket] Processing ${chat.users?.length || 0} recipients for message ${newMessageReceived._id}`);
+        console.log(`[Socket] Processing message ${newMessageReceived._id} for chat ${chatIdStr}. Sender: ${senderIdStr}. Participants: ${chat.users?.length}`);
 
         const notificationPromises = chat.users.map(async (user) => {
             const userIdStr = user._id ? user._id.toString() : user.toString();
@@ -191,29 +178,20 @@ io.on("connection", (socket) => {
 
             console.log(`[Socket] Recipient ${userIdStr} online status: ${!!isUserOnline} (Sockets: ${userSocketIds?.size || 0})`);
 
-            // A user is "in chat" if AT LEAST ONE of their active sockets is in the chat room
-            const socketsInRoom = io.sockets.adapter.rooms.get(chatIdStr);
-            const isUserInChat = isUserOnline && socketsInRoom && Array.from(userSocketIds).some(sid => socketsInRoom.has(sid));
+            // NEW TICK LOGIC: 
+            // 1. We NO LONGER mark as 'read' automatically here to avoid premature blue ticks (stale sessions).
+            // 2. We ONLY mark as 'delivered' if the user is online.
+            // 3. 'Read' status will be triggered explicitly by the client via 'mark-as-read' or 'mark-chat-read'.
 
-            logNotif(`[Notif-Logic] Recipient: ${user.name} (${userIdStr})`);
-            logNotif(`[Notif-Logic] -- Online: ${!!isUserOnline} (Sessions: ${userSocketIds?.size || 0})`);
-            logNotif(`[Notif-Logic] -- In Chat Room: ${!!isUserInChat}`);
-
-            const personalRoom = io.sockets.adapter.rooms.get(userIdStr);
-            const personalRoomSize = personalRoom ? personalRoom.size : 0;
-
-            if (isUserInChat) {
-                console.log(`[Socket] Recipient ${userIdStr} is IN CHAT ${chatIdStr}. Marking as read.`);
+            if (isUserOnline) {
+                console.log(`[Socket] Recipient ${userIdStr} is ONLINE. Marking as delivered.`);
                 try {
                     const updateObj = {};
                     if (chat.isGroupChat) {
-                        updateObj.$addToSet = {
-                            deliveredTo: { user: userIdStr, deliveredAt: new Date() },
-                            readBy: { user: userIdStr, readAt: new Date() }
-                        };
+                        updateObj.$addToSet = { deliveredTo: { user: userIdStr, deliveredAt: new Date() } };
                     } else {
-                        updateObj.status = "read";
-                        newMessageReceived.status = "read";
+                        updateObj.status = "delivered";
+                        newMessageReceived.status = "delivered";
                     }
                     await Message.findByIdAndUpdate(newMessageReceived._id, updateObj);
 
@@ -221,44 +199,23 @@ io.on("connection", (socket) => {
                     if (senderSocketId) {
                         io.to(senderIdStr).emit("message-status-updated", {
                             messageId: newMessageReceived._id.toString(),
-                            status: "read",
+                            status: "delivered",
                             userId: userIdStr
                         });
                     }
                 } catch (error) {
-                    console.error("[Socket] Error updating status to read:", error);
+                    console.error("[Socket] Error marking as delivered:", error);
                 }
             } else {
-                console.log(`[Socket] Recipient ${userIdStr} NOT in chat room. Checking delivery/push.`);
-                // Not in chat room, check if push should be sent
+                console.log(`[Socket] Recipient ${userIdStr} is OFFLINE. Marking as sent (Single Tick).`);
+                // If offline, we proceed to push logic below
                 logNotif(`[Notif-Logic] -- Proceeding to Push logic...`);
-                if (isUserOnline) {
-                    try {
-                        const updateObj = {};
-                        if (chat.isGroupChat) {
-                            updateObj.$addToSet = { deliveredTo: { user: userIdStr, deliveredAt: new Date() } };
-                        } else {
-                            updateObj.status = "delivered";
-                        }
-                        await Message.findByIdAndUpdate(newMessageReceived._id, updateObj);
-
-                        const senderSocketId = onlineUsers.get(senderIdStr);
-                        if (senderSocketId) {
-                            io.to(senderIdStr).emit("message-status-updated", {
-                                messageId: newMessageReceived._id.toString(),
-                                status: "delivered",
-                                userId: userIdStr
-                            });
-                        }
-                    } catch (error) {
-                        console.error("[Socket] Error marking as delivered:", error);
-                    }
-                }
+            }
 
                 // Push Notification Logic
                 const isMuted = chat.mutedBy && Array.isArray(chat.mutedBy) && chat.mutedBy.some(m => {
-                    if (!m.user) return false;
-                    const mutedUserId = m.user._id ? m.user._id.toString() : m.user.toString();
+                    const mutedUser = m.user?._id || m.user;
+                    const mutedUserId = mutedUser ? mutedUser.toString() : null;
                     const match = (mutedUserId === userIdStr) && (!m.mutedUntil || new Date(m.mutedUntil) > new Date());
                     if (match) logNotif(`[Push] 🔕 SKIPPING: User ${userIdStr} has muted this chat until ${m.mutedUntil || 'forever'}`);
                     return match;
@@ -269,13 +226,22 @@ io.on("connection", (socket) => {
                         const User = require('./models/User');
                         const { sendPushNotification } = require('./controllers/notificationControllers');
                         const recipient = await User.findById(userIdStr);
-                        if (recipient && !recipient.notificationsMuted && recipient.pushTokens?.length > 0) {
-                            console.log(`[Socket] Sending push to ${userIdStr}`);
+                        
+                        if (recipient && recipient.notificationsMuted) {
                             logNotif(`[Push] Skipping notification for ${userIdStr} - Global Mute is ON`);
                             return;
                         }
-                        if (recipient && recipient.pushTokens && recipient.pushTokens.length > 0) {
+
+                        const expoTokens = recipient?.pushTokens || [];
+                        const fcmTokens = recipient?.fcmTokens || [];
+
+                        if (expoTokens.length > 0 || fcmTokens.length > 0) {
                             const senderName = newMessageReceived.sender.name || 'Someone';
+                            const chatName = chat.chatName || 'Chat';
+                            const title = chat.isGroupChat 
+                                ? `Chatzy: ${senderName} in ${chatName}` 
+                                : `Chatzy: ${senderName}`;
+
                             const msgType = newMessageReceived.type || 'text';
                             let messagePreview;
                             if (msgType === 'image') messagePreview = '📷 Photo';
@@ -288,22 +254,23 @@ io.on("connection", (socket) => {
                             }
 
                             await sendPushNotification(
-                                recipient.pushTokens,
-                                chat.isGroupChat ? `${senderName} in ${chat.chatName}` : senderName,
+                                expoTokens,
+                                title,
                                 messagePreview,
-                                { type: 'new_message', chatId: chatIdStr, senderId: senderIdStr }
+                                { type: 'new_message', chatId: chatIdStr, senderId: senderIdStr },
+                                fcmTokens
                             );
                         }
                     } catch (error) {
                         console.error("[Socket] Push notification failed:", error);
                     }
                 }
-            }
 
             if (isUserOnline) {
-                console.log(`[Socket] Emitting 'message received' to user room: ${userIdStr}`);
+                console.log(`[Socket] 🔴 DELIVERY: Emitting 'message received' to user ${userIdStr} room. Sockets: ${userSocketIds.size}`);
                 io.to(userIdStr).emit("message received", newMessageReceived);
-                logNotif(`[Notif-Logic] -- Emitted 'message received' to user room: ${userIdStr}`);
+            } else {
+                console.log(`[Socket] ⚪ OFFLINE: User ${userIdStr} is offline. Skipping real-time emission.`);
             }
         });
 
@@ -330,10 +297,12 @@ io.on("connection", (socket) => {
             // Notify the SENDER sessions that their message was read
             const senderSocketIds = onlineUsers.get(senderId.toString());
             if (senderSocketIds) {
-                io.to(senderSocketId).emit("message-status-updated", {
-                    messageId: messageId.toString(),
-                    status: "read",
-                    userId: userId
+                senderSocketIds.forEach(socketId => {
+                    io.to(socketId).emit("message-status-updated", {
+                        messageId: messageId.toString(),
+                        status: "read",
+                        userId: userId
+                    });
                 });
             }
         } catch (error) {

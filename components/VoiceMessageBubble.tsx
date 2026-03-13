@@ -107,7 +107,7 @@ export const VoiceMessageBubble = ({ uri, duration, isMyMessage, profilePic }: V
                         <IconSymbol name="person.fill" size={28} color="#fff" />
                     )}
                 </View>
-                {/* Mic Badge - Always green in WhatsApp */}
+                {/* Mic Badge - Always green in Chatzy */}
                 <View style={[styles.micBadge, { backgroundColor: '#00A884' }]}>
                     <IconSymbol name="mic.fill" size={9} color={'#fff'} />
                 </View>

@@ -165,18 +165,18 @@ export const LiveKitCallScreen = ({
                                 }
 
                                 if (
-                                    errMsg.includes('PC manager') ||
-                                    errMsg.includes('Client initiated disconnect') ||
-                                    errMsg.includes('Tried to add a track') ||
-                                    errMsg.includes('Negotiation failed') ||
-                                    errMsg.includes("'client' of undefined") ||
-                                    errMsg.includes("reading 'client'") ||
-                                    errMsg.includes("remote description was null") ||
-                                    errMsg.includes('engine not connected') ||
-                                    errMsg.includes('PublishTrackError') ||
-                                    errMsg.includes('could not establish pc connection') ||
-                                    errMsg.includes('WebSocket') ||
-                                    errMsg.includes('Connection reset')
+                                    errMsg.toLowerCase().includes('pc manager') ||
+                                    errMsg.toLowerCase().includes('client initiated disconnect') ||
+                                    errMsg.toLowerCase().includes('negotiationerror') ||
+                                    errMsg.toLowerCase().includes('signal connection') ||
+                                    errMsg.toLowerCase().includes('abort handler') ||
+                                    errMsg.toLowerCase().includes('negotiation failed') ||
+                                    errMsg.toLowerCase().includes("'client' of undefined") ||
+                                    errMsg.toLowerCase().includes("reading 'client'") ||
+                                    errMsg.toLowerCase().includes("remote description was null") ||
+                                    errMsg.toLowerCase().includes('engine not connected') ||
+                                    errMsg.toLowerCase().includes('publishtrackerror') ||
+                                    errMsg.toLowerCase().includes('connection reset')
                                 ) {
                                     console.log("[LiveKit] Ignored transient error:", errMsg);
                                     return;
@@ -202,12 +202,15 @@ export const LiveKitCallScreen = ({
                             <Text style={styles.callerName}>{displayName}</Text>
                             <ActivityIndicator size="small" color="rgba(255,255,255,0.6)" style={{ marginTop: 12 }} />
                             <Text style={styles.statusText}>{fetching ? "Connecting..." : "Preparing..."}</Text>
-                            <TouchableOpacity
-                                style={[styles.controlButton, styles.endButton, { marginTop: 60 }]}
-                                onPress={onClose}
-                            >
-                                <IconSymbol name="phone.down.fill" size={28} color="#fff" />
-                            </TouchableOpacity>
+                            <View style={{ alignItems: 'center', marginTop: 60 }}>
+                                <TouchableOpacity
+                                    style={[styles.controlButton, styles.endButton]}
+                                    onPress={onClose}
+                                >
+                                    <IconSymbol name="phone.down.fill" size={28} color="#fff" />
+                                </TouchableOpacity>
+                                <Text style={[styles.controlLabel, { marginTop: 8 }]}>End</Text>
+                            </View>
                         </View>
                     </View>
                 )}
@@ -324,6 +327,62 @@ const CallContent = ({
         catch (e) { console.warn("toggleMic:", e); }
     };
 
+    const flipCamera = async () => {
+        try {
+            console.log("[LiveKit] Starting Super-Robust Camera Flip...");
+            
+            // 1. Identify the local video track publication
+            const videoPublication = tracks.find(t => 
+                t.participant.isLocal && t.source === Track.Source.Camera
+            )?.publication;
+
+            const videoTrack = videoPublication?.track;
+            if (!videoTrack) {
+                console.warn("[LiveKit] No local video track found to flip.");
+                return;
+            }
+
+            // 2. Multi-layer Flip Strategy
+            
+            // Layer A: Manual Constraint Restart (Confirmed working for Oppo F19)
+            if (typeof (videoTrack as any).restartTrack === 'function') {
+                console.log("[LiveKit] Layer A: Attempting restartTrack with flipped facingMode");
+                const currentSettings = (videoTrack as any).mediaStreamTrack?.getSettings?.() || {};
+                const currentFacing = currentSettings.facingMode || 'user';
+                const newFacingMode = currentFacing === 'user' ? 'environment' : 'user';
+                
+                await (videoTrack as any).restartTrack({ 
+                    facingMode: newFacingMode,
+                    width: { ideal: 1280 },
+                    height: { ideal: 720 }
+                });
+                return;
+            }
+
+            // Layer B: Check if switchCamera exists on the high-level LiveKit track wrapper
+            if (typeof (videoTrack as any).switchCamera === 'function') {
+                await (videoTrack as any).switchCamera();
+                return;
+            }
+
+            // Layer C: Check for the underlying WebRTC MediaStreamTrack's private _switchCamera
+            const nativeTrack = (videoTrack as any).mediaStreamTrack;
+            if (nativeTrack && typeof nativeTrack._switchCamera === 'function') {
+                nativeTrack._switchCamera();
+                return;
+            }
+
+            // Layer D: Fallback to high-level participant API if available
+            const activeLocalParticipant = room.localParticipant || localParticipant;
+            if (activeLocalParticipant && typeof (activeLocalParticipant as any).switchCamera === 'function') {
+                await (activeLocalParticipant as any).switchCamera();
+                return;
+            }
+        } catch (e: any) {
+            console.warn("[LiveKit] flipCamera critical error:", e);
+        }
+    };
+
     if (room.state === ConnectionState.Connecting || room.state === ConnectionState.Reconnecting) {
         return (
             <View style={styles.voiceBg}>
@@ -344,12 +403,9 @@ const CallContent = ({
 
     // ── Voice call layout ──────────────────────────────────────────────────────
     if (!isVideoCall || !hasRemoteVideo) {
-        // For voice calls: waiting only until callConnected (no video track to wait for)
-        // For video calls: waiting until both connected AND remote video arrives
         const isWaiting = isVideoCall ? (!callConnected || !hasRemoteVideo) : !callConnected;
         return (
             <SafeAreaView style={styles.voiceBg}>
-                {/* Top area - caller info */}
                 <View style={styles.voiceTopSection}>
                     <AvatarCircle name={displayName} pic={displayPic} size={110} pulse={isWaiting} />
                     <Text style={styles.callerName}>{displayName}</Text>
@@ -364,9 +420,7 @@ const CallContent = ({
                     )}
                 </View>
 
-                {/* Bottom controls */}
                 <View style={styles.voiceControlsRow}>
-                    {/* Mute */}
                     <View style={styles.controlItem}>
                         <TouchableOpacity
                             style={[styles.controlButton, !isMicEnabled && styles.controlButtonActive]}
@@ -377,7 +431,6 @@ const CallContent = ({
                         <Text style={styles.controlLabel}>{isMicEnabled ? 'Mute' : 'Unmute'}</Text>
                     </View>
 
-                    {/* End Call */}
                     <View style={styles.controlItem}>
                         <TouchableOpacity style={[styles.controlButton, styles.endButton]} onPress={onClose}>
                             <IconSymbol name="phone.down.fill" size={30} color="#fff" />
@@ -385,7 +438,6 @@ const CallContent = ({
                         <Text style={styles.controlLabel}>End</Text>
                     </View>
 
-                    {/* Speaker - placeholder for future use */}
                     <View style={styles.controlItem}>
                         <TouchableOpacity style={styles.controlButton}>
                             <IconSymbol name="speaker.wave.2.fill" size={24} color="#fff" />
@@ -400,7 +452,6 @@ const CallContent = ({
     // ── Video call layout ──────────────────────────────────────────────────────
     return (
         <SafeAreaView style={styles.container}>
-            {/* Remote Video */}
             <View style={styles.remoteView}>
                 {hasRemoteVideo ? (
                     <VideoView style={styles.fullVideo} videoTrack={remoteTrack.publication.track as any} />
@@ -413,7 +464,6 @@ const CallContent = ({
                         </View>
                     </View>
                 )}
-                {/* Timer Overlay */}
                 <View style={styles.timerHeader}>
                     <Text style={styles.timerText}>{durationText}</Text>
                     <Text style={styles.callTypeText}>Video Call</Text>
@@ -433,23 +483,44 @@ const CallContent = ({
 
             {/* Controls */}
             <View style={styles.controlsContainer}>
-                <TouchableOpacity
-                    style={[styles.controlButton, !isMicEnabled && styles.controlButtonActive]}
-                    onPress={toggleMic}
-                >
-                    <IconSymbol name={isMicEnabled ? "mic.fill" : "mic.slash.fill"} size={24} color="#fff" />
-                </TouchableOpacity>
+                <View style={styles.controlItem}>
+                    <TouchableOpacity
+                        style={[styles.controlButton, !isMicEnabled && styles.controlButtonActive]}
+                        onPress={toggleMic}
+                    >
+                        <IconSymbol name={isMicEnabled ? "mic.fill" : "mic.slash.fill"} size={22} color="#fff" />
+                    </TouchableOpacity>
+                    <Text style={styles.controlLabel}>{isMicEnabled ? 'Mute' : 'Unmute'}</Text>
+                </View>
 
-                <TouchableOpacity style={[styles.controlButton, styles.endButton]} onPress={onClose}>
-                    <IconSymbol name="phone.down.fill" size={32} color="#fff" />
-                </TouchableOpacity>
+                {isCameraEnabled && (
+                    <View style={styles.controlItem}>
+                        <TouchableOpacity
+                            style={styles.controlButton}
+                            onPress={flipCamera}
+                        >
+                            <IconSymbol name="camera.rotate.fill" size={22} color="#fff" />
+                        </TouchableOpacity>
+                        <Text style={styles.controlLabel}>Flip</Text>
+                    </View>
+                )}
 
-                <TouchableOpacity
-                    style={[styles.controlButton, !isCameraEnabled && styles.controlButtonActive]}
-                    onPress={toggleCamera}
-                >
-                    <IconSymbol name={isCameraEnabled ? "video.fill" : "video.slash.fill"} size={24} color="#fff" />
-                </TouchableOpacity>
+                <View style={styles.controlItem}>
+                    <TouchableOpacity
+                        style={[styles.controlButton, !isCameraEnabled && styles.controlButtonActive]}
+                        onPress={toggleCamera}
+                    >
+                        <IconSymbol name={isCameraEnabled ? "video.fill" : "video.slash.fill"} size={22} color="#fff" />
+                    </TouchableOpacity>
+                    <Text style={styles.controlLabel}>{isCameraEnabled ? 'Video Off' : 'Video On'}</Text>
+                </View>
+
+                <View style={styles.controlItem}>
+                    <TouchableOpacity style={[styles.controlButton, styles.endButton]} onPress={onClose}>
+                        <IconSymbol name="phone.down.fill" size={28} color="#fff" />
+                    </TouchableOpacity>
+                    <Text style={styles.controlLabel}>End</Text>
+                </View>
             </View>
         </SafeAreaView>
     );

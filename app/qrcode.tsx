@@ -25,7 +25,7 @@ export default function QRCodeScreen() {
                 </View>
 
                 <Text style={[styles.name, { color: theme.text }]}>Agasthya</Text>
-                <Text style={[styles.info, { color: theme.text }]}>WhatsApp Contact</Text>
+                <Text style={[styles.info, { color: theme.text }]}>Chatzy Contact</Text>
             </View>
         </View>
     );

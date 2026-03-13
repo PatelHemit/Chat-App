@@ -72,7 +72,7 @@ export default function PhoneScreen() {
                             </TouchableOpacity>
                         </View>
                         <Text style={[styles.subtitle, { color: theme.text }]}>
-                            WhatsApp will need to verify your phone number.
+                            Chatzy will need to verify your phone number.
                         </Text>
                         <TouchableOpacity>
                             <Text style={styles.linkText}>What's my number?</Text>

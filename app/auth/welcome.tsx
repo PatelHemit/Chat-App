@@ -1,7 +1,7 @@
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useRouter } from 'expo-router';
-import { Alert, Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, Platform, StyleSheet, Text, TouchableOpacity, View, Image as RNImage } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { API_BASE_URL } from '@/config/api';
@@ -25,11 +25,15 @@ export default function WelcomeScreen() {
         <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
             <View style={styles.content}>
                 <View style={styles.imageContainer}>
-                    <View style={[styles.circle, { backgroundColor: 'rgba(0, 128, 105, 0.1)' }]}>
-                        <FontAwesome name="whatsapp" size={100} color="#008069" />
+                    <View style={[styles.circle, { backgroundColor: 'transparent' }]}>
+                        <RNImage 
+                            source={require('../../assets/images/chatzy-icon.png')} 
+                            style={{ width: 180, height: 180 }} 
+                            resizeMode="contain"
+                        />
                     </View>
                 </View>
-                <Text style={[styles.title, { color: theme.text }]}>Welcome to WhatsApp</Text>
+                <Text style={[styles.title, { color: theme.text }]}>Welcome to Chatzy</Text>
                 <Text style={[styles.terms, { color: '#888' }]}>
                     Read our <Text style={{ color: '#008069' }}>Privacy Policy</Text>. Tap "Agree and Continue" to accept the <Text style={{ color: '#008069' }}>Terms of Service</Text>.
                 </Text>
@@ -57,19 +61,6 @@ export default function WelcomeScreen() {
                     </TouchableOpacity>
                 )}
 
-                {Platform.OS !== 'web' && (
-                    <View style={{ marginTop: 40, padding: 10, backgroundColor: 'rgba(0,0,0,0.05)', borderRadius: 8 }}>
-                        <Text style={{ fontSize: 10, color: '#666', textAlign: 'center' }}>
-                            Debug IP: {API_BASE_URL}
-                        </Text>
-                        <TouchableOpacity
-                            onPress={() => Alert.alert("System Config", `Backend URL: ${API_BASE_URL}\nPlatform: ${Platform.OS}`)}
-                            style={{ marginTop: 5 }}
-                        >
-                            <Text style={{ fontSize: 10, color: '#008069', fontWeight: 'bold', textAlign: 'center' }}>Verify Connection</Text>
-                        </TouchableOpacity>
-                    </View>
-                )}
             </View>
         </SafeAreaView>
     );

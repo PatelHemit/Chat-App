@@ -129,7 +129,7 @@ export default function QRLoginScreen() {
 
                     {status === "waiting" && (
                         <View style={styles.infoContainer}>
-                            <Text style={styles.name}>WhatsApp Web</Text>
+                            <Text style={styles.name}>Chatzy Web</Text>
                             <Text style={styles.subtitle}>Scan to log in instantly</Text>
                             <Text style={{ fontSize: 10, color: '#aaa', marginTop: 10 }}>Server: {SOCKET_URL}</Text>
                         </View>

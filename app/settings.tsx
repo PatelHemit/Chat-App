@@ -234,7 +234,7 @@ export default function SettingsScreen() {
                     </TouchableOpacity>
                     <View>
                         <Text style={[styles.name, { color: theme.text }]}>{user?.name || "User"}</Text>
-                        <Text style={styles.status}>{user?.email || "Hey there! I am using WhatsApp."}</Text>
+                        <Text style={styles.status}>{user?.about || "Hey there! I am using Chatzy."}</Text>
                         {/* <Text style={{ fontSize: 10, color: 'red' }}>Debug URL: {user?.profilePic}</Text> */}
                     </View>
                 </View>

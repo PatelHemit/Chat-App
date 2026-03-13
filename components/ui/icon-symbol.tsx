@@ -82,6 +82,10 @@ const MAPPING = {
   'arrow.up.right': 'call-made',
   'arrow.down.left': 'call-received',
   'delete.backward.fill': 'backspace',
+  'camera.rotate.fill': 'switch-camera',
+  'phone.down.fill': 'call-end',
+  'video.slash.fill': 'videocam-off',
+  'mic.slash.fill': 'mic-off',
 } as Partial<IconMapping>;
 
 /**

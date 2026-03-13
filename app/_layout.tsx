@@ -202,7 +202,8 @@ if (Platform.OS === 'web' && typeof window !== 'undefined') {
       errMsg.includes("reading 'client'") ||
       errMsg.includes("Participant that's not present") ||
       errMsg.includes('PC manager') ||
-      errMsg.includes("remote description was null")
+      errMsg.includes("remote description was null") ||
+      errMsg.includes('Client initiated disconnect')
     );
   };
 
@@ -644,19 +645,25 @@ const GlobalCallHandlers = ({ isReady }: { isReady: boolean }) => {
               </View>
 
               <View style={styles.callActions}>
-                <TouchableOpacity
-                  style={[styles.callBtn, styles.rejectBtn]}
-                  onPress={handleRejectCall}
-                >
-                  <IconSymbol name="phone.down.fill" size={30} color="#fff" />
-                </TouchableOpacity>
+                <View style={{ alignItems: 'center' }}>
+                  <TouchableOpacity
+                    style={[styles.callBtn, styles.rejectBtn]}
+                    onPress={handleRejectCall}
+                  >
+                    <IconSymbol name="phone.down.fill" size={30} color="#fff" />
+                  </TouchableOpacity>
+                  <Text style={[styles.controlLabel, { color: '#fff', marginTop: 8 }]}>Decline</Text>
+                </View>
 
-                <TouchableOpacity
-                  style={[styles.callBtn, styles.acceptBtn]}
-                  onPress={handleAcceptCall}
-                >
-                  <IconSymbol name="phone.fill" size={30} color="#fff" />
-                </TouchableOpacity>
+                <View style={{ alignItems: 'center' }}>
+                  <TouchableOpacity
+                    style={[styles.callBtn, styles.acceptBtn]}
+                    onPress={handleAcceptCall}
+                  >
+                    <IconSymbol name="phone.fill" size={30} color="#fff" />
+                  </TouchableOpacity>
+                  <Text style={[styles.controlLabel, { color: '#fff', marginTop: 8 }]}>Receive</Text>
+                </View>
               </View>
             </View>
           </div>
@@ -682,19 +689,25 @@ const GlobalCallHandlers = ({ isReady }: { isReady: boolean }) => {
                 </View>
 
                 <View style={styles.callActions}>
-                  <TouchableOpacity
-                    style={[styles.callBtn, styles.rejectBtn]}
-                    onPress={handleRejectCall}
-                  >
-                    <IconSymbol name="phone.down.fill" size={30} color="#fff" />
-                  </TouchableOpacity>
+                  <View style={{ alignItems: 'center' }}>
+                    <TouchableOpacity
+                      style={[styles.callBtn, styles.rejectBtn]}
+                      onPress={handleRejectCall}
+                    >
+                      <IconSymbol name="phone.down.fill" size={30} color="#fff" />
+                    </TouchableOpacity>
+                    <Text style={[styles.controlLabel, { color: '#fff', marginTop: 8 }]}>Decline</Text>
+                  </View>
 
-                  <TouchableOpacity
-                    style={[styles.callBtn, styles.acceptBtn]}
-                    onPress={handleAcceptCall}
-                  >
-                    <IconSymbol name="phone.fill" size={30} color="#fff" />
-                  </TouchableOpacity>
+                  <View style={{ alignItems: 'center' }}>
+                    <TouchableOpacity
+                      style={[styles.callBtn, styles.acceptBtn]}
+                      onPress={handleAcceptCall}
+                    >
+                      <IconSymbol name="phone.fill" size={30} color="#fff" />
+                    </TouchableOpacity>
+                    <Text style={[styles.controlLabel, { color: '#fff', marginTop: 8 }]}>Receive</Text>
+                  </View>
                 </View>
               </View>
             </View>
@@ -921,6 +934,10 @@ const styles = StyleSheet.create({
   callType: {
     color: '#bbb',
     fontSize: 16,
+  },
+  controlLabel: {
+    fontSize: 12,
+    fontWeight: '500',
   },
   callActions: {
     flexDirection: 'row',

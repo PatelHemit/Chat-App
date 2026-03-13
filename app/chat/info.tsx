@@ -57,7 +57,7 @@ export default function ChatInfoScreen() {
                         (m.content && m.content.match(/\.(jpeg|jpg|gif|png|mp4)$/i))
                     );
                     // Reverse to show newest first if the API returns oldest first (usually logs do)
-                    // WhatsApp shows newest on left? Actually usually newest is fast access.
+                    // Chatzy shows newest on left? Actually usually newest is fast access.
                     // Assuming API returns chronological (oldest -> newest), we want reverse for "recent media"
                     setMediaMessages(media.reverse());
                 }

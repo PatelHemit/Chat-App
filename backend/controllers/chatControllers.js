@@ -294,7 +294,7 @@ const deleteChat = async (req, res) => { // Assuming asyncHandler is not used he
     try {
         // Check if user is part of the chat or admin logic if needed
         // For now, allow any member to "delete" the chat for themselves?
-        // WhatsApp "Delete Chat" removes it from your list. If it's 1-on-1, it might delete messages.
+        // Chatzy "Delete Chat" removes it from your list. If it's 1-on-1, it might delete messages.
         // If it's a group, "Exit" is separate. "Delete" usually implies removing the history.
 
         // Let's implement hard delete for now as per "delete no option" request

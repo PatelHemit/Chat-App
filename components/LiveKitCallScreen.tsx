@@ -192,7 +192,12 @@ export const LiveKitCallScreen = ({
                                 video={isVideoCall}
                                 onError={(err) => {
                                     const errMsg = err.message || "";
-                                    if (errMsg.includes("remote description was null") || errMsg.includes("PC manager") || errMsg.includes("'client' of undefined")) {
+                                    if (
+                                        errMsg.includes("remote description was null") ||
+                                        errMsg.includes("PC manager") ||
+                                        errMsg.includes("'client' of undefined") ||
+                                        errMsg.includes('Client initiated disconnect')
+                                    ) {
                                         console.log("[LiveKit-Web] Ignoring transient room error:", errMsg);
                                         return;
                                     }
@@ -216,7 +221,7 @@ export const LiveKitCallScreen = ({
                     flex: 1,
                     justifyContent: 'center',
                     alignItems: 'center',
-                    backgroundColor: '#075E54', // WhatsApp Teal to verify it's NOT black
+                    backgroundColor: '#075E54', // Chatzy Teal to verify it's NOT black
                     color: '#fff',
                     width: '100%',
                     height: '100%',

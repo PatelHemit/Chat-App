@@ -63,49 +63,87 @@ const markAsRead = asyncHandler(async (req, res) => {
     res.json({ success: true, notification });
 });
 
-// Helper function to send push notification via Expo
+// Helper function to send push notification via Expo and FCM
 const { Expo } = require('expo-server-sdk');
+const admin = require('firebase-admin');
 const expo = new Expo();
 
-const sendPushNotification = async (expoPushTokens, title, body, data = {}) => {
-    logNotif(`[Push] sendPushNotification called with ${expoPushTokens.length} tokens`);
+const sendPushNotification = async (expoPushTokens = [], title, body, data = {}, fcmTokens = []) => {
+    logNotif(`[Push] sendPushNotification called: Expo=${expoPushTokens.length}, FCM=${fcmTokens.length}`);
 
-    // Filter valid tokens
-    let validTokens = expoPushTokens.filter(token => Expo.isExpoPushToken(token));
-    logNotif(`[Push] Valid tokens count: ${validTokens.length}`);
+    const results = { expo: null, fcm: null };
 
-    if (validTokens.length === 0) {
-        logNotif("[Push] NO VALID TOKENS FOUND, skipping push");
-        return;
-    }
+    // 1. Send via Expo
+    if (expoPushTokens.length > 0) {
+        let validTokens = expoPushTokens.filter(token => Expo.isExpoPushToken(token));
+        if (validTokens.length > 0) {
+            let messages = validTokens.map(token => ({
+                to: token,
+                sound: 'default',
+                title: title,
+                body: body,
+                data: data,
+                priority: 'high',
+                channelId: 'chat-messages',
+            }));
 
-    let messages = [];
-    for (let token of validTokens) {
-        messages.push({
-            to: token,
-            sound: 'default',
-            title: title,
-            body: body,
-            data: data,
-            priority: 'high',
-            channelId: 'chat-messages', // Match the new frontend channel
-        });
-    }
-
-    // Chunk and send
-    let chunks = expo.chunkPushNotifications(messages);
-    let tickets = [];
-    for (let chunk of chunks) {
-        try {
-            logNotif(`[Push] Sending chunk to Expo with ${chunk.length} messages...`);
-            let ticketChunk = await expo.sendPushNotificationsAsync(chunk);
-            logNotif(`[Push] Tickets received from Expo: ${JSON.stringify(ticketChunk)}`);
-            tickets.push(...ticketChunk);
-        } catch (error) {
-            logNotif(`[Push] ERROR sending chunk to Expo: ${error.message}`);
+            let chunks = expo.chunkPushNotifications(messages);
+            for (let chunk of chunks) {
+                try {
+                    let ticketChunk = await expo.sendPushNotificationsAsync(chunk);
+                    logNotif(`[Push-Expo] Tickets: ${JSON.stringify(ticketChunk)}`);
+                } catch (error) {
+                    logNotif(`[Push-Expo] ERROR: ${error.message}`);
+                }
+            }
         }
     }
-    return tickets;
+
+    // 2. Send via FCM (Multicast)
+    if (fcmTokens.length > 0) {
+        try {
+            const fcmMessage = {
+                tokens: fcmTokens,
+                notification: {
+                    title: title,
+                    body: body,
+                },
+                data: {
+                    ...data,
+                    click_action: 'FLUTTER_NOTIFICATION_CLICK', // Legacy compatibility
+                },
+                android: {
+                    priority: 'high',
+                    notification: {
+                        channelId: 'chat-messages',
+                        icon: 'notification_icon',
+                    },
+                },
+                apns: {
+                    payload: {
+                        aps: {
+                            sound: 'default',
+                            badge: 1,
+                        },
+                    },
+                },
+            };
+
+            const response = await admin.messaging().sendEachForMulticast(fcmMessage);
+            logNotif(`[Push-FCM] Multicast success: ${response.successCount}/${fcmTokens.length}`);
+            if (response.failureCount > 0) {
+                const failedTokens = [];
+                response.responses.forEach((resp, idx) => {
+                    if (!resp.success) failedTokens.push(fcmTokens[idx]);
+                });
+                logNotif(`[Push-FCM] Failed tokens count: ${failedTokens.length}`);
+            }
+        } catch (error) {
+            logNotif(`[Push-FCM] Global ERROR: ${error.message}`);
+        }
+    }
+
+    return results;
 };
 
 module.exports = { getNotifications, createNotification, markAsRead, sendPushNotification };

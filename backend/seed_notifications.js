@@ -41,7 +41,7 @@ const seedNotifications = async () => {
             {
                 recipient: mainUser._id,
                 type: "system_alert",
-                content: "Welcome to WhatsApp! Secure your account with Two-Step Verification.",
+                content: "Welcome to Chatzy! Secure your account with Two-Step Verification.",
                 isRead: false
             }
         ]);

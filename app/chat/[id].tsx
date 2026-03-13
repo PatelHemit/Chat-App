@@ -341,6 +341,7 @@ export default function ChatScreen() {
     const [isBlocked, setIsBlocked] = useState(false);
     const [isBlockingMe, setIsBlockingMe] = useState(false);
     const [isUserOnline, setIsUserOnline] = useState(false);
+    const [isSocketConnected, setIsSocketConnected] = useState(false);
     const [headerMenuVisible, setHeaderMenuVisible] = useState(false);
     const [muteModalVisible, setMuteModalVisible] = useState(false);
     const [clearChatModalVisible, setClearChatModalVisible] = useState(false);
@@ -465,11 +466,19 @@ export default function ChatScreen() {
                 headers: { Authorization: `Bearer ${token}` }
             });
             const data = await response.json();
-            setMessages(data);
+            // Inverted list: newest at the beginning of the array (bottom of screen)
+            setMessages([...data].reverse());
         } catch (error) {
             console.log(error);
         } finally {
             setLoading(false);
+        }
+    };
+
+    const scrollToBottom = (animated = true) => {
+        // Inverted: bottom is index 0
+        if (flatListRef.current && messages.length > 0) {
+            flatListRef.current.scrollToOffset({ offset: 0, animated });
         }
     };
 
@@ -545,6 +554,23 @@ export default function ChatScreen() {
         console.log(`[Chat] Using global socket. Joining chat: ${id}`);
         socket.emit("join chat", id);
         socket.emit("mark-chat-read", { chatId: id, userId: currentUserId });
+        setIsSocketConnected(socket.connected);
+
+        const handleConnect = () => {
+            console.log("[Chat-DEBUG] Socket Connected Event. Re-joining room.");
+            setIsSocketConnected(true);
+            socket.emit("join chat", id);
+            socket.emit("mark-chat-read", { chatId: id, userId: currentUserId });
+            // Re-setup if necessary to ensure user room is joined
+            AsyncStorage.getItem("userInfo").then(info => {
+                if (info) socket.emit("setup", JSON.parse(info));
+            });
+        };
+
+        const handleDisconnect = () => {
+            console.log("[Chat-DEBUG] Socket Disconnected Event.");
+            setIsSocketConnected(false);
+        };
 
         const handleUserOnline = (userId: string) => {
             if (userId === otherUserId) setIsUserOnline(true);
@@ -571,22 +597,35 @@ export default function ChatScreen() {
         };
 
         const handleMessageReceived = (newMessageRecieved: any) => {
-            console.log("[Chat] Message detected via global socket:", newMessageRecieved);
-            if (!newMessageRecieved || !newMessageRecieved.chat || !newMessageRecieved.sender) return;
+            console.log("[Chat-DEBUG] Message RECEIVED via socket:", JSON.stringify(newMessageRecieved));
+            if (!newMessageRecieved || !newMessageRecieved.chat || !newMessageRecieved.sender) {
+                console.log("[Chat-DEBUG] Message ignored: invalid structure");
+                return;
+            }
 
-            if (id === newMessageRecieved.chat._id && newMessageRecieved.sender._id !== currentUserId) {
-                console.log("[Chat] Appending new message to list");
-                setMessages((prev) => [...prev, newMessageRecieved]);
+            const incomingChatId = newMessageRecieved.chat._id || newMessageRecieved.chat;
 
-                socket.emit("mark-as-read", {
-                    messageId: newMessageRecieved._id,
-                    senderId: newMessageRecieved.sender._id
-                });
+            if (String(id) === String(incomingChatId)) {
+                if (String(newMessageRecieved.sender._id) !== String(currentUserId)) {
+                    setMessages((prev) => {
+                        const isDuplicate = prev.some(m => m._id === newMessageRecieved._id);
+                        if (isDuplicate) return prev;
+                        return [newMessageRecieved, ...prev];
+                    });
 
-                if (flatListRef.current) {
-                    setTimeout(() => {
-                        flatListRef.current?.scrollToEnd({ animated: true });
-                    }, 100);
+                    // Explicitly signal that we've read this message
+                    socket.emit("mark-as-read", {
+                        messageId: newMessageRecieved._id,
+                        senderId: newMessageRecieved.sender._id,
+                        chatId: id,
+                        userId: currentUserId
+                    });
+                } else {
+                    // Check if message is in state, if not add it (e.g. sent from another device)
+                    setMessages((prev) => {
+                        if (prev.some(m => m._id === newMessageRecieved._id)) return prev;
+                        return [newMessageRecieved, ...prev];
+                    });
                 }
             }
         };
@@ -616,6 +655,8 @@ export default function ChatScreen() {
         };
 
         // Attach listeners
+        socket.on("connect", handleConnect);
+        socket.on("disconnect", handleDisconnect);
         socket.on("user-online", handleUserOnline);
         socket.on("user-offline", handleUserOffline);
         socket.on("message-deleted", handleMessageDeleted);
@@ -639,6 +680,8 @@ export default function ChatScreen() {
             socket.emit("leave chat", id);
 
             // Cleanup listeners
+            socket.off("connect", handleConnect);
+            socket.off("disconnect", handleDisconnect);
             socket.off("user-online", handleUserOnline);
             socket.off("user-offline", handleUserOffline);
             socket.off("message-deleted", handleMessageDeleted);
@@ -780,11 +823,11 @@ export default function ChatScreen() {
             const newMessage = await response.json();
             newMessage.status = newMessage.status || 'sent';
 
-            if (socket.current) {
-                socket.current.emit("new message", newMessage);
+            if (socket) {
+                socket.emit("new message", newMessage);
             }
 
-            setMessages((prev) => [...prev, newMessage]);
+            setMessages((prev) => [newMessage, ...prev]);
 
         } catch (error) {
             console.log("Error sending voice message:", error);
@@ -926,7 +969,7 @@ export default function ChatScreen() {
                 socket.emit('new message', newMessage);
             }
 
-            setMessages((prev) => [...prev, newMessage]);
+            setMessages((prev) => [newMessage, ...prev]);
         } catch (error) {
             console.error('Error sending media:', error);
             Alert.alert('Error', 'Failed to send media');
@@ -974,7 +1017,7 @@ export default function ChatScreen() {
                 socket.emit("new message", newMessage);
             }
 
-            setMessages((prev) => [...prev, newMessage]);
+            setMessages((prev) => [newMessage, ...prev]);
         } catch (error) {
             console.log("Error sending message:", error);
             // Optionally restore message to input if failed
@@ -1497,10 +1540,14 @@ export default function ChatScreen() {
                                         <IconSymbol name="person.fill" size={24} color="#fff" />
                                     </View>
                                 )}
-                                <View style={styles.headerTextContainer}>
-                                    <Text style={[styles.headerName, { color: theme.headerTintColor }]} numberOfLines={1}>{chatName || name}</Text>
-                                    <Text style={[styles.headerStatus, { color: theme.headerTintColor }]}>{isUserOnline ? "online" : "last seen recently"}</Text>
-                                </View>
+                                    <View style={styles.headerTextContainer}>
+                                        <Text style={[styles.headerName, { color: '#fff' }]} numberOfLines={1}>
+                                            {chatName || "Chat"}
+                                        </Text>
+                                        <Text style={[styles.headerStatus, { color: 'rgba(255,255,255,0.8)' }]}>
+                                            {!isSocketConnected ? "Connecting..." : (isUserOnline ? "online" : "offline")}
+                                        </Text>
+                                    </View>
                             </TouchableOpacity>
                         </View>
                     ),
@@ -1650,8 +1697,11 @@ export default function ChatScreen() {
                 )}
 
                 <FlatList
+                    ref={flatListRef}
+                    inverted
                     style={{ flex: 1 }}
                     data={messages}
+                    extraData={messages}
                     keyExtractor={(item) => item._id}
                     renderItem={({ item, index }) => {
                         const isMyMessage = (item.sender?._id || item.sender) === currentUserId;
@@ -1790,10 +1840,6 @@ export default function ChatScreen() {
                         );
                     }}
                     contentContainerStyle={styles.messagesList}
-                    /* Scroll to bottom on new message */
-                    onContentSizeChange={() => messages.length > 0 && flatListRef.current?.scrollToEnd({ animated: true })}
-                    onLayout={() => messages.length > 0 && flatListRef.current?.scrollToEnd({ animated: true })}
-                    ref={flatListRef}
                 />
                 {replyingTo && (
                     <View style={{ padding: 10, backgroundColor: 'rgba(0,0,0,0.05)', borderTopWidth: 1, borderTopColor: '#eee', flexDirection: 'row', alignItems: 'center' }}>
@@ -2118,7 +2164,7 @@ export default function ChatScreen() {
 const incomingStyles = StyleSheet.create({
     overlay: {
         flex: 1,
-        backgroundColor: '#075E54', // WhatsApp Green
+        backgroundColor: '#075E54', // Chatzy Green
     },
     container: {
         flex: 1,

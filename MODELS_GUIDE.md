@@ -1,4 +1,4 @@
-# WhatsApp Clone Models Guide
+# Chatzy Clone Models Guide
 
 Here is a practical guide on how to use the 3 new models (`Status`, `Call`, `Community`) in your Node.js/Express backend.
 

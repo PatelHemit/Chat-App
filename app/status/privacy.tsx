@@ -145,7 +145,7 @@ export default function StatusPrivacyScreen() {
         <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
             <Stack.Screen options={{ headerShown: false }} />
 
-            {/* Custom WhatsApp Teal Header */}
+            {/* Custom Chatzy Teal Header */}
             <View style={[styles.header, { backgroundColor: '#008069' }]}>
                 <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
                     <IconSymbol name="arrow.left" size={24} color="#FFFFFF" />
