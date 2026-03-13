@@ -319,24 +319,30 @@ export default function MetaAIScreen() {
 
     return (
         <SafeAreaView style={[styles.container, { backgroundColor: Colors[colorScheme].background }]} edges={['top', 'left', 'right', 'bottom']}>
-            <Stack.Screen options={{ headerShown: false }} />
-
-            {/* Header */}
-            <View style={[styles.header, { backgroundColor: Colors[colorScheme].headerBackground }]}>
-                <View style={styles.headerLeft}>
-                    <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-                        <IconSymbol name="arrow.left" size={24} color={Colors[colorScheme].headerTintColor} />
-                    </TouchableOpacity>
-                    <View style={styles.headerTitleContainer}>
-                        <Text style={[styles.headerTitle, { color: Colors[colorScheme].headerTintColor }]}>Meta AI</Text>
-                        <Text style={styles.headerSubtitle}>with Llama 3</Text>
-                    </View>
-                </View>
-            </View>
+            <Stack.Screen
+                options={{
+                    headerStyle: {
+                        backgroundColor: Colors[colorScheme].headerBackground,
+                    },
+                    headerTintColor: Colors[colorScheme].headerTintColor,
+                    headerTitleAlign: 'left',
+                    headerTitle: () => (
+                        <View style={styles.headerTitleContainer}>
+                            <Text style={[styles.headerTitle, { color: Colors[colorScheme].headerTintColor }]}>Meta AI</Text>
+                            <Text style={styles.headerSubtitle}>with Llama 3</Text>
+                        </View>
+                    ),
+                    headerLeft: () => (
+                        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+                            <IconSymbol name="arrow.left" size={24} color={Colors[colorScheme].headerTintColor} />
+                        </TouchableOpacity>
+                    ),
+                }}
+            />
 
             <KeyboardAvoidingView
-                behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-                keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
+                behavior="padding"
+                keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 98}
                 style={{ flex: 1 }}
             >
                 <ImageBackground
@@ -490,32 +496,34 @@ const styles = StyleSheet.create({
     },
     inputContainer: {
         flexDirection: 'row',
-        alignItems: 'center',
-        padding: 8,
-        // When edges includes 'bottom', SafeAreaView handles the home indicator/nav bar padding.
-        // We only add extra for iOS if needed, but for Android 8 is usually enough.
-        paddingBottom: Platform.OS === 'ios' ? 10 : 8,
+        padding: 5, // Match chat screen's tighter padding
+        alignItems: 'flex-end',
+        backgroundColor: '#f0f0f0', // Will be overridden by theme
+        // SafeAreaView handles bottom padding on iOS, we don't need extra paddingBottom
     },
     inputFieldContainer: {
         flex: 1,
         flexDirection: 'row',
         alignItems: 'center',
         borderRadius: 25,
-        marginRight: 8,
-        paddingVertical: 4,
+        marginRight: 5,
+        minHeight: 40,
     },
     input: {
         flex: 1,
-        paddingHorizontal: 10,
-        paddingVertical: 8,
         fontSize: 16,
-        maxHeight: 30,
-        borderWidth: 0,
-        borderColor: 'transparent',
+        maxHeight: 120,
+        paddingVertical: 10,
+        paddingHorizontal: 10,
         ...Platform.select({
             web: {
                 outlineStyle: 'none',
-            } as any
+                height: 40,
+                marginVertical: 4,
+            } as any,
+            android: {
+                paddingVertical: 8,
+            }
         }),
     },
     sendButton: {
