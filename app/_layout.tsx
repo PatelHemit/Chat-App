@@ -807,6 +807,14 @@ export default function RootLayout() {
                 await NotificationService.sendFCMTokenToBackend(fcmToken, userToken, API_BASE_URL);
               }
             }
+
+            // 3. E2EE Public Key Sync
+            const { EncryptionService } = require('@/services/EncryptionService');
+            const publicKey = await EncryptionService.getOrGeneratePublicKey();
+            if (publicKey) {
+              console.log('[E2EE] Syncing public key with server...');
+              await EncryptionService.syncPublicKeyWithServer(publicKey, userToken);
+            }
           } catch (tokenErr) {
             console.error('[Token] Registration process failed:', tokenErr);
           }

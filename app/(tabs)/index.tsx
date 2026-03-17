@@ -71,12 +71,40 @@ export default function HomeScreen() {
       const response = await fetch(`${API_BASE_URL}/api/chat?t=${Date.now()}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
+
+      if (response.status === 401) {
+        console.warn("[HomeScreen] 401 Unauthorized - Token invalid. Auto-logging out.");
+        await AsyncStorage.removeItem('userToken');
+        await AsyncStorage.removeItem('userInfo');
+        if (Platform.OS === 'web') {
+          router.replace('/auth/qr-login' as any);
+        } else {
+          router.replace('/auth/welcome' as any);
+        }
+        return;
+      }
+
       const data = await response.json();
       console.log(`[HomeScreen] Fetched ${data?.length} chats`);
 
       if (Array.isArray(data)) {
-        setChats(data);
-        setFilteredChats(data);
+        const { EncryptionService } = require('@/services/EncryptionService');
+        const processedChats = await Promise.all(data.map(async (chat) => {
+          if (chat.latestMessage?.type === 'text' && EncryptionService.isEncrypted(chat.latestMessage.content)) {
+            try {
+              const decrypted = await EncryptionService.decrypt(chat.latestMessage.content);
+              return {
+                ...chat,
+                latestMessage: { ...chat.latestMessage, content: decrypted }
+              };
+            } catch (e) {
+              console.log('[HomeScreen] Decryption failed for chat:', chat._id);
+            }
+          }
+          return chat;
+        }));
+        setChats(processedChats);
+        setFilteredChats(processedChats);
       }
     } catch (error) {
       console.error(error);

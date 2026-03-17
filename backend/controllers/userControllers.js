@@ -354,4 +354,29 @@ const testCallPushNotification = asyncHandler(async (req, res) => {
     res.json({ success: true, results });
 });
 
-module.exports = { allUsers, updateProfile, registerPushToken, registerFcmToken, blockUser, unblockUser, getBlockedUsers, deleteAccount, getBlockStatus, toggleNotifications, testPushNotification, testCallPushNotification };
+// @description     Update User Public Key for E2EE
+// @route           POST /api/user/update-public-key
+// @access          Protected
+const updatePublicKey = asyncHandler(async (req, res) => {
+    const { publicKey } = req.body;
+
+    if (!publicKey) {
+        res.status(400);
+        throw new Error("Public key is required");
+    }
+
+    const user = await User.findByIdAndUpdate(
+        req.user._id,
+        { publicKey },
+        { new: true }
+    );
+
+    if (!user) {
+        res.status(404);
+        throw new Error("User not found");
+    }
+
+    res.json({ success: true, message: "Public key updated successfully" });
+});
+
+module.exports = { allUsers, updateProfile, registerPushToken, registerFcmToken, blockUser, unblockUser, getBlockedUsers, deleteAccount, getBlockStatus, toggleNotifications, testPushNotification, testCallPushNotification, updatePublicKey };

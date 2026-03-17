@@ -365,6 +365,7 @@ export default function ChatScreen() {
     const [recordingDuration, setRecordingDuration] = useState(0);
     const [isRecording, setIsRecording] = useState(false);
     const [recording, setRecording] = useState<Audio.Recording | null>(null);
+    const [recipientPublicKey, setRecipientPublicKey] = useState<string | null>(null);
     const { socket } = useCall();
 
     const flatListRef = useRef<FlatList>(null);
@@ -466,8 +467,18 @@ export default function ChatScreen() {
                 headers: { Authorization: `Bearer ${token}` }
             });
             const data = await response.json();
+            
+            // Decrypt messages if needed
+            const { EncryptionService } = require('@/services/EncryptionService');
+            const decryptedData = await Promise.all(data.map(async (msg: any) => {
+                if (msg.type === 'text' && EncryptionService.isEncrypted(msg.content)) {
+                    msg.content = await EncryptionService.decrypt(msg.content);
+                }
+                return msg;
+            }));
+
             // Inverted list: newest at the beginning of the array (bottom of screen)
-            setMessages([...data].reverse());
+            setMessages([...decryptedData].reverse());
         } catch (error) {
             console.log(error);
         } finally {
@@ -507,6 +518,10 @@ export default function ChatScreen() {
                         }
                         if (otherUser?.name) {
                             setChatName(otherUser.name);
+                        }
+                        if (otherUser?.publicKey) {
+                            setRecipientPublicKey(otherUser.publicKey);
+                            console.log('[E2EE] Recipient public key loaded');
                         }
                     }
                 }
@@ -606,13 +621,22 @@ export default function ChatScreen() {
             const incomingChatId = newMessageRecieved.chat._id || newMessageRecieved.chat;
 
             if (String(id) === String(incomingChatId)) {
-                if (String(newMessageRecieved.sender._id) !== String(currentUserId)) {
-                    setMessages((prev) => {
-                        const isDuplicate = prev.some(m => m._id === newMessageRecieved._id);
-                        if (isDuplicate) return prev;
-                        return [newMessageRecieved, ...prev];
-                    });
+                // Decrypt if needed
+                if (newMessageRecieved.type === 'text') {
+                   const { EncryptionService } = require('@/services/EncryptionService');
+                   if (EncryptionService.isEncrypted(newMessageRecieved.content)) {
+                       EncryptionService.decrypt(newMessageRecieved.content).then((decrypted: string) => {
+                           newMessageRecieved.content = decrypted;
+                           addMessageToState(newMessageRecieved);
+                       });
+                   } else {
+                       addMessageToState(newMessageRecieved);
+                   }
+                } else {
+                    addMessageToState(newMessageRecieved);
+                }
 
+                if (String(newMessageRecieved.sender._id) !== String(currentUserId)) {
                     // Explicitly signal that we've read this message
                     socket.emit("mark-as-read", {
                         messageId: newMessageRecieved._id,
@@ -620,14 +644,16 @@ export default function ChatScreen() {
                         chatId: id,
                         userId: currentUserId
                     });
-                } else {
-                    // Check if message is in state, if not add it (e.g. sent from another device)
-                    setMessages((prev) => {
-                        if (prev.some(m => m._id === newMessageRecieved._id)) return prev;
-                        return [newMessageRecieved, ...prev];
-                    });
                 }
             }
+        };
+
+        const addMessageToState = (msg: any) => {
+            setMessages((prev) => {
+                const isDuplicate = prev.some(m => m._id === msg._id);
+                if (isDuplicate) return prev;
+                return [msg, ...prev];
+            });
         };
 
         const handleMessageStatusUpdated = ({ messageId, status }: any) => {
@@ -984,6 +1010,17 @@ export default function ChatScreen() {
             const token = await AsyncStorage.getItem("userToken");
             setMessage(""); // Clear input immediately
 
+            const { EncryptionService } = require('@/services/EncryptionService');
+            let contentToSend = currentMessage;
+
+            if (recipientPublicKey) {
+                console.log('[E2EE] Encrypting message for recipient...');
+                const encrypted = await EncryptionService.encrypt(currentMessage, recipientPublicKey);
+                if (encrypted) {
+                    contentToSend = encrypted;
+                }
+            }
+
             const response = await fetch(`${API_BASE_URL}/api/message`, {
                 method: "POST",
                 headers: {
@@ -991,7 +1028,7 @@ export default function ChatScreen() {
                     Authorization: `Bearer ${token}`,
                 },
                 body: JSON.stringify({
-                    content: currentMessage,
+                    content: contentToSend,
                     chatId: id,
                     type: 'text'
                 }),
@@ -1011,6 +1048,11 @@ export default function ChatScreen() {
 
             // Default status is sent
             newMessage.status = newMessage.status || 'sent';
+            
+            // Decrypt local display content (restore our original unencrypted text)
+            if (newMessage.type === 'text' && EncryptionService.isEncrypted(newMessage.content)) {
+                newMessage.content = currentMessage;
+            }
 
             // Emit socket message using global socket
             if (socket) {
