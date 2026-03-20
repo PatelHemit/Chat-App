@@ -60,9 +60,9 @@ const styles = StyleSheet.create({
     headerTitleContainer: {
         flexDirection: 'row',
         alignItems: 'center',
-        paddingVertical: Platform.OS === 'android' ? 8 : 4,
+        paddingVertical: Platform.OS === 'android' ? 12 : 8,
         paddingRight: 15,
-        paddingTop: Platform.OS === 'android' ? 5 : 4,
+        paddingTop: Platform.OS === 'android' ? 2 : 0,
     },
     avatar: {
         width: 40,
@@ -467,7 +467,7 @@ export default function ChatScreen() {
                 headers: { Authorization: `Bearer ${token}` }
             });
             const data = await response.json();
-            
+
             // Decrypt messages if needed
             const { EncryptionService } = require('@/services/EncryptionService');
             const decryptedData = await Promise.all(data.map(async (msg: any) => {
@@ -623,15 +623,15 @@ export default function ChatScreen() {
             if (String(id) === String(incomingChatId)) {
                 // Decrypt if needed
                 if (newMessageRecieved.type === 'text') {
-                   const { EncryptionService } = require('@/services/EncryptionService');
-                   if (EncryptionService.isEncrypted(newMessageRecieved.content)) {
-                       EncryptionService.decrypt(newMessageRecieved.content).then((decrypted: string) => {
-                           newMessageRecieved.content = decrypted;
-                           addMessageToState(newMessageRecieved);
-                       });
-                   } else {
-                       addMessageToState(newMessageRecieved);
-                   }
+                    const { EncryptionService } = require('@/services/EncryptionService');
+                    if (EncryptionService.isEncrypted(newMessageRecieved.content)) {
+                        EncryptionService.decrypt(newMessageRecieved.content).then((decrypted: string) => {
+                            newMessageRecieved.content = decrypted;
+                            addMessageToState(newMessageRecieved);
+                        });
+                    } else {
+                        addMessageToState(newMessageRecieved);
+                    }
                 } else {
                     addMessageToState(newMessageRecieved);
                 }
@@ -1048,7 +1048,7 @@ export default function ChatScreen() {
 
             // Default status is sent
             newMessage.status = newMessage.status || 'sent';
-            
+
             // Decrypt local display content (restore our original unencrypted text)
             if (newMessage.type === 'text' && EncryptionService.isEncrypted(newMessage.content)) {
                 newMessage.content = currentMessage;
@@ -1561,16 +1561,28 @@ export default function ChatScreen() {
     };
 
     return (
-        <SafeAreaView style={[styles.container, { backgroundColor: theme.chatBackground }]} edges={['top', 'left', 'right', 'bottom']}>
+        <SafeAreaView style={[styles.container, { backgroundColor: theme.chatBackground }]} edges={['left', 'right', 'bottom']}>
             <Stack.Screen
                 options={{
+                    headerLeft: () => (
+                        <TouchableOpacity 
+                            style={{ marginLeft: 5, padding: 5 }} 
+                            onPress={() => router.back()}
+                            hitSlop={{ top: 20, bottom: 20, left: 20, right: 20 }}
+                        >
+                            <IconSymbol name="chevron.left" size={24} color="#fff" />
+                        </TouchableOpacity>
+                    ),
+                    headerBackground: () => (
+                        <View style={{ backgroundColor: '#008069', flex: 1 }} />
+                    ),
                     headerStyle: {
-                        backgroundColor: theme.headerBackground,
+                        backgroundColor: '#008069', // WhatsApp Green
                     },
-                    headerTintColor: theme.headerTintColor,
+                    headerTintColor: '#fff',
                     headerTitleAlign: 'left',
                     headerTitle: () => (
-                        <View style={styles.headerTitleContainer}>
+                        <View style={[styles.headerTitleContainer, { marginLeft: 15 }]}>
                             <TouchableOpacity
                                 style={{ flexDirection: 'row', alignItems: 'center' }}
                                 onPress={() => router.push({ pathname: '/chat/info', params: { id, name, profilePic, otherUserId } })}
@@ -1582,19 +1594,19 @@ export default function ChatScreen() {
                                         <IconSymbol name="person.fill" size={24} color="#fff" />
                                     </View>
                                 )}
-                                    <View style={styles.headerTextContainer}>
-                                        <Text style={[styles.headerName, { color: '#fff' }]} numberOfLines={1}>
-                                            {chatName || "Chat"}
-                                        </Text>
-                                        <Text style={[styles.headerStatus, { color: 'rgba(255,255,255,0.8)' }]}>
-                                            {!isSocketConnected ? "Connecting..." : (isUserOnline ? "online" : "offline")}
-                                        </Text>
-                                    </View>
+                                <View style={styles.headerTextContainer}>
+                                    <Text style={[styles.headerName, { color: '#fff' }]} numberOfLines={1}>
+                                        {chatName || "Chat"}
+                                    </Text>
+                                    <Text style={[styles.headerStatus, { color: 'rgba(255,255,255,0.8)' }]}>
+                                        {!isSocketConnected ? "Connecting..." : (isUserOnline ? "online" : "offline")}
+                                    </Text>
+                                </View>
                             </TouchableOpacity>
                         </View>
                     ),
                     headerRight: () => (
-                        <View style={styles.headerRight}>
+                        <View style={[styles.headerRight]}>
 
                             <TouchableOpacity style={styles.headerIconTouch} onPress={() => {
                                 console.log(`[ChatScreen] Video Call pressed. otherUserId: ${otherUserId}, currentUserId: ${currentUserId}`);
@@ -1608,7 +1620,7 @@ export default function ChatScreen() {
                                     profilePic: currentUserProfilePic
                                 }, true, chatName, chatPic);
                             }}>
-                                <IconSymbol name="video.fill" size={22} color={theme.headerTintColor} />
+                                <IconSymbol name="video.fill" size={22} color="#fff" />
                             </TouchableOpacity>
                             <TouchableOpacity style={styles.headerIconTouch} onPress={() => {
                                 console.log(`[ChatScreen] Voice Call pressed. otherUserId: ${otherUserId}, currentUserId: ${currentUserId}`);
@@ -1622,10 +1634,10 @@ export default function ChatScreen() {
                                     profilePic: currentUserProfilePic
                                 }, false, chatName, chatPic);
                             }}>
-                                <IconSymbol name="phone.fill" size={22} color={theme.headerTintColor} />
+                                <IconSymbol name="phone.fill" size={22} color="#fff" />
                             </TouchableOpacity>
                             <TouchableOpacity style={styles.headerIconTouch} onPress={() => setHeaderMenuVisible(true)}>
-                                <IconSymbol name="ellipsis.vertical" size={22} color={theme.headerTintColor} />
+                                <IconSymbol name="ellipsis.vertical" size={22} color="#fff" />
                             </TouchableOpacity>
 
                             <Modal
@@ -1670,6 +1682,7 @@ export default function ChatScreen() {
                     ),
                 }}
             />
+
             {loading && <ActivityIndicator size="large" color="#008069" />}
 
             {/* Search Bar UI */}
@@ -1715,7 +1728,7 @@ export default function ChatScreen() {
 
             <KeyboardAvoidingView
                 behavior={Platform.OS === 'ios' ? 'padding' : 'padding'}
-                keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 98}
+                keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
                 style={{ flex: 1 }}
             >
                 {/* Blocked Banners */}

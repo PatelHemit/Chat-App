@@ -1,32 +1,32 @@
 const mongoose = require('mongoose');
 require('dotenv').config();
 
-const User = require('./models/User');
+const UserSchema = new mongoose.Schema({
+  name: String,
+  fcmTokens: [String],
+  pushTokens: [String]
+}, { collection: 'users' });
 
-const checkTokens = async () => {
-    try {
-        await mongoose.connect(process.env.MONGO_URI || "mongodb+srv://hemitpatel550:oY4V8s37229N195T@cluster0.z5i6k.mongodb.net/chat-app?retryWrites=true&w=majority");
-        console.log("--- Token Diagnostic ---");
-        const users = await User.find({}, 'name phone pushTokens fcmTokens');
+const User = mongoose.model('User', UserSchema);
 
-        users.forEach(u => {
-            console.log(`User: ${u.name || u.phone}`);
-            console.log(`  - Expo Tokens: ${u.pushTokens?.length || 0}`);
-            if (u.pushTokens?.length > 0) {
-                u.pushTokens.forEach((t, i) => console.log(`      [${i}] ${t}`));
-            }
-            console.log(`  - FCM Tokens: ${u.fcmTokens?.length || 0}`);
-            if (u.fcmTokens?.length > 0) {
-                u.fcmTokens.forEach((t, i) => console.log(`      [${i}] ${t.substring(0, 20)}...`));
-            }
-            console.log("------------------------");
-        });
-
-        process.exit(0);
-    } catch (err) {
-        console.error("Error:", err);
-        process.exit(1);
-    }
+async function checkUsers() {
+  try {
+    const mongoUri = process.env.MONGODB_URI || 'mongodb://localhost:27017/chat-app';
+    console.log('Connecting to:', mongoUri);
+    await mongoose.connect(mongoUri);
+    
+    const users = await User.find({}, 'name fcmTokens pushTokens');
+    console.log('Found users:', users.length);
+    users.forEach(u => {
+      console.log(`User: ${u.name}`);
+      console.log(`  FCM Tokens: ${u.fcmTokens?.length || 0}`);
+      console.log(`  Push Tokens: ${u.pushTokens?.length || 0}`);
+    });
+    
+    mongoose.connection.close();
+  } catch (err) {
+    console.error('Error:', err);
+  }
 }
 
-checkTokens();
+checkUsers();

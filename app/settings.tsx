@@ -5,8 +5,9 @@ import { useColorScheme } from '@/hooks/use-color-scheme';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as ImagePicker from 'expo-image-picker';
 import { Stack, useFocusEffect, useRouter } from 'expo-router';
-import { ActivityIndicator, Alert, Image, Platform, StyleSheet, Switch, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, Image, Platform, StyleSheet, Switch, Text, TouchableOpacity, View, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import NotificationService from '@/services/NotificationService';
 
 import { useNavigation } from 'expo-router';
 import { useCallback, useState } from 'react';
@@ -111,6 +112,41 @@ export default function SettingsScreen() {
         }
     };
 
+    const [testingCall, setTestingCall] = useState(false);
+
+    const handleTestCall = async () => {
+        setTestingCall(true);
+        try {
+            const token = await AsyncStorage.getItem('userToken');
+            const response = await fetch(`${API_BASE_URL}/api/user/test-call-push`, {
+                method: 'POST',
+                headers: {
+                    Authorization: `Bearer ${token}`
+                }
+            });
+            const data = await response.json();
+            if (response.ok) {
+                if (Platform.OS === 'web') {
+                    alert("Test Initiated: A background signal has been sent to this device. Please close the app COMPLETELY and wait 5-10 seconds.");
+                } else {
+                    Alert.alert(
+                        "Test Initiated", 
+                        "A high-priority background signal has been sent to this device. Please close the app COMPLETELY and wait 5-10 seconds to see if the calling UI appears."
+                    );
+                }
+            } else {
+                if (Platform.OS === 'web') alert(data.message || "Failed to trigger test call");
+                else Alert.alert("Error", data.message || "Failed to trigger test call");
+            }
+        } catch (error) {
+            console.error(error);
+            if (Platform.OS === 'web') alert("Network error while testing");
+            else Alert.alert("Error", "Network error while testing");
+        } finally {
+            setTestingCall(false);
+        }
+    };
+
     const handleLogout = async () => {
         if (Platform.OS === 'web') {
             const confirmed = window.confirm("Are you sure you want to log out?");
@@ -204,6 +240,7 @@ export default function SettingsScreen() {
 
     return (
         <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
+            <ScrollView showsVerticalScrollIndicator={false}>
             <Stack.Screen
                 options={{
                     headerShown: true,
@@ -301,13 +338,45 @@ export default function SettingsScreen() {
                 </TouchableOpacity>
 
                 <TouchableOpacity
-                    style={[styles.logoutButton, { backgroundColor: colorScheme === 'dark' ? '#1f2c34' : '#fff' }]}
+                    style={[styles.logoutButton, { backgroundColor: colorScheme === 'dark' ? '#1f2c34' : '#fff', marginBottom: 10 }]}
                     onPress={handleLogout}
                 >
                     <IconSymbol name="arrow.right.circle" size={24} color="#F53649" style={styles.logoutIcon} />
                     <Text style={styles.logoutText}>Log Out</Text>
                 </TouchableOpacity>
+
+                {/* Diagnostics Section */}
+                <View style={{ marginTop: 30, paddingHorizontal: 4 }}>
+                    <Text style={{ fontSize: 13, color: '#666', marginBottom: 15, fontWeight: 'bold', textTransform: 'uppercase' }}>
+                        Diagnostics & Reliability
+                    </Text>
+                    
+                    <TouchableOpacity
+                        style={[styles.menuItem, { backgroundColor: colorScheme === 'dark' ? '#1f2c34' : '#fff' }]}
+                        onPress={handleTestCall}
+                        disabled={testingCall}
+                    >
+                        <IconSymbol name="phone.badge.plus" size={24} color="#25D366" style={styles.menuIcon} />
+                        <View style={{ flex: 1 }}>
+                            <Text style={[styles.menuText, { color: theme.text }]}>Test Background Call</Text>
+                            <Text style={{ fontSize: 12, color: '#666' }}>Verify if app rings when closed</Text>
+                        </View>
+                        {testingCall && <ActivityIndicator size="small" color="#25D366" />}
+                    </TouchableOpacity>
+
+                    {Platform.OS === 'android' && (
+                        <View style={{ padding: 12, backgroundColor: 'rgba(37, 211, 102, 0.05)', borderRadius: 10, marginTop: 5 }}>
+                            <Text style={{ fontSize: 12, color: '#666', lineHeight: 18 }}>
+                                <Text style={{ fontWeight: 'bold' }}>Note for Android:</Text> If the test call doesn't appear when the app is killed, ensure you have allowed:
+                                {"\n"}• "Display over other apps"
+                                {"\n"}• "Auto-start"
+                                {"\n"}• "No restrictions" in Battery optimization
+                            </Text>
+                        </View>
+                    )}
+                </View>
             </View>
+            </ScrollView>
         </SafeAreaView>
     );
 }

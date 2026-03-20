@@ -14,6 +14,8 @@ interface CallContextType {
     otherUserPic: string | null;
     userInfo: any;
     socket: any;
+    videoSwitchRequest: { fromId: string; fromName: string } | null;
+    setVideoSwitchRequest: (request: { fromId: string; fromName: string } | null) => void;
     setUserInfo: (info: any) => void;
     setIncomingCall: (call: any) => void;
     setIsReceivingCall: (status: boolean) => void;
@@ -27,6 +29,12 @@ interface CallContextType {
     setOtherUserPic: (pic: string | null) => void;
     setSocket: (socket: any) => void;
     initiateCall: (to: string, from: any, isVideo: boolean, toName?: string, toPic?: string) => void;
+    requestVideoSwitch: () => void;
+    respondToVideoSwitch: (accepted: boolean) => void;
+    requestVoiceSwitch: () => void;
+    voiceSwitchRequest: { fromId: string; fromName: string } | null;
+    setVoiceSwitchRequest: (request: { fromId: string; fromName: string } | null) => void;
+    respondToVoiceSwitch: (accepted: boolean) => void;
 }
 
 const CallContext = createContext<CallContextType | undefined>(undefined);
@@ -44,6 +52,8 @@ export const CallProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const [otherUserPic, setOtherUserPic] = useState<string | null>(null);
     const [userInfo, setUserInfo] = useState<any>(null);
     const [socket, setSocket] = useState<any>(null);
+    const [videoSwitchRequest, setVideoSwitchRequest] = useState<{ fromId: string; fromName: string } | null>(null);
+    const [voiceSwitchRequest, setVoiceSwitchRequest] = useState<{ fromId: string; fromName: string } | null>(null);
 
     const initiateCall = (to: string, from: any, isVideo: boolean, toName?: string, toPic?: string) => {
         const roomName = `room-${to}-${Date.now()}`;
@@ -88,6 +98,54 @@ export const CallProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
     };
 
+    const requestVideoSwitch = () => {
+        if (socket && otherUserId) {
+            console.log(`[CallContext] Emitting video-switch-request to: ${otherUserId}`);
+            socket.emit("video-switch-request", { 
+                to: otherUserId, 
+                fromName: userInfo?.name || "Participant" 
+            });
+        }
+    };
+
+    const requestVoiceSwitch = () => {
+        if (socket && otherUserId) {
+            console.log(`[CallContext] Emitting voice-switch-request to: ${otherUserId}`);
+            socket.emit("voice-switch-request", { 
+                to: otherUserId, 
+                fromName: userInfo?.name || "Participant" 
+            });
+        }
+    };
+
+    const respondToVideoSwitch = (accepted: boolean) => {
+        if (socket && otherUserId) {
+            console.log(`[CallContext] Emitting video-switch-response to: ${otherUserId}, accepted: ${accepted}`);
+            socket.emit("video-switch-response", { 
+                to: otherUserId, 
+                accepted 
+            });
+            setVideoSwitchRequest(null);
+            if (accepted) {
+                setIsVideoCall(true);
+            }
+        }
+    };
+
+    const respondToVoiceSwitch = (accepted: boolean) => {
+        if (socket && otherUserId) {
+            console.log(`[CallContext] Emitting voice-switch-response to: ${otherUserId}, accepted: ${accepted}`);
+            socket.emit("voice-switch-response", { 
+                to: otherUserId, 
+                accepted 
+            });
+            setVoiceSwitchRequest(null);
+            if (accepted) {
+                setIsVideoCall(false);
+            }
+        }
+    };
+
     return (
         <CallContext.Provider value={{
             incomingCall,
@@ -102,6 +160,8 @@ export const CallProvider: React.FC<{ children: React.ReactNode }> = ({ children
             otherUserPic,
             userInfo,
             socket,
+            videoSwitchRequest,
+            setVideoSwitchRequest,
             setUserInfo,
             setIncomingCall,
             setIsReceivingCall,
@@ -114,7 +174,13 @@ export const CallProvider: React.FC<{ children: React.ReactNode }> = ({ children
             setOtherUserName,
             setOtherUserPic,
             setSocket,
-            initiateCall
+            initiateCall,
+            requestVideoSwitch,
+            respondToVideoSwitch,
+            requestVoiceSwitch,
+            voiceSwitchRequest,
+            setVoiceSwitchRequest,
+            respondToVoiceSwitch
         }}>
             {children}
         </CallContext.Provider>

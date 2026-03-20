@@ -24,7 +24,7 @@ export const LiveKitCallScreen = ({
     visible,
     roomName,
     onClose,
-    isVideoCall = true
+    isVideoCall: initialIsVideoCall = true
 }: {
     visible: boolean;
     roomName: string;
@@ -34,16 +34,24 @@ export const LiveKitCallScreen = ({
     const [token, setToken] = useState<string | null>(null);
     const [fetching, setFetching] = useState(false);
     const [duration, setDuration] = useState(0);
-    const { socket, otherUserId, callConnected, otherUserName, otherUserPic, incomingCall } = useCall();
+    const { socket, otherUserId, callConnected, otherUserName, otherUserPic, incomingCall, isVideoCall: contextIsVideo, activeRoomName } = useCall();
+    const isVideoCall = contextIsVideo ?? initialIsVideoCall;
     const fetchedForRoom = useRef<string | null>(null);
 
     // Resolve display info - from incomingCall (callee) or from context (caller)
     const displayName = otherUserName || incomingCall?.from?.name || 'Unknown';
     const displayPic = otherUserPic || incomingCall?.from?.profilePic || null;
 
+    // Use context roomName as fallback if prop is missing
+    const effectiveRoomName = roomName || activeRoomName || incomingCall?.roomName;
+
+    console.log(`[LiveKitScreen] Render - visible: ${visible}, propRoom: ${roomName}, contextRoom: ${activeRoomName}, effective: ${effectiveRoomName}, hasToken: ${!!token}, fetching: ${fetching}`);
+
     // Fetch a fresh token whenever the call becomes visible with a new roomName
     useEffect(() => {
-        if (!visible || !roomName) {
+        const effectiveRoomName = roomName || activeRoomName || incomingCall?.roomName;
+        if (!visible || !effectiveRoomName) {
+            console.log(`[LiveKitScreen] getToken skipped: visible=${visible}, room=${effectiveRoomName}`);
             if (!visible) {
                 const timer = setTimeout(() => {
                     setToken(null);
@@ -54,14 +62,22 @@ export const LiveKitCallScreen = ({
             return;
         }
 
-        if (fetchedForRoom.current === roomName) return;
+        if (fetchedForRoom.current === effectiveRoomName && token) return;
 
         let cancelled = false;
-        const getToken = async () => {
+        const getToken = async (retries = 0) => {
+            console.log(`[LiveKitScreen] getToken for: ${effectiveRoomName} (Attempt ${retries + 1})`);
             setFetching(true);
             try {
                 const userInfoStr = await AsyncStorage.getItem("userInfo");
-                if (!userInfoStr) throw new Error("User not logged in");
+                if (!userInfoStr) {
+                    if (retries < 2) {
+                        console.log("[LiveKit] UserInfo missing, retrying in 500ms...");
+                        setTimeout(() => getToken(retries + 1), 500);
+                        return;
+                    }
+                    throw new Error("User not logged in");
+                }
                 const userInfo = JSON.parse(userInfoStr);
                 const participantName = `${userInfo.name || userInfo.phone || "User"} (${userInfo._id?.slice(-4) || Math.random()})`;
                 const participantIdentity = userInfo._id || `user-${Math.random()}`;
@@ -73,20 +89,24 @@ export const LiveKitCallScreen = ({
                         'Content-Type': 'application/json',
                         'Authorization': `Bearer ${userToken}`
                     },
-                    body: JSON.stringify({ roomName, participantName, participantIdentity })
+                    body: JSON.stringify({ roomName: effectiveRoomName, participantName, participantIdentity })
                 });
 
-                if (!res.ok) throw new Error("Failed to get token");
+                if (!res.ok) throw new Error(`Token API failed: ${res.status}`);
                 const data = await res.json();
 
                 if (!cancelled) {
+                    console.log("[LiveKitScreen] Token fetched successfully!");
                     setToken(data.token);
-                    fetchedForRoom.current = roomName;
+                    fetchedForRoom.current = effectiveRoomName;
                 }
-            } catch (err) {
+            } catch (err: any) {
                 console.error("[LiveKit] Token error:", err);
-                if (!cancelled) {
-                    Alert.alert("Error", "Could not connect to call service.");
+                if (retries < 3 && !cancelled) {
+                    console.log(`[LiveKit] Retrying token fetch in 2s... (${retries + 1}/3)`);
+                    setTimeout(() => getToken(retries + 1), 2000);
+                } else if (!cancelled) {
+                    Alert.alert("Connection Error", "Could not connect to call service. Please check your internet.");
                     onClose();
                 }
             } finally {
@@ -96,7 +116,7 @@ export const LiveKitCallScreen = ({
 
         getToken();
         return () => { cancelled = true; };
-    }, [visible, roomName]);
+    }, [visible, roomName, activeRoomName, incomingCall?.roomName]);
 
     // Call Timer Logic
     useEffect(() => {
@@ -186,7 +206,7 @@ export const LiveKitCallScreen = ({
                         >
                             <CallContent
                                 onClose={onClose}
-                                isVideoCall={isVideoCall}
+                                isVideoCall={isVideoCall} // Context value
                                 durationText={formatDuration(duration)}
                                 displayName={displayName}
                                 displayPic={displayPic}
@@ -195,13 +215,20 @@ export const LiveKitCallScreen = ({
                         </LiveKitRoom>
                     </ErrorBoundary>
                 ) : (
-                    // Loading screen (fetching token)
+                    // Loading screen (fetching token or waiting for context)
                     <View style={styles.voiceBg}>
                         <View style={styles.centerContainer}>
-                            <AvatarCircle name={displayName} pic={displayPic} size={110} pulse={false} />
+                            <AvatarCircle name={displayName} pic={displayPic} size={110} pulse={true} />
                             <Text style={styles.callerName}>{displayName}</Text>
-                            <ActivityIndicator size="small" color="rgba(255,255,255,0.6)" style={{ marginTop: 12 }} />
-                            <Text style={styles.statusText}>{fetching ? "Connecting..." : "Preparing..."}</Text>
+                            <ActivityIndicator size="small" color="#25D366" style={{ marginTop: 24 }} />
+                            <Text style={styles.statusText}>
+                                {fetching ? "Connecting to secure line..." : "Initializing call..."}
+                            </Text>
+                            {!token && !fetching && visible && (
+                                <Text style={[styles.statusText, { color: '#ff3b30', marginTop: 12 }]}>
+                                    Waiting for call signal...
+                                </Text>
+                            )}
                             <View style={{ alignItems: 'center', marginTop: 60 }}>
                                 <TouchableOpacity
                                     style={[styles.controlButton, styles.endButton]}
@@ -303,6 +330,20 @@ const CallContent = ({
 }) => {
     const room = useRoomContext();
     const { localParticipant } = useLocalParticipant();
+    const { 
+        videoSwitchRequest, respondToVideoSwitch, requestVideoSwitch, 
+        voiceSwitchRequest, respondToVoiceSwitch, requestVoiceSwitch 
+    } = useCall();
+    const [isSwitching, setIsSwitching] = useState(false);
+
+    useEffect(() => {
+        if (isVideoCall && isSwitching) {
+            setIsSwitching(false);
+        }
+        if (!isVideoCall && isSwitching) {
+            setIsSwitching(false);
+        }
+    }, [isVideoCall, isSwitching]);
 
     const tracks = useTracks([Track.Source.Camera, Track.Source.ScreenShare]);
     const localTrack = tracks.find(t => t.participant.isLocal);
@@ -432,6 +473,28 @@ const CallContent = ({
                     </View>
 
                     <View style={styles.controlItem}>
+                        <TouchableOpacity 
+                            style={[styles.controlButton, isSwitching && { backgroundColor: 'rgba(37, 211, 102, 0.2)' }]}
+                            onPress={() => {
+                                if (!isSwitching) {
+                                    console.log("[LiveKit] Requesting video switch...");
+                                    setIsSwitching(true);
+                                    requestVideoSwitch();
+                                    // Timeout if no response
+                                    setTimeout(() => setIsSwitching(false), 20000);
+                                }
+                            }}
+                        >
+                            {isSwitching ? (
+                                <ActivityIndicator size="small" color="#25D366" />
+                            ) : (
+                                <IconSymbol name="video.fill" size={24} color="#fff" />
+                            )}
+                        </TouchableOpacity>
+                        <Text style={styles.controlLabel}>{isSwitching ? "Pending..." : "Video"}</Text>
+                    </View>
+
+                    <View style={styles.controlItem}>
                         <TouchableOpacity style={[styles.controlButton, styles.endButton]} onPress={onClose}>
                             <IconSymbol name="phone.down.fill" size={30} color="#fff" />
                         </TouchableOpacity>
@@ -445,6 +508,32 @@ const CallContent = ({
                         <Text style={styles.controlLabel}>Speaker</Text>
                     </View>
                 </View>
+
+                {/* Video Switch Request Prompt */}
+                {videoSwitchRequest && (
+                    <View style={styles.requestOverlay}>
+                        <View style={styles.requestModal}>
+                            <Text style={styles.requestTitle}>{videoSwitchRequest.fromName} wants to turn on video</Text>
+                            <View style={styles.requestButtons}>
+                                <TouchableOpacity 
+                                    style={[styles.requestBtn, styles.declineRequestBtn]} 
+                                    onPress={() => respondToVideoSwitch(false)}
+                                >
+                                    <Text style={styles.requestBtnText}>Decline</Text>
+                                </TouchableOpacity>
+                                <TouchableOpacity 
+                                    style={[styles.requestBtn, styles.acceptRequestBtn]} 
+                                    onPress={async () => {
+                                        await localParticipant?.setCameraEnabled(true);
+                                        respondToVideoSwitch(true);
+                                    }}
+                                >
+                                    <Text style={styles.requestBtnText}>Accept</Text>
+                                </TouchableOpacity>
+                            </View>
+                        </View>
+                    </View>
+                )}
             </SafeAreaView>
         );
     }
@@ -516,12 +605,57 @@ const CallContent = ({
                 </View>
 
                 <View style={styles.controlItem}>
+                    <TouchableOpacity
+                        style={[styles.controlButton, isSwitching && styles.controlButtonActive]}
+                        onPress={() => {
+                            if (!isSwitching) {
+                                console.log("[LiveKit] Requesting voice switch...");
+                                setIsSwitching(true);
+                                requestVoiceSwitch();
+                                // Safety timeout
+                                setTimeout(() => setIsSwitching(false), 20000);
+                            }
+                        }}
+                    >
+                        {isSwitching ? (
+                            <ActivityIndicator size="small" color="#fff" />
+                        ) : (
+                            <IconSymbol name="phone.fill" size={22} color="#fff" />
+                        )}
+                    </TouchableOpacity>
+                    <Text style={styles.controlLabel}>{isSwitching ? 'Pending...' : 'Voice'}</Text>
+                </View>
+
+                <View style={styles.controlItem}>
                     <TouchableOpacity style={[styles.controlButton, styles.endButton]} onPress={onClose}>
                         <IconSymbol name="phone.down.fill" size={28} color="#fff" />
                     </TouchableOpacity>
                     <Text style={styles.controlLabel}>End</Text>
                 </View>
             </View>
+
+            {/* Incoming Voice Switch Request */}
+            {voiceSwitchRequest && (
+                <View style={styles.requestOverlay}>
+                    <View style={styles.requestModal}>
+                        <Text style={styles.requestTitle}>{voiceSwitchRequest.fromName} wants to switch to voice</Text>
+                        <View style={styles.requestButtons}>
+                            <TouchableOpacity 
+                                style={[styles.requestBtn, styles.declineRequestBtn]} 
+                                onPress={() => respondToVoiceSwitch(false)}
+                            >
+                                <Text style={styles.requestBtnText}>Decline</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity 
+                                style={[styles.requestBtn, styles.acceptRequestBtn]} 
+                                onPress={() => respondToVoiceSwitch(true)}
+                            >
+                                <Text style={styles.requestBtnText}>Accept</Text>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                </View>
+            )}
         </SafeAreaView>
     );
 };
@@ -684,5 +818,49 @@ const styles = StyleSheet.create({
         color: 'rgba(255,255,255,0.7)',
         fontSize: 12,
         marginTop: 2,
+    },
+    // Request Modal Styles
+    requestOverlay: {
+        ...StyleSheet.absoluteFillObject,
+        backgroundColor: 'rgba(0,0,0,0.6)',
+        justifyContent: 'center',
+        alignItems: 'center',
+        zIndex: 1000,
+    },
+    requestModal: {
+        width: '80%',
+        backgroundColor: '#1c1c1c',
+        borderRadius: 20,
+        padding: 24,
+        alignItems: 'center',
+    },
+    requestTitle: {
+        color: '#fff',
+        fontSize: 18,
+        fontWeight: 'bold',
+        textAlign: 'center',
+        marginBottom: 24,
+    },
+    requestButtons: {
+        flexDirection: 'row',
+        gap: 16,
+        width: '100%',
+    },
+    requestBtn: {
+        flex: 1,
+        paddingVertical: 12,
+        borderRadius: 12,
+        alignItems: 'center',
+    },
+    requestBtnText: {
+        color: '#fff',
+        fontWeight: 'bold',
+        fontSize: 16,
+    },
+    acceptRequestBtn: {
+        backgroundColor: '#25D366',
+    },
+    declineRequestBtn: {
+        backgroundColor: 'rgba(255,255,255,0.1)',
     },
 });

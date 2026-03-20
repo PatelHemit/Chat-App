@@ -30,8 +30,8 @@ const getApiBaseUrl = () => {
 const RENDER_URL = 'https://chat-app-3-avn4.onrender.com';
 
 // Use local for development, Render URL for production (Switch manually when needed)
-export const API_BASE_URL = getApiBaseUrl(); 
-// export const API_BASE_URL = RENDER_URL;
+// export const API_BASE_URL = getApiBaseUrl(); 
+export const API_BASE_URL = RENDER_URL;
 console.log(`[API-Config] ****************************************`);
 console.log(`[API-Config] * FINAL API_BASE_URL: ${API_BASE_URL}`);
 console.log(`[API-Config] ****************************************`);

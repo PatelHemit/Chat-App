@@ -96,8 +96,23 @@ class NotificationService {
                     lightColor: '#FF231F7C',
                     lockscreenVisibility: Notifications.AndroidNotificationVisibility.PUBLIC,
                     bypassDnd: true,
+                    sound: 'default', // Using default sound for now
                 });
             }
+
+            // Define Global Notification Categories (Buttons for Heads-up)
+            await Notifications.setNotificationCategoryAsync('incoming-call', [
+                {
+                    identifier: 'ACCEPT_CALL',
+                    buttonTitle: 'Accept',
+                    options: { opensAppToForeground: true },
+                },
+                {
+                    identifier: 'DECLINE_CALL',
+                    buttonTitle: 'Decline',
+                    options: { isDestructive: true },
+                },
+            ]);
 
             return this.expoPushToken;
         } catch (error: any) {
@@ -143,7 +158,14 @@ class NotificationService {
      * Register for Firebase Cloud Messaging token
      */
     async registerFCMToken(): Promise<string | null> {
-        if (Platform.OS === 'web' || !Device.isDevice) return null;
+        if (Platform.OS === 'web') return null;
+        
+        // Emulators sometimes return !Device.isDevice but can still receive FCM if Play Services exist.
+        // We'll allow it for Android even if it claims not to be a physical device for dev ease.
+        if (Platform.OS === 'ios' && !Device.isDevice) {
+            await logger.info('[FCM] Skipped: Not a physical iOS device');
+            return null;
+        }
 
         try {
             // Request permission for iOS (Android is managed via Manifest/User prompt)
@@ -153,8 +175,9 @@ class NotificationService {
                 authStatus === messaging.AuthorizationStatus.PROVISIONAL;
 
             if (enabled) {
+                // Force a fresh token check if possible to catch re-installs
                 const token = await messaging().getToken();
-                await logger.info('[FCM] Token generated', { token: token.substring(0, 10) });
+                await logger.info('[FCM] Token obtained', { token: token.substring(0, 10) + '...' });
                 return token;
             }
             await logger.warn('[FCM] Permission NOT enabled');
@@ -163,6 +186,18 @@ class NotificationService {
             await logger.error('[FCM] Token Error', { error: error.message });
             return null;
         }
+    }
+
+    /**
+     * Start listening for token refreshes
+     */
+    listenToTokenRefresh(userToken: string, apiUrl: string) {
+        if (Platform.OS === 'web') return () => {};
+
+        return messaging().onTokenRefresh(async (newToken) => {
+            await logger.info('[FCM] Token refreshed automatically', { token: newToken.substring(0, 10) + '...' });
+            await this.sendFCMTokenToBackend(newToken, userToken, apiUrl);
+        });
     }
 
     /**

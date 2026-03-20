@@ -308,7 +308,8 @@ const testCallPushNotification = asyncHandler(async (req, res) => {
                         callId: 'test-id'
                     },
                     priority: 'high',
-                    channelId: 'incoming-calls'
+                    channelId: 'incoming-calls',
+                    categoryIdentifier: 'incoming-call'
                 });
             }
         }

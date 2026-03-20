@@ -138,6 +138,31 @@ class CallKeepService {
 
     removeEventListener(type: any, handler: any) {
         if (Platform.OS === 'web' || !RNCallKeep) return;
+        try {
+            RNCallKeep.removeEventListener(type, handler);
+        } catch (err) {
+            console.error('[CallKeep] removeEventListener error:', err);
+        }
+    }
+
+    /**
+     * Shows a missed call notification if the call was ended before answering.
+     */
+    async showMissedCallNotification(callerName: string) {
+        try {
+            const LocalNotifications = require('expo-notifications');
+            await LocalNotifications.scheduleNotificationAsync({
+                content: {
+                    title: 'Missed Call',
+                    body: `You have a missed call from ${callerName}`,
+                    sound: true,
+                    priority: LocalNotifications.AndroidNotificationPriority.HIGH,
+                },
+                trigger: null,
+            });
+        } catch (err) {
+            console.error('[CallKeep] Failed to show missed call notification:', err);
+        }
     }
 }
 

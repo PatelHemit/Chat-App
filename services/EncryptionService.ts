@@ -1,13 +1,35 @@
-import { Platform } from 'react-native';
+import { Platform, NativeModules } from 'react-native';
 import { API_BASE_URL } from '@/config/api';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import CryptoJS from 'crypto-js';
 
-// Lazy load native modules to prevent crashes on Web
+// Robust check for native module availability to avoid loud Metro/Expo errors
+const checkNativeModule = (moduleName: string): boolean => {
+  if (Platform.OS === 'web') return false;
+  
+  // 1. Check standard NativeModules
+  if (NativeModules[moduleName]) return true;
+  
+  // 2. Check for common RSA module names
+  if (moduleName === 'RSA' && (NativeModules.RSA || NativeModules.RNRSANative)) return true;
+  
+  // 3. Check for Expo Modules proxy presence
+  try {
+     const ExpoModulesProxy = NativeModules.NativeUnimoduleProxy || NativeModules.ExpoModulesProxy;
+     if (ExpoModulesProxy?.viewManagersNames?.includes(moduleName) || 
+         ExpoModulesProxy?.modulesConstants?.[moduleName]) return true;
+  } catch(e) {}
+
+  return false;
+};
+
 const getSecureStore = () => {
+  if (!checkNativeModule('ExpoSecureStore')) return null;
   try { return require('expo-secure-store'); } catch (e) { return null; }
 };
+
 const getRSA = () => {
+  if (!checkNativeModule('RSA')) return null;
   try { return require('react-native-rsa-native').RSA; } catch (e) { return null; }
 };
 
@@ -29,7 +51,11 @@ export class EncryptionService {
     try {
       const RSA = getRSA();
       const SecureStore = getSecureStore();
-      if (!RSA || !SecureStore) throw new Error('Native crypto modules missing');
+      
+      if (!RSA || !SecureStore) {
+        console.warn('[Encryption] RSA/SecureStore discovery failed. This usually means you are running in Expo Go or haven\'t run "npx expo run:android" after installing native dependencies. E2EE will be disabled.');
+        return null;
+      }
 
       console.log('[Encryption] Generating RSA 2048 key pair...');
       const keys = await RSA.generateKeys(2048);
@@ -41,8 +67,12 @@ export class EncryptionService {
 
       console.log('[Encryption] Key pair generated and stored successfully');
       return keys.public;
-    } catch (error) {
-      console.error('[Encryption] Key generation failed:', error);
+    } catch (error: any) {
+      if (error.message?.includes('Cannot find native module')) {
+         console.warn('[Encryption] Native module not found. Please build the native app.');
+      } else {
+         console.error('[Encryption] Key generation failed:', error);
+      }
       return null;
     }
   }

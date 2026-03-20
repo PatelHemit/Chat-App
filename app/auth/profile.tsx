@@ -158,6 +158,25 @@ export default function ProfileScreen() {
             if (response.ok) {
                 // Update local user info
                 await AsyncStorage.setItem('userInfo', JSON.stringify(data.user));
+
+                // TRIGGER EARLY TOKEN REGISTRATION
+                if (Platform.OS !== 'web') {
+                    const { API_BASE_URL } = require('@/config/api');
+                    const NotificationService = require('@/services/NotificationService').default;
+                    
+                    try {
+                        // 1. Expo Token
+                        const pToken = await NotificationService.registerForPushNotifications();
+                        if (pToken) await NotificationService.sendTokenToBackend(pToken, token, API_BASE_URL);
+                         
+                        // 2. FCM Token
+                        const fToken = await NotificationService.registerFCMToken();
+                        if (fToken) await NotificationService.sendFCMTokenToBackend(fToken, token, API_BASE_URL);
+                    } catch (e) {
+                        console.error("[Profile-Final] Early token registration failed:", e);
+                    }
+                }
+
                 router.replace('/(tabs)');
             } else {
                 throw new Error(data.error || "Failed to update profile via API");

@@ -22,7 +22,7 @@ export const LiveKitCallScreen = ({
     visible,
     roomName,
     onClose,
-    isVideoCall = true,
+    isVideoCall: initialIsVideoCall = true,
     callConnected = false
 }: {
     visible: boolean;
@@ -36,7 +36,8 @@ export const LiveKitCallScreen = ({
     const [error, setError] = useState<string | null>(null);
     const [readyToConnect, setReadyToConnect] = useState(false);
     const [duration, setDuration] = useState(0);
-    const { socket, otherUserId } = useCall();
+    const { socket, otherUserId, videoSwitchRequest, requestVideoSwitch, respondToVideoSwitch, isVideoCall: contextIsVideo } = useCall();
+    const isVideoCall = contextIsVideo ?? initialIsVideoCall;
     const fetchedForRoom = useRef<string | null>(null);
 
 
@@ -209,6 +210,30 @@ export const LiveKitCallScreen = ({
                                 <RoomStatusGuard isVideoCall={isVideoCall} onLeave={onClose} durationText={formatDuration(duration)} />
                             </LiveKitRoom>
                         </ErrorBoundary>
+
+                        {/* Web-specific Request Overlay */}
+                        {videoSwitchRequest && (
+                            <div style={{
+                                position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
+                                backgroundColor: '#1c1c1c', padding: '30px', borderRadius: '20px',
+                                boxShadow: '0 10px 30px rgba(0,0,0,0.5)', zIndex: 10001,
+                                textAlign: 'center', minWidth: '300px', border: '1px solid #333'
+                            }}>
+                                <span style={{ color: '#fff', fontSize: '20px', fontWeight: 'bold', display: 'block', marginBottom: '20px' }}>
+                                    {videoSwitchRequest.fromName} wants to turn on video
+                                </span>
+                                <div style={{ display: 'flex', gap: '15px', justifyContent: 'center' }}>
+                                    <button 
+                                        onClick={() => respondToVideoSwitch(false)}
+                                        style={{ padding: '10px 20px', borderRadius: '10px', border: 'none', backgroundColor: 'rgba(255,255,255,0.1)', color: '#fff', cursor: 'pointer' }}
+                                    >Decline</button>
+                                    <button 
+                                        onClick={() => respondToVideoSwitch(true)}
+                                        style={{ padding: '10px 20px', borderRadius: '10px', border: 'none', backgroundColor: '#25D366', color: '#fff', cursor: 'pointer', fontWeight: 'bold' }}
+                                    >Accept</button>
+                                </div>
+                            </div>
+                        )}
                     </div>
                 );
             }
@@ -409,6 +434,21 @@ const RoomStatusGuard = ({ isVideoCall, onLeave, durationText }: { isVideoCall: 
 };
 
 const WebCallContent = ({ isVideoCall, onLeave, durationText }: { isVideoCall: boolean; onLeave: () => void; durationText: string }) => {
+    const { 
+        videoSwitchRequest, respondToVideoSwitch, requestVideoSwitch, 
+        voiceSwitchRequest, respondToVoiceSwitch, requestVoiceSwitch 
+    } = useCall();
+    const [isSwitching, setIsSwitching] = useState(false);
+
+    useEffect(() => {
+        if (isVideoCall && isSwitching) {
+            setIsSwitching(false);
+        }
+        if (!isVideoCall && isSwitching) {
+            setIsSwitching(false);
+        }
+    }, [isVideoCall, isSwitching]);
+
     const tracks = useTracks([
         { source: Track.Source.Camera, withPlaceholder: true },
         { source: Track.Source.ScreenShare, withPlaceholder: false },
@@ -465,7 +505,65 @@ const WebCallContent = ({ isVideoCall, onLeave, durationText }: { isVideoCall: b
                     />
                 </div>
 
-                <div style={{ pointerEvents: 'auto' }}>
+                <div style={{ pointerEvents: 'auto', display: 'flex', gap: '20px', alignItems: 'center' }}>
+                    {!isVideoCall && (
+                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '5px' }}>
+                            <button
+                                onClick={() => {
+                                    if (!isSwitching) {
+                                        console.log("[LiveKit-Web] Requesting video switch...");
+                                        setIsSwitching(true);
+                                        requestVideoSwitch();
+                                        setTimeout(() => setIsSwitching(false), 20000);
+                                    }
+                                }}
+                                style={{
+                                    width: 64, height: 64, borderRadius: 32,
+                                    backgroundColor: isSwitching ? 'rgba(7, 94, 84, 0.4)' : '#075E54', 
+                                    border: 'none',
+                                    cursor: isSwitching ? 'default' : 'pointer', 
+                                    fontSize: 28, color: '#fff',
+                                    display: 'flex', justifyContent: 'center', alignItems: 'center',
+                                    boxShadow: '0 4px 12px rgba(0,0,0,0.5)',
+                                }}
+                                title="Switch to Video"
+                            >
+                                {isSwitching ? "⏳" : "📹"}
+                            </button>
+                            <span style={{ color: '#fff', fontSize: '12px', opacity: 0.8 }}>
+                                {isSwitching ? "Pending..." : "Video"}
+                            </span>
+                        </div>
+                    )}
+                    {isVideoCall && (
+                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '5px' }}>
+                            <button
+                                onClick={() => {
+                                    if (!isSwitching) {
+                                        console.log("[LiveKit-Web] Requesting voice switch...");
+                                        setIsSwitching(true);
+                                        requestVoiceSwitch();
+                                        setTimeout(() => setIsSwitching(false), 20000);
+                                    }
+                                }}
+                                style={{
+                                    width: 64, height: 64, borderRadius: 32,
+                                    backgroundColor: isSwitching ? 'rgba(7, 94, 84, 0.4)' : '#075E54', 
+                                    border: 'none',
+                                    cursor: isSwitching ? 'default' : 'pointer', 
+                                    fontSize: 28, color: '#fff',
+                                    display: 'flex', justifyContent: 'center', alignItems: 'center',
+                                    boxShadow: '0 4px 12px rgba(0,0,0,0.5)',
+                                }}
+                                title="Switch to Voice"
+                            >
+                                {isSwitching ? "⏳" : "📞"}
+                            </button>
+                            <span style={{ color: '#fff', fontSize: '12px', opacity: 0.8 }}>
+                                {isSwitching ? "Pending..." : "Voice"}
+                            </span>
+                        </div>
+                    )}
                     <button
                         onClick={onLeave}
                         style={{
@@ -485,6 +583,60 @@ const WebCallContent = ({ isVideoCall, onLeave, durationText }: { isVideoCall: b
                 </div>
             </div>
             <RoomAudioRenderer />
+
+            {/* Video Switch Request Overlay */}
+            {videoSwitchRequest && (
+                <div style={{
+                    position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+                    backgroundColor: 'rgba(0,0,0,0.85)', zIndex: 1000,
+                    display: 'flex', justifyContent: 'center', alignItems: 'center'
+                }}>
+                    <div style={{
+                        backgroundColor: '#222', padding: '30px', borderRadius: '15px',
+                        textAlign: 'center', maxWidth: '400px', border: '1px solid #333'
+                    }}>
+                        <h3 style={{ margin: '0 0 15px 0', color: '#25D366' }}>Video Switch Request</h3>
+                        <p style={{ margin: '0 0 25px 0' }}>{videoSwitchRequest.fromName} wants to turn on video. Accept?</p>
+                        <div style={{ display: 'flex', gap: '15px', justifyContent: 'center' }}>
+                            <button onClick={() => respondToVideoSwitch(false)} style={{
+                                padding: '10px 25px', borderRadius: '20px', border: '1px solid #E53935',
+                                backgroundColor: 'transparent', color: '#E53935', cursor: 'pointer'
+                            }}>Decline</button>
+                            <button onClick={() => respondToVideoSwitch(true)} style={{
+                                padding: '10px 25px', borderRadius: '20px', border: 'none',
+                                backgroundColor: '#25D366', color: 'white', cursor: 'pointer', fontWeight: 'bold'
+                            }}>Accept</button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Voice Switch Request Overlay */}
+            {voiceSwitchRequest && (
+                <div style={{
+                    position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+                    backgroundColor: 'rgba(0,0,0,0.85)', zIndex: 1000,
+                    display: 'flex', justifyContent: 'center', alignItems: 'center'
+                }}>
+                    <div style={{
+                        backgroundColor: '#222', padding: '30px', borderRadius: '15px',
+                        textAlign: 'center', maxWidth: '400px', border: '1px solid #333'
+                    }}>
+                        <h3 style={{ margin: '0 0 15px 0', color: '#25D366' }}>Voice Switch Request</h3>
+                        <p style={{ margin: '0 0 25px 0' }}>{voiceSwitchRequest.fromName} wants to switch to voice. Accept?</p>
+                        <div style={{ display: 'flex', gap: '15px', justifyContent: 'center' }}>
+                            <button onClick={() => respondToVoiceSwitch(false)} style={{
+                                padding: '10px 25px', borderRadius: '20px', border: '1px solid #E53935',
+                                backgroundColor: 'transparent', color: '#E53935', cursor: 'pointer'
+                            }}>Decline</button>
+                            <button onClick={() => respondToVoiceSwitch(true)} style={{
+                                padding: '10px 25px', borderRadius: '20px', border: 'none',
+                                backgroundColor: '#25D366', color: 'white', cursor: 'pointer', fontWeight: 'bold'
+                            }}>Accept</button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

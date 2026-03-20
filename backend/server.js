@@ -463,13 +463,25 @@ io.on("connection", (socket) => {
                                 callerName: from.name || 'Unknown',
                                 callerPic: from.profilePic || '',
                                 roomName: roomName || '',
-                                isVideoCall: isVideoCall ? '1' : '0',  // '1'=video, '0'=voice; use numeric to avoid 'false' string being truthy
+                                isVideoCall: isVideoCall ? '1' : '0',  
                                 callId: callId?.toString() || '',
                                 sender: JSON.stringify(from),
                             },
                             android: {
                                 priority: 'high',
                                 ttl: 30000,
+                            },
+                            apns: {
+                                payload: {
+                                    aps: {
+                                        contentAvailable: true,
+                                        mutableContent: true,
+                                    },
+                                },
+                                headers: {
+                                    'apns-priority': '10', // High priority
+                                    'apns-push-type': 'background', // Or 'voip' for PushKit
+                                },
                             },
                         };
                         const fcmResult = await admin.messaging().send(fcmMessage);
@@ -499,6 +511,24 @@ io.on("connection", (socket) => {
     socket.on("end-call", ({ to }) => {
         console.log(`[Socket] Call ended for ${to}`);
         io.to(to).emit("call-ended");
+    });
+
+    // Voice-to-Video Switch Signaling
+    socket.on("video-switch-request", ({ to, fromName }) => {
+        console.log(`[Socket] Video switch request from ${socket.id} to ${to}`);
+        io.to(to).emit("video-switch-request", { fromId: socket.id, fromName });
+    });
+
+    socket.on('video-switch-response', ({ to, accepted }) => {
+        io.to(to).emit('video-switch-response', { from: socket.user?._id, accepted });
+    });
+
+    socket.on('voice-switch-request', ({ to, fromName }) => {
+        io.to(to).emit('voice-switch-request', { from: socket.user?._id, fromName });
+    });
+
+    socket.on('voice-switch-response', ({ to, accepted }) => {
+        io.to(to).emit('voice-switch-response', { from: socket.user?._id, accepted });
     });
 
     socket.on("disconnect", () => {
