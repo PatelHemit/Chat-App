@@ -26,7 +26,12 @@ export const parseCallType = (val: any): boolean => {
  * Handle incoming call from background/killed state via FCM
  */
 export const handleBackgroundMessage = async (remoteMessage: FirebaseMessagingTypes.RemoteMessage) => {
-    await logger.info('[FCM-Background] 🔔 Background Message Received', { id: remoteMessage.messageId });
+    console.log('[FCM-Background] 📥 Message Received:', remoteMessage.messageId);
+    await logger.info('[FCM-Background] 🔔 Background Message Received', { 
+        id: remoteMessage.messageId,
+        data: remoteMessage.data,
+        notification: remoteMessage.notification 
+    });
 
     try {
         if (remoteMessage.data?.type === 'incoming-call') {
@@ -78,22 +83,34 @@ export const handleBackgroundMessage = async (remoteMessage: FirebaseMessagingTy
                 await logger.info('[FCM-Background] ✅ CallKeep triggered successfully');
             } catch (ckErr: any) {
                 await logger.error('[FCM-Background] ❌ CallKeep display FAILED', { error: ckErr.message });
-                
-                // Fallback to local notification with buttons
-                await Notifications.scheduleNotificationAsync({
-                    content: {
-                        title: `Incoming ${meta.isVideoCall ? 'Video' : 'Voice'} Call`,
-                        body: meta.callerName,
-                        data: { type: 'incoming-call', callId: realCallId, uuid: callUUID },
-                        categoryIdentifier: 'incoming-call', // Trigger Accept/Decline buttons
-                        sound: 'default',
-                        priority: Notifications.AndroidNotificationPriority.MAX,
-                    },
-                    trigger: null,
-                });
             }
 
-            // Bring app to foreground on Android if possible
+            // ALWAYS schedule a high-priority local notification on Android to ensure visibility
+            // This acts as the reliable UI trigger if the system blocks background activity starts
+            if (Platform.OS === 'android') {
+                try {
+                    await Notifications.scheduleNotificationAsync({
+                        content: {
+                            title: `Incoming ${meta.isVideoCall ? 'Video' : 'Voice'} Call`,
+                            body: meta.callerName || 'Chatzy Call',
+                            data: { ...meta, type: 'incoming-call', uuid: callUUID },
+                            categoryIdentifier: 'incoming-call',
+                            sound: 'default',
+                            priority: Notifications.AndroidNotificationPriority.MAX,
+                            // @ts-ignore - channelId is supported in expo-notifications 0.32.x
+                            channelId: 'incoming-calls',
+                            vibrate: [0, 500, 500, 500],
+                            sticky: true,
+                        },
+                        trigger: null,
+                    });
+                    await logger.info('[FCM-Background] ✅ Backup High-Priority notification scheduled');
+                } catch (notifErr: any) {
+                    await logger.error('[FCM-Background] ❌ Notification scheduling FAILED', { error: notifErr.message });
+                }
+            }
+
+            // Bring app to foreground on Android if possible (some devices allow this via CallKeep)
             if (Platform.OS === 'android') {
                 CallKeepService.backToForeground();
             }
