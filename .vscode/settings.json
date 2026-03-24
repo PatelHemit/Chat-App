@@ -3,5 +3,21 @@
     "source.fixAll": "explicit",
     "source.organizeImports": "explicit",
     "source.sortMembers": "explicit"
-  }
+  },
+  "files.exclude": {
+    "node_modules/": true,
+    "**/.expo/": true,
+    "**/android/": false,
+    "**/ios/": false
+  },
+  "search.exclude": {
+    "**/node_modules": true,
+    "**/bower_components": true,
+    "**/.expo": true
+  },
+  "files.watcherExclude": {
+    "**/node_modules/**": true,
+    "**/.expo/**": true
+  },
+  "java.project.importHint": "manual"
 }
