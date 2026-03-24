@@ -90,7 +90,8 @@ const styles = StyleSheet.create({
     },
     messagesList: {
         padding: 16,
-        paddingBottom: 20,
+        paddingTop: 10,
+        paddingBottom: 110, // Must be significantly large (110+) to clear the Expo Stack Header + Status Bar!
     },
     messageBubble: {
         padding: 8,
@@ -1320,7 +1321,10 @@ export default function ChatScreen() {
         });
     };
 
+    const isSharingRef = useRef(false);
     const handleOpenDocument = async (msg: any) => {
+        if (isSharingRef.current) return;
+        isSharingRef.current = true;
         const uri = getInternalUri(msg.content || msg.fileUrl);
         if (!uri) {
             Alert.alert("Error", "Invalid document link");
@@ -1382,11 +1386,15 @@ export default function ChatScreen() {
             if (Platform.OS === 'android') ToastAndroid.show("Opening...", ToastAndroid.SHORT);
 
             if (Sharing && typeof Sharing.shareAsync === 'function') {
-                await Sharing.shareAsync(finalLocalUri, {
-                    mimeType: mimeType,
-                    UTI: mimeType,
-                    dialogTitle: fileName
-                });
+                try {
+                    await Sharing.shareAsync(finalLocalUri, {
+                        mimeType: mimeType,
+                        UTI: mimeType,
+                        dialogTitle: fileName
+                    });
+                } catch (shareErr: any) {
+                    if (!shareErr?.message?.includes('Another share')) throw shareErr;
+                }
             } else {
                 await WebBrowser.openBrowserAsync(uri);
             }
@@ -1401,6 +1409,8 @@ export default function ChatScreen() {
                     { text: "Open in Browser", onPress: () => WebBrowser.openBrowserAsync(uri) }
                 ]
             );
+        } finally {
+            isSharingRef.current = false;
         }
     };
 
@@ -1564,15 +1574,7 @@ export default function ChatScreen() {
         <SafeAreaView style={[styles.container, { backgroundColor: theme.chatBackground }]} edges={['left', 'right', 'bottom']}>
             <Stack.Screen
                 options={{
-                    headerLeft: () => (
-                        <TouchableOpacity 
-                            style={{ marginLeft: 5, padding: 5 }} 
-                            onPress={() => router.back()}
-                            hitSlop={{ top: 20, bottom: 20, left: 20, right: 20 }}
-                        >
-                            <IconSymbol name="chevron.left" size={24} color="#fff" />
-                        </TouchableOpacity>
-                    ),
+                    headerBackVisible: true,
                     headerBackground: () => (
                         <View style={{ backgroundColor: '#008069', flex: 1 }} />
                     ),
@@ -1582,7 +1584,7 @@ export default function ChatScreen() {
                     headerTintColor: '#fff',
                     headerTitleAlign: 'left',
                     headerTitle: () => (
-                        <View style={[styles.headerTitleContainer, { marginLeft: 15 }]}>
+                        <View style={[styles.headerTitleContainer, { marginLeft: 10 }]}>
                             <TouchableOpacity
                                 style={{ flexDirection: 'row', alignItems: 'center' }}
                                 onPress={() => router.push({ pathname: '/chat/info', params: { id, name, profilePic, otherUserId } })}
@@ -1594,11 +1596,11 @@ export default function ChatScreen() {
                                         <IconSymbol name="person.fill" size={24} color="#fff" />
                                     </View>
                                 )}
-                                <View style={styles.headerTextContainer}>
+                                <View style={[styles.headerTextContainer, { maxWidth: '75%' }]}>
                                     <Text style={[styles.headerName, { color: '#fff' }]} numberOfLines={1}>
                                         {chatName || "Chat"}
                                     </Text>
-                                    <Text style={[styles.headerStatus, { color: 'rgba(255,255,255,0.8)' }]}>
+                                    <Text style={[styles.headerStatus, { color: 'rgba(255,255,255,0.8)' }]} numberOfLines={1}>
                                         {!isSocketConnected ? "Connecting..." : (isUserOnline ? "online" : "offline")}
                                     </Text>
                                 </View>
@@ -1614,6 +1616,10 @@ export default function ChatScreen() {
                                     if (Platform.OS === 'web') alert("Call failed: User information not yet synchronized.");
                                     return;
                                 }
+                                if (String(otherUserId) === String(currentUserId)) {
+                                    if (Platform.OS === 'web') alert("You cannot call yourself.");
+                                    return;
+                                }
                                 initiateCall(otherUserId, {
                                     _id: currentUserId,
                                     name: currentUserName || "User",
@@ -1626,6 +1632,10 @@ export default function ChatScreen() {
                                 console.log(`[ChatScreen] Voice Call pressed. otherUserId: ${otherUserId}, currentUserId: ${currentUserId}`);
                                 if (!otherUserId || !currentUserId) {
                                     if (Platform.OS === 'web') alert("Call failed: User information not yet synchronized.");
+                                    return;
+                                }
+                                if (String(otherUserId) === String(currentUserId)) {
+                                    if (Platform.OS === 'web') alert("You cannot call yourself.");
                                     return;
                                 }
                                 initiateCall(otherUserId, {

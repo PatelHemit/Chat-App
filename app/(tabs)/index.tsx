@@ -106,21 +106,46 @@ export default function HomeScreen() {
         setChats(processedChats);
         setFilteredChats(processedChats);
       }
-    } catch (error) {
-      console.error(error);
+    } catch (error: any) {
+      console.log("[HomeScreen] Error fetching chats:", error.message || error);
     } finally {
       setLoading(false);
     }
   };
 
   const handleChatPress = async (chat: any) => {
+    if (!currentUserId) {
+        // Try one last check of AsyncStorage if state is null
+        const userInfo = await AsyncStorage.getItem("userInfo");
+        if (userInfo) {
+            const user = JSON.parse(userInfo);
+            setCurrentUserId(user._id);
+            // Use local variable to avoid stale state in this execution
+            const otherUser = chat.isGroupChat ? undefined : chat.users.find((u: any) => String(u._id) !== String(user._id));
+            router.push({
+                pathname: '/chat/[id]',
+                params: {
+                    id: chat._id,
+                    name: getChatName(chat),
+                    profilePic: otherUser?.profilePic,
+                    otherUserId: otherUser?._id
+                }
+            });
+            return;
+        }
+        Alert.alert("Please wait", "User information is still loading...");
+        return;
+    }
+
+    const otherUser = chat.isGroupChat ? undefined : chat.users.find((u: any) => String(u._id) !== String(currentUserId));
+    
     router.push({
       pathname: '/chat/[id]',
       params: {
         id: chat._id,
         name: getChatName(chat),
-        profilePic: chat.users.find((u: any) => u._id !== currentUserId)?.profilePic,
-        otherUserId: chat.isGroupChat ? undefined : chat.users.find((u: any) => u._id !== currentUserId)?._id
+        profilePic: otherUser?.profilePic,
+        otherUserId: otherUser?._id
       }
     });
   };
@@ -244,9 +269,18 @@ export default function HomeScreen() {
 
   const getChatName = (chat: any) => {
     if (chat.isGroupChat) return chat.chatName;
-    if (!currentUserId || !chat.users) return "Unknown";
-    // Find the user who is NOT the current user
-    const otherUser = chat.users.find((u: any) => u._id !== currentUserId);
+    if (!chat.users) return "Unknown";
+    
+    // Find the user who is NOT me. If currentUserId is null, we can't be sure,
+    // so we return the one that is likely the recipient (usually there are only 2 users in 1-on-1).
+    if (!currentUserId) {
+      // If we don't know who we are, we can't filter ourselves out perfectly yet.
+      // But we can return the first user who isn't us if we had their name.
+      // For now, most 1-on-1 chats have exactly 2 users.
+      return chat.users[1]?.name || chat.users[0]?.name || "Unknown User";
+    }
+
+    const otherUser = chat.users.find((u: any) => String(u._id) !== String(currentUserId));
     return otherUser ? otherUser.name : "Unknown User";
   };
 

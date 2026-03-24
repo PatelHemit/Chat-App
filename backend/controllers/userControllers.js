@@ -380,4 +380,42 @@ const updatePublicKey = asyncHandler(async (req, res) => {
     res.json({ success: true, message: "Public key updated successfully" });
 });
 
-module.exports = { allUsers, updateProfile, registerPushToken, registerFcmToken, blockUser, unblockUser, getBlockedUsers, deleteAccount, getBlockStatus, toggleNotifications, testPushNotification, testCallPushNotification, updatePublicKey };
+// @description     Logout User (remove push tokens)
+// @route           POST /api/user/logout
+// @access          Protected
+const logoutUser = asyncHandler(async (req, res) => {
+    const { pushToken, fcmToken } = req.body;
+    logNotif(`[Logout] Request from user ${req.user._id}. Removing tokens: Push=${!!pushToken}, FCM=${!!fcmToken}`);
+
+    const user = await User.findById(req.user._id);
+
+    if (!user) {
+        res.status(404);
+        throw new Error("User not found");
+    }
+
+    let modified = false;
+
+    if (pushToken && user.pushTokens) {
+        const initialCount = user.pushTokens.length;
+        user.pushTokens = user.pushTokens.filter(t => t !== pushToken);
+        if (user.pushTokens.length !== initialCount) modified = true;
+    }
+
+    if (fcmToken && user.fcmTokens) {
+        const initialCount = user.fcmTokens.length;
+        user.fcmTokens = user.fcmTokens.filter(t => t !== fcmToken);
+        if (user.fcmTokens.length !== initialCount) modified = true;
+    }
+
+    if (modified) {
+        await user.save();
+        logNotif(`[Logout] Tokens removed successfully for ${user.name || user.phone}`);
+    } else {
+        logNotif(`[Logout] No matching tokens found for removal`);
+    }
+
+    res.json({ success: true, message: "Logged out and tokens removed" });
+});
+
+module.exports = { allUsers, updateProfile, registerPushToken, registerFcmToken, blockUser, unblockUser, getBlockedUsers, deleteAccount, getBlockStatus, toggleNotifications, testPushNotification, testCallPushNotification, updatePublicKey, logoutUser };

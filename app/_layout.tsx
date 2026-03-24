@@ -293,6 +293,14 @@ const GlobalCallHandlers = ({ isReady }: { isReady: boolean }): React.ReactEleme
     const appStateListener = AppState.addEventListener('change', (next) => { if (next === 'active') checkPendingCall(); });
     const notificationListener = NotificationService.addNotificationReceivedListener((notification) => {
       const data = notification.request.content.data;
+      const currentUserId = userInfoRef.current?._id || userInfoRef.current?.id;
+      
+      // Global Recipient Verification
+      if (data.to && currentUserId && data.to.toString() !== currentUserId.toString()) {
+        console.log(`[Notification] Ignored ${data.type} for different user: ${data.to}`);
+        return;
+      }
+
       if (data.type === 'incoming-call') {
         AsyncStorage.getItem(`call_meta_${data.uuid}`).then(metaStr => {
           const finalData = metaStr ? { ...data, ...JSON.parse(metaStr) } : data;
@@ -305,6 +313,14 @@ const GlobalCallHandlers = ({ isReady }: { isReady: boolean }): React.ReactEleme
     const responseListener = NotificationService.addNotificationResponseReceivedListener((response) => {
       const data = response.notification.request.content.data;
       const actionId = response.actionIdentifier;
+      const currentUserId = userInfoRef.current?._id || userInfoRef.current?.id;
+
+      // Global Recipient Verification
+      if (data.to && currentUserId && data.to.toString() !== currentUserId.toString()) {
+        console.log(`[Notification] Ignored ${data.type} response for different user: ${data.to}`);
+        return;
+      }
+
       if (data.type === 'incoming-call') {
         AsyncStorage.getItem(`call_meta_${data.uuid}`).then(metaStr => {
           const finalData = metaStr ? { ...data, ...JSON.parse(metaStr) } : data;

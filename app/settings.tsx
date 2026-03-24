@@ -174,7 +174,35 @@ export default function SettingsScreen() {
 
     const performLogout = async () => {
         try {
-            // Uninitialize ZegoCloud if on native
+            const token = await AsyncStorage.getItem('userToken');
+            
+            // 1. Remove push tokens from backend (Fire and Forget)
+            if (token) {
+                // Do this asynchronously so it doesn't block the logout UI
+                (async () => {
+                    try {
+                        const expoToken = await NotificationService.registerForPushNotifications().catch(() => null);
+                        const fcmToken = await NotificationService.registerFCMToken().catch(() => null);
+                        
+                        await fetch(`${API_BASE_URL}/api/user/logout`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                Authorization: `Bearer ${token}`
+                            },
+                            body: JSON.stringify({
+                                pushToken: expoToken,
+                                fcmToken: fcmToken
+                            })
+                        });
+                        console.log("[Settings] Backend logout/token removal successful");
+                    } catch (err) {
+                        console.log("[Settings] Backend token removal failed or was ignored:", err);
+                    }
+                })();
+            }
+
+            // 2. Uninitialize ZegoCloud if on native
             if (Platform.OS !== 'web') {
                 try {
                     const { onUserLogout } = require('@/services/CallingService');
@@ -184,6 +212,7 @@ export default function SettingsScreen() {
                 }
             }
 
+            // 3. Clear local storage immediately
             await AsyncStorage.removeItem('userToken');
             await AsyncStorage.removeItem('userInfo');
 
@@ -196,6 +225,10 @@ export default function SettingsScreen() {
             }
         } catch (error) {
             console.error("Error logging out:", error);
+            // Fallback clear just in case
+            await AsyncStorage.removeItem('userToken');
+            await AsyncStorage.removeItem('userInfo');
+            router.replace('/auth/welcome');
         }
     };
 
@@ -345,36 +378,6 @@ export default function SettingsScreen() {
                     <Text style={styles.logoutText}>Log Out</Text>
                 </TouchableOpacity>
 
-                {/* Diagnostics Section */}
-                <View style={{ marginTop: 30, paddingHorizontal: 4 }}>
-                    <Text style={{ fontSize: 13, color: '#666', marginBottom: 15, fontWeight: 'bold', textTransform: 'uppercase' }}>
-                        Diagnostics & Reliability
-                    </Text>
-                    
-                    <TouchableOpacity
-                        style={[styles.menuItem, { backgroundColor: colorScheme === 'dark' ? '#1f2c34' : '#fff' }]}
-                        onPress={handleTestCall}
-                        disabled={testingCall}
-                    >
-                        <IconSymbol name="phone.badge.plus" size={24} color="#25D366" style={styles.menuIcon} />
-                        <View style={{ flex: 1 }}>
-                            <Text style={[styles.menuText, { color: theme.text }]}>Test Background Call</Text>
-                            <Text style={{ fontSize: 12, color: '#666' }}>Verify if app rings when closed</Text>
-                        </View>
-                        {testingCall && <ActivityIndicator size="small" color="#25D366" />}
-                    </TouchableOpacity>
-
-                    {Platform.OS === 'android' && (
-                        <View style={{ padding: 12, backgroundColor: 'rgba(37, 211, 102, 0.05)', borderRadius: 10, marginTop: 5 }}>
-                            <Text style={{ fontSize: 12, color: '#666', lineHeight: 18 }}>
-                                <Text style={{ fontWeight: 'bold' }}>Note for Android:</Text> If the test call doesn't appear when the app is killed, ensure you have allowed:
-                                {"\n"}• "Display over other apps"
-                                {"\n"}• "Auto-start"
-                                {"\n"}• "No restrictions" in Battery optimization
-                            </Text>
-                        </View>
-                    )}
-                </View>
             </View>
             </ScrollView>
         </SafeAreaView>

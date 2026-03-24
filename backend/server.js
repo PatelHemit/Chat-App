@@ -257,7 +257,7 @@ io.on("connection", (socket) => {
                                 expoTokens,
                                 title,
                                 messagePreview,
-                                { type: 'new_message', chatId: chatIdStr, senderId: senderIdStr },
+                                { type: 'new_message', chatId: chatIdStr, senderId: senderIdStr, to: userIdStr },
                                 fcmTokens
                             );
                         }
@@ -349,6 +349,14 @@ io.on("connection", (socket) => {
     socket.on("call-user", async ({ to, from, roomName, isVideoCall }) => {
         logNotif(`[Socket] Call from ${from.name} to ${to} (isVideo: ${isVideoCall})`);
 
+        // Prevent self-calling
+        const fromId = from._id?.toString() || from.toString();
+        if (String(to) === String(fromId)) {
+            logNotif(`[Socket] ⚠️ BLOCKED: User ${from.name} (${fromId}) tried to call themselves.`);
+            socket.emit("call-error", { message: "You cannot call yourself." });
+            return;
+        }
+
         let callId = null;
         try {
             const newCall = await Call.create({
@@ -417,6 +425,7 @@ io.on("connection", (socket) => {
                             data: {
                                 type: 'incoming-call',
                                 from: sanitizedFrom,
+                                to: to.toString(), // Added recipient ID
                                 roomName,
                                 isVideoCall: isVideoCall ? '1' : '0',
                                 callId
@@ -459,6 +468,7 @@ io.on("connection", (socket) => {
                             token: fcmToken,
                             data: {
                                 type: 'incoming-call',
+                                to: to.toString(), // Added recipient ID
                                 callerId: from._id?.toString() || '',
                                 callerName: from.name || 'Unknown',
                                 callerPic: from.profilePic || '',
