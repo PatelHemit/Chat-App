@@ -131,7 +131,6 @@ export default function QRLoginScreen() {
                         <View style={styles.infoContainer}>
                             <Text style={styles.name}>Chatzy Web</Text>
                             <Text style={styles.subtitle}>Scan to log in instantly</Text>
-                            <Text style={{ fontSize: 10, color: '#aaa', marginTop: 10 }}>Server: {SOCKET_URL}</Text>
                         </View>
                     )}
                 </View>

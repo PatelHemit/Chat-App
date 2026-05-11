@@ -10364,3 +10364,15 @@
 [2026-03-20T11:09:54.749Z] [PushNotif] Ticket for ExponentPushToken[dEFAfNJ...: [{"status":"error","message":"Unable to retrieve the FCM server key for the recipient's app. Make sure you have provided a server key as directed by the Expo FCM documentation.","details":{"error":"InvalidCredentials","fault":"developer"}}]
 [2026-03-20T11:09:54.793Z] [FCM] Sending call data message to Hemit (1 FCM tokens)
 [2026-03-20T11:09:55.056Z] [FCM] Data message sent successfully to token fI7ErA7mTb...
+[2026-03-25T04:53:54.183Z] [Socket] User Online: 6996adb45e25a10f4831078d (Sessions: 1)
+[2026-03-25T06:46:34.517Z] [Socket] User Online: 6996adb45e25a10f4831078d (Sessions: 1)
+[2026-03-25T07:13:21.675Z] [Socket] User Online: 6996adb45e25a10f4831078d (Sessions: 1)
+[2026-03-25T13:30:16.904Z] [Socket] User Online: 6996adb45e25a10f4831078d (Sessions: 1)
+[2026-04-17T05:03:44.535Z] [Socket] User Online: 6996adb45e25a10f4831078d (Sessions: 1)
+[2026-04-17T08:37:40.020Z] [Socket] User Online: 6996adb45e25a10f4831078d (Sessions: 1)
+[2026-04-17T09:27:04.770Z] [Socket] User Online: 6996adb45e25a10f4831078d (Sessions: 1)
+[2026-04-18T07:18:16.436Z] [Socket] User Online: 6996adb45e25a10f4831078d (Sessions: 1)
+[2026-04-18T07:26:55.098Z] [Socket] User Online: 6996adb45e25a10f4831078d (Sessions: 1)
+[2026-04-18T07:31:57.240Z] [Socket] User Online: 6996adb45e25a10f4831078d (Sessions: 1)
+[2026-04-18T07:41:49.974Z] [Socket] User Online: 6996adb45e25a10f4831078d (Sessions: 1)
+[2026-05-09T04:24:00.117Z] [Socket] User Online: 6996adb45e25a10f4831078d (Sessions: 1)

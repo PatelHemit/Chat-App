@@ -91,7 +91,7 @@ export default function LinkDeviceScreen() {
                 }}
             />
 
-            <View style={styles.overlay}>
+            <View style={styles.overlay} pointerEvents="none">
                 <View style={styles.unfocusedContainer}></View>
                 <View style={styles.middleContainer}>
                     <View style={styles.unfocusedContainer}></View>

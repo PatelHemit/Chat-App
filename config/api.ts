@@ -2,7 +2,7 @@ import Constants from 'expo-constants';
 import * as Device from 'expo-device';
 import { Platform } from 'react-native';
 
-const MANUAL_LAN_IP = '192.168.1.38';
+const MANUAL_LAN_IP = '192.168.1.2';
 
 // Use manual IP if provided, otherwise try to detect
 const debuggerHost = Constants.expoConfig?.hostUri?.split(':')[0];
@@ -30,8 +30,8 @@ const getApiBaseUrl = () => {
 const RENDER_URL = 'https://chat-app-3-avn4.onrender.com';
 
 // Use local for development, Render URL for production (Switch manually when needed)
-export const API_BASE_URL = getApiBaseUrl(); 
-// export const API_BASE_URL = RENDER_URL;
+// export const API_BASE_URL = getApiBaseUrl(); // <-- Local dev (192.168.1.2)
+export const API_BASE_URL = RENDER_URL; // <-- Production (Render) - uncomment for APK build
 console.log(`[API-Config] ****************************************`);
 console.log(`[API-Config] * FINAL API_BASE_URL: ${API_BASE_URL}`);
 console.log(`[API-Config] ****************************************`);
